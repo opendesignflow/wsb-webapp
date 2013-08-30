@@ -5,15 +5,73 @@
 	<artifactId>wsb-webapp</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<name>WSB Webapp Extension</name>
+	<parent>
+	    <groupId>com.idyria.osi</groupId>
+	    <artifactId>superpom-scala</artifactId>
+	    <version>2.10.1.r21</version>
+	</parent>
+
+	 <!-- SCM -->
+    <!-- ### -->
+     <scm>
+        <connection>scm:git:git://bitbucket.org/osi/${project.artifactId}.git</connection>
+        <developerConnection>scm:git:git@bitbucket.org:osi/${project.artifactId}.git</developerConnection>
+        <url>http://bitbucket.org/osi/${project.artifactId}.git</url>
+    </scm>
+
 	<build>
-		<sourceDirectory>src/main/scala</sourceDirectory>
-		<testSourceDirectory>src/test/scala</testSourceDirectory>
-	</build>
+        <!-- Add Examples folder to compilation and resources -->
+        <!-- ################## -->
+        <resources>
+         <resource>
+           <directory>${basedir}/src/examples/scala</directory>
+         </resource>
+       </resources>
+
+        <plugins>
+            <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-ooxoo-plugin</artifactId>
+            <version>3.0.0-SNAPSHOT</version>
+            <executions>
+              <execution>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>generate-sources</goal>
+                </goals>
+              </execution>
+            </executions>
+            </plugin>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>${scala.plugin.version}</version>
+                <executions>
+                  <execution>
+                    <id>add-source</id>
+                    <phase>generate-sources</phase>
+                    <goals>
+                      <goal>add-source</goal>
+                    </goals>
+                    <configuration>
+                      <sourceDir>${basedir}/src/examples/scala</sourceDir>
+                    </configuration>
+                  </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 	<dependencies>
 	   <dependency>
 	       <groupId>com.idyria.osi.wsb</groupId>
 	       <artifactId>wsb-core</artifactId>
 	       <version>3.0.0-SNAPSHOT</version>
 	   </dependency>
+     <dependency>
+          <groupId>com.idyria.osi.vui</groupId>
+          <artifactId>vui-core</artifactId>
+          <version>1.0.0-SNAPSHOT</version>
+      </dependency>
 	</dependencies>
 </project>
