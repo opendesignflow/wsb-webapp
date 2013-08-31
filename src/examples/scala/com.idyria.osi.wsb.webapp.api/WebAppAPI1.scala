@@ -35,6 +35,8 @@ object WebAppAPI1 extends App with GridBuilder {
     // Add WebApplication to broker
     //------------------
     var webApp = new WebApplication("/")
+    webApp.addFilesSource("com.idyria.osi.wsb.webapp.api/app1")
+
     engine.broker <= webApp
 
     webApp addView("/",new ViewRenderer {
@@ -73,6 +75,14 @@ object WebAppAPI1 extends App with GridBuilder {
         }
 
     })
+
+    // Upload
+    //-------------------
+    webApp.addControler("/upload") {
+      message => 
+
+        println("Got PUT Message for upload")
+    }
 
     // Start
     //-----------

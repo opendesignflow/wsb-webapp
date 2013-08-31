@@ -62,6 +62,67 @@
         </plugins>
     </build>
 
+  <!-- Repositories to find OSI packages -->
+  <!-- ############################################## -->
+  <pluginRepositories>
+      <pluginRepository>
+          <id>sonatype</id>
+          <name>Sonatype OSS Snapshots Repository</name>
+          <url>http://oss.sonatype.org/content/groups/public</url>
+      </pluginRepository>
+      <!-- For old snapshots, please use groupId `com.jnaerator` and the
+          following repo -->
+      <pluginRepository>
+          <id>nativelibs4java-repo</id>
+          <url>http://nativelibs4java.sourceforge.net/maven</url>
+      </pluginRepository>
+      <pluginRepository>
+          <snapshots>
+              <enabled>false</enabled>
+          </snapshots>
+          <id>idyria.central</id>
+          <name>plugins-release</name>
+          <url>http://www.idyria.com/access/osi/artifactory/libs-release</url>
+      </pluginRepository>
+      <pluginRepository>
+          <snapshots>
+              <enabled>true</enabled>
+          </snapshots>
+          <id>idyria.snapshots</id>
+          <name>plugins-snapshot</name>
+          <url>http://www.idyria.com/access/osi/artifactory/libs-snapshot</url>
+      </pluginRepository>
+  </pluginRepositories>
+  <repositories>
+      <repository>
+          <id>sonatype</id>
+          <name>Sonatype OSS Snapshots Repository</name>
+          <url>http://oss.sonatype.org/content/groups/public</url>
+      </repository>
+      <!-- For old snapshots, please use groupId `com.jnaerator` and the
+          following repo -->
+      <repository>
+          <id>nativelibs4java-repo</id>
+          <url>http://nativelibs4java.sourceforge.net/maven</url>
+      </repository>
+      <repository>
+          <snapshots>
+                  <enabled>false</enabled>
+          </snapshots>
+          <id>idyria.central</id>
+          <name>libs-release</name>
+          <url>http://www.idyria.com/access/osi/artifactory/libs-release</url>
+      </repository>
+      <repository>
+              <snapshots>
+                      <enabled>true</enabled>
+              </snapshots>
+              <id>idyria.snapshots</id>
+              <name>libs-snapshot</name>
+              <url>http://www.idyria.com/access/osi/artifactory/libs-snapshot</url>
+      </repository>
+  </repositories>
+
 	<dependencies>
 	   <dependency>
 	       <groupId>com.idyria.osi.wsb</groupId>
