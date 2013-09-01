@@ -2,7 +2,8 @@ package com.idyria.osi.wsb.webapp
 
 import com.idyria.osi.wsb.core.broker.tree._
 import com.idyria.osi.wsb.core.message._
-import com.idyria.osi.wsb.core.message.http._
+import com.idyria.osi.wsb.webapp.http.message._
+import com.idyria.osi.wsb.webapp.http.connector._
 import com.idyria.osi.wsb.webapp.view._
 
 import java.nio._
@@ -34,13 +35,42 @@ class WebApplication (
 
     }
 
-    // Default Intermediary behavior
-    //------------------------------
-     downClosure = {
+    // Main Web App intermediary
+    //----------------------------
+    downClosure = {
+
         message => 
 
+            //---- Session
+            //--------------------
+            println("[Session] In Session Intermediary")
+
+    }
+   
+    upClosure = {
+
+        message => 
+
+            //---- Session
+            //---------------------
+            if (message.relatedMessage!=null && message.relatedMessage.isInstanceOf[HTTPRequest] && message.relatedMessage.asInstanceOf[HTTPRequest].session!=null) {
+
+                var httpMessage = message.relatedMessage.asInstanceOf[HTTPRequest]
+                message.asInstanceOf[HTTPResponse].session = httpMessage.session
+            }
+    }
+
+    // Default Intermediary for Content
+    //------------------------------
+     this <= new Intermediary {
+
+        downClosure = {
+
+        message => 
+
+
             // If actual request path can match a file in one of the sources, then return this path
-            this.filter.findFirstMatchIn(message.qualifier) match {
+            WebApplication.this.filter.findFirstMatchIn(message.qualifier) match {
 
                 case Some(matched) => 
 
@@ -55,29 +85,48 @@ class WebApplication (
                                 case null => 
 
                                 // Read Content
-                                case url => 
+                                case url  => 
+ 
+                                    var data = ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(url.openStream))
 
+                                    url.toString match {
+                                        case path if (path.endsWith(".html")) => response(HTTPResponse("text/html",data),message)
+                                        case path if (path.endsWith(".css")) => response(HTTPResponse("text/css",data),message)
+                                        case path if (path.endsWith(".js")) => response(HTTPResponse("application/javascript",data),message)
+                                        case path if (path.endsWith(".png")) => response(HTTPResponse("image/png",data),message)
+                                        case path if (path.endsWith(".jpg")) => response(HTTPResponse("image/jpeg",data),message)
+                                        case path if (path.endsWith(".jpeg")) => response(HTTPResponse("image/jpeg",data),message)
+                                        case path if (path.endsWith(".gif")) => response(HTTPResponse("image/gif",data),message)
+                                        case _ =>  response(HTTPResponse("text/plain",data),message)
+                                    }
 
-                                    response(HTTPResponse("text/html",Source.fromInputStream(url.openStream).mkString),message)
+                                    
                             }
                             
                     }
 
                 case None => 
             }
-
+            // EOF file found match
+          
+        }
+        // EOF down closure for content handler intermediary
     }
+    // EOF content intermediary
 
     // API Definitions
     //------------------------
-    def addControler(path:String)(action: Message => Unit) = {
+    def addControler(path:String)(action: HTTPRequest => Option[HTTPResponse]) = {
 
         this <= new Intermediary {
 
             this.filter = s"""http:${WebApplication.makePath(basePath,path)}:(POST|PUT)""".r
 
             downClosure = {
-                message => action(message)
+                message => action(message.asInstanceOf[HTTPRequest]) match {
+                    case Some(responseMessage) => response(responseMessage,message)
+                    case None => 
+                }
             }
 
         }
@@ -103,7 +152,7 @@ class WebApplication (
 
                     var result = renderer.produce
 
-                    response(HTTPResponse("text/html",result),message)
+                    response(HTTPResponse("text/html",ByteBuffer.wrap(result.getBytes)),message)
 
             }
         }

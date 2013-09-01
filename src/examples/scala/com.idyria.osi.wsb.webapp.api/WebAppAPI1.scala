@@ -2,9 +2,9 @@ package com.idyria.osi.wsb.webapp
 
 //import com.idyria.osi.wsb.core.network.connectors.http._
 
-import com.idyria.osi.wsb.core.message.http._
-import com.idyria.osi.wsb.core.network.connectors.tcp._
-import com.idyria.osi.wsb.core.network.connectors.http._
+import com.idyria.osi.wsb.webapp.http.message._
+import com.idyria.osi.wsb.webapp.http.connector._
+
 import com.idyria.osi.wsb.core._
 
 import com.idyria.osi.vui.lib.gridbuilder._
@@ -78,10 +78,63 @@ object WebAppAPI1 extends App with GridBuilder {
 
     // Upload
     //-------------------
-    webApp.addControler("/upload") {
+    webApp.addControler("/upload/configure") {
       message => 
 
-        println("Got PUT Message for upload")
+          message.getURLParameter("name") match {
+            case Some(name) if(name!="") => 
+
+               println("************  Files will be saved to name: "+name)
+
+               message.getSession("name") match {
+                  case Some(existingValue) =>  println("************  Previous name: "+existingValue)
+                  case None => 
+               }
+
+               message.getSession("name"->name)
+               Option(HTTPResponse("application/json","""{ "result" : "ok"}"""))
+
+            case _ => 
+
+                Option(HTTPResponse("application/json","""{ "result" : "error"}"""))
+
+          }
+         
+         
+          
+    }
+
+    webApp.addControler("/upload") {
+
+      message  => 
+
+        var fName = message.getSession("name")
+        println("Got PUT Message for upload: "+fName)
+
+        // Save File if the part has got the file name
+        //-----------------
+        (message.getFileName,message.getSession("name")) match {
+
+          case (Some(filename),Some(folderName)) => 
+
+              println(s"Saving ${message.bytes.size} bytes to $folderName/$filename")
+
+              var folder = new File(folderName.toString)
+              folder.mkdirs
+
+              var outFile = new File(folder,filename)
+              var out = new FileOutputStream(outFile)
+              out.write(message.bytes)
+              out.flush
+              out.close
+
+
+              Option(HTTPResponse("application/json","""{ "status" : "ok"}"""))
+
+          case _ =>  Option(HTTPResponse("application/json","""{ "status" : "error"}""")) 
+        }
+
+
     }
 
     // Start
