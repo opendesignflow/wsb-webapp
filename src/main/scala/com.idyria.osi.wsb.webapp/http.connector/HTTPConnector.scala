@@ -18,20 +18,19 @@ import java.io._
 import scala.collection.JavaConversions._
 import scala.io.Source
 
-class HTTPConnector( cport : Int) extends TCPProtocolHandlerConnector[MimePart]( ctx => new HTTPProtocolHandler(ctx) ) {
+class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ctx => new HTTPProtocolHandler(ctx)) {
 
   this.address = "0.0.0.0"
-	this.port = cport
-	this.messageType = "http"
+  this.port = cport
+  this.messageType = "http"
 
-	Message("http",HTTPRequest)
-
+  Message("http", HTTPRequest)
 
   /**
-    After sending response data to a client, one must close the socket
-  */
-  override def send(buffer:ByteBuffer, context: TCPNetworkContext) = {
-    super.send(buffer,context)
+   * After sending response data to a client, one must close the socket
+   */
+  override def send(buffer: ByteBuffer, context: TCPNetworkContext) = {
+    super.send(buffer, context)
 
     println("Send datas to client -> close it")
     //context.socket.close 
@@ -39,203 +38,194 @@ class HTTPConnector( cport : Int) extends TCPProtocolHandlerConnector[MimePart](
 
   }
 }
- 
+
 object HTTPConnector {
 
-	def apply(port: Int) : HTTPConnector = new HTTPConnector(port)
+  def apply(port: Int): HTTPConnector = new HTTPConnector(port)
 }
 
-class HTTPProtocolHandler (var localContext : NetworkContext) extends ProtocolHandler[MimePart](localContext) with ListeningSupport {
+class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHandler[MimePart](localContext) with ListeningSupport {
 
-	// Receive
-	//-----------------
-  
+  // Receive
+  //-----------------
+
   /**
-    Read lines or bytes depending on data received
-
-    Supported:
-
-      line or bytes
-  */
+   * Read lines or bytes depending on data received
+   *
+   * Supported:
+   *
+   * line or bytes
+   */
   var readMode = "line"
 
   /**
-    The read mode for upcoming message part
-  */
+   * The read mode for upcoming message part
+   */
   var nextReadMode = "line"
-
 
   var contentLength = 0
 
   var contentTypeRegexp = """Content-Type: (.*)""".r
   var contentLengthRegexp = """Content-Length: (.*)""".r
-	
-	// Take Lines and create message
+
+  // Take Lines and create message
   var currentPart = new DefaultMimePart()
 
-	// Send
-	//---------------------
+  // Send
+  //---------------------
 
-	/**
-		REceive some HTTP
-	*/
-	def receive(buffer : ByteBuffer) : Boolean = {
+  /**
+   * REceive some HTTP
+   */
+  def receive(buffer: ByteBuffer): Boolean = {
 
-		@->("http.connector.receive",buffer)
+    @->("http.connector.receive", buffer)
     var bytesArray = buffer.array
-		//println("Got HTTP Datas: "+new String(bytesArray))
-    	
-    	// Use SOurce to read from buffer
-    	//--------------------
-      var bytes  = bytesArray
-    	//var bytesSource = Source.fromInputStream(new ByteArrayInputStream(buffer.array))
-      var stop = false
+    //println("Got HTTP Datas: "+new String(bytesArray))
 
-      do {
+    // Use SOurce to read from buffer
+    //--------------------
+    var bytes = bytesArray
+    //var bytesSource = Source.fromInputStream(new ByteArrayInputStream(buffer.array))
+    var stop = false
 
-        // If no bytes to read, put on hold
-        if (bytes.size==0) 
-          stop = true 
-        else
-          // Read Mode
-          //------------------
-          readMode match {
+    do {
 
-            // Take line
-            //---------------
-            case "line" =>
+      // If no bytes to read, put on hold
+      if (bytes.size == 0)
+        stop = true
+      else
+        // Read Mode
+        //------------------
+        readMode match {
 
-                //  Read line
-                var currentLineBytes = bytes.takeWhile(_ != '\n')
-                bytes = bytes.drop(currentLineBytes.size+1)
-                var line = new String(currentLineBytes.toArray).trim
+          // Take line
+          //---------------
+          case "line" =>
 
-                //-- Parse protocol
-                //-------------------------
-                line match {
+            //  Read line
+            var currentLineBytes = bytes.takeWhile(_ != '\n')
+            bytes = bytes.drop(currentLineBytes.size + 1)
+            var line = new String(currentLineBytes.toArray).trim
 
-                  //-- Content Length expected
-                  case line if(contentLengthRegexp.findFirstMatchIn(line) match {
-                      case Some(matched) => 
+            //-- Parse protocol
+            //-------------------------
+            line match {
 
-                        contentLength = matched.group(1).toInt
-                        true
+              //-- Content Length expected
+              case line if (contentLengthRegexp.findFirstMatchIn(line) match {
+                case Some(matched) =>
 
-                      case None => false
-                    }) => 
+                  contentLength = matched.group(1).toInt
+                  true
 
-                      currentPart.addParameter(line)
+                case None => false
+              }) =>
 
-                  //-- Content Type
-                   case line if(contentTypeRegexp.findFirstMatchIn(line) match {
+                currentPart.addParameter(line)
 
-                      // Multipart form data -> just continue using lines
-                      case Some(matched) if(matched.group(1).matches("multipart/form-data.*")) => 
+              //-- Content Type
+              case line if (contentTypeRegexp.findFirstMatchIn(line) match {
 
-                          true
+                // Multipart form data -> just continue using lines
+                case Some(matched) if (matched.group(1).matches("multipart/form-data.*")) =>
 
-                      // Otherwise, just buffer bytes
-                      case Some(matched) => 
-                          nextReadMode = "bytes"
-                          true
+                  true
 
-                      case None => false
-                    }) => 
+                // Otherwise, just buffer bytes
+                case Some(matched) =>
+                  nextReadMode = "bytes"
+                  true
 
-                      currentPart.addParameter(line)
+                case None => false
+              }) =>
 
-                  //-- Normal Line
-                  case line if (line!="") => 
+                currentPart.addParameter(line)
 
-                    
-                      currentPart.addParameter(line)
+              //-- Normal Line
+              case line if (line != "") =>
 
-                  //-- Empty Line but content is upcomming
-                  case line if (line=="" && contentLength!=0 && nextReadMode=="line") =>
+                currentPart.addParameter(line)
 
-                      println(s"Empty Line but some content is expected") 
+              //-- Empty Line but content is upcomming
+              case line if (line == "" && contentLength != 0 && nextReadMode == "line") =>
 
-                      //--> Write this message part to output
-                      this.availableDatas += this.currentPart 
-                      this.currentPart = new DefaultMimePart
-                   
+                println(s"Empty Line but some content is expected")
 
-                  //-- Empty line, content is upcoming and next Read mode is not line
-                  case line if (line=="" && contentLength!=0 && nextReadMode!="line") =>
+                //--> Write this message part to output
+                this.availableDatas += this.currentPart
+                this.currentPart = new DefaultMimePart
 
-                       println(s"Empty Line but some content is expected in read mode: $nextReadMode, for a length of: $contentLength") 
-                       readMode = nextReadMode
+              //-- Empty line, content is upcoming and next Read mode is not line
+              case line if (line == "" && contentLength != 0 && nextReadMode != "line") =>
 
+                println(s"Empty Line but some content is expected in read mode: $nextReadMode, for a length of: $contentLength")
+                readMode = nextReadMode
 
-                  //-- Empty Line and no content
-                  case line if (line=="" && contentLength==0) =>
+              //-- Empty Line and no content
+              case line if (line == "" && contentLength == 0 && this.currentPart.contentLength > 0) =>
 
-                    println(s"Empty Line and no content expected, end of section")
+                println(s"Empty Line and no content expected, end of section")
 
-                    //--> Write this message part to output
-                    this.availableDatas += this.currentPart 
-                    this.currentPart = new DefaultMimePart
-                    this.contentLength = 0
-                  
-                }
+                //--> Write this message part to output
+                this.availableDatas += this.currentPart
+                this.currentPart = new DefaultMimePart
+                this.contentLength = 0
 
-            // Buffer Bytes
-            //---------------
-            case "bytes" =>
-                
-                // Read
-                this.currentPart += bytes
-                bytes = bytes.drop(bytes.size)
+              case _ =>
+            }
 
-                // Report read progress 
-                var progress = this.currentPart.bytes.size * 100.0 / contentLength
-                println(s"Read state: $progress %, $contentLength expected, and read bytes ${this.currentPart.bytes.size} and content length: ${this.currentPart.contentLength} ")
-                if ( (contentLength -this.currentPart.contentLength) < 10 ) {
-                //if ( progress == 100 ) {
+          // Buffer Bytes
+          //---------------
+          case "bytes" =>
 
-                  (this.availableDatas.contains(this.currentPart),this.availableDatas.size) match {
+            // Read
+            this.currentPart += bytes
+            bytes = bytes.drop(bytes.size)
 
-                    // Part is already stacked, don't do anything
-                    case (true,size) => 
+            // Report read progress 
+            var progress = this.currentPart.bytes.size * 100.0 / contentLength
+            println(s"Read state: $progress %, $contentLength expected, and read bytes ${this.currentPart.bytes.size} and content length: ${this.currentPart.contentLength} ")
+            if ((contentLength - this.currentPart.contentLength) < 10) {
+              //if ( progress == 100 ) {
 
-      
+              (this.availableDatas.contains(this.currentPart), this.availableDatas.size) match {
 
-                    // Add part
-                    case(false,0) =>
+                // Part is already stacked, don't do anything
+                case (true, size) =>
 
-                      this.availableDatas += this.currentPart 
+                // Add part
+                case (false, 0) =>
 
-                    // Merge part
-                    case(false,size) => 
+                  this.availableDatas += this.currentPart
 
-                        println("Merging with head")
-                        this.availableDatas.head.append(this.currentPart)
-                  }
-                  
+                // Merge part
+                case (false, size) =>
 
-                  // Reset all
-                  this.currentPart = new DefaultMimePart
-                  this.contentLength = 0
-                  this.nextReadMode = "line"
-                  this.readMode = "line"
-     
+                  println("Merging with head")
+                  this.availableDatas.head.append(this.currentPart)
+              }
 
-                }
+              // Reset all
+              this.currentPart = new DefaultMimePart
+              this.contentLength = 0
+              this.nextReadMode = "line"
+              this.readMode = "line"
 
-            case mode => throw new RuntimeException(s"HTTP Receive protocol unsupported read mode: $mode")
+            }
 
-          }
+          case mode => throw new RuntimeException(s"HTTP Receive protocol unsupported read mode: $mode")
 
+        }
 
-      } while(!stop)
-      
-      true
+    } while (!stop)
 
+    true
 
-	}
+  }
 
-	def send (buffer: ByteBuffer) :  ByteBuffer  = {
-		buffer
-	}
+  def send(buffer: ByteBuffer): ByteBuffer = {
+    buffer
+  }
 
 }
