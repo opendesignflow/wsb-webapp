@@ -79,16 +79,18 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
    */
   def receive(buffer: ByteBuffer): Boolean = {
 
-    @->("http.connector.receive", buffer)
-    var bytesArray = buffer.array
-    //println("Got HTTP Datas: "+new String(bytesArray))
 
-    // Use SOurce to read from buffer
-    //--------------------
-    var bytes = bytesArray
-    //var bytesSource = Source.fromInputStream(new ByteArrayInputStream(buffer.array))
-    var stop = false
-
+	@->("http.connector.receive",buffer)
+	var bytes = new Array[Byte](buffer.remaining)
+	buffer.get(bytes)
+	//println("Got HTTP Datas: "+new String(bytesArray))
+	
+	// Use SOurce to read from buffer
+	//--------------------
+	//var bytes  = bytesArray
+	//var bytesSource = Source.fromInputStream(new ByteArrayInputStream(buffer.array))
+	var stop = false
+  
     do {
 
       // If no bytes to read, put on hold
@@ -99,14 +101,24 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
         //------------------
         readMode match {
 
+
           // Take line
           //---------------
           case "line" =>
 
             //  Read line
             var currentLineBytes = bytes.takeWhile(_ != '\n')
-            bytes = bytes.drop(currentLineBytes.size + 1)
+            bytes = bytes.drop(currentLineBytes.size+1)
+            if (bytes.length!=0 && bytes(0)=='\r')
+              bytes.drop(1)
+              
             var line = new String(currentLineBytes.toArray).trim
+
+
+            //  Read line
+            /*var currentLineBytes = bytes.takeWhile(_ != '\n')
+            bytes = bytes.drop(currentLineBytes.size + 1)
+            var line = new String(currentLineBytes.toArray).trim*/
 
             //-- Parse protocol
             //-------------------------
@@ -174,6 +186,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
 
               case _ =>
             }
+
 
           // Buffer Bytes
           //---------------

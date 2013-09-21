@@ -15,6 +15,7 @@ import scala.io.Source
  * A Web Application can simply integrate as a Tree Intermediary
  *
  */
+<<<<<<< HEAD
 abstract class WebApplication(
 
     /**
@@ -153,12 +154,12 @@ abstract class WebApplication(
           case None =>
         }
       // EOF file found match
-
     }
     // EOF down closure for content handler intermediary
   }
   // EOF content intermediary
 
+ 
   // API Definitions
   //------------------------
   def addControler(path: String)(action: HTTPRequest => Option[HTTPResponse]) = {
@@ -202,7 +203,6 @@ abstract class WebApplication(
 
       }
     }
-
   }
 
 }

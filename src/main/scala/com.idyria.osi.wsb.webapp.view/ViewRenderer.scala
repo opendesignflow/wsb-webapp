@@ -5,3 +5,4 @@ trait ViewRenderer {
   def produce: String
 
 }
+ 

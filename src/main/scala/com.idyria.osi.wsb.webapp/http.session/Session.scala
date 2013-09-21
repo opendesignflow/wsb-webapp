@@ -5,7 +5,7 @@ import com.idyria.osi.wsb.webapp.http.message._
 /**
     Persistent memory accross requests for a user
 */
-class Session(var id : String ) {
+class Session(var host : String ,var id : String ) {
 
     /**
         Validity is always for now 30minutes
@@ -70,10 +70,19 @@ object Session {
         }
 
         // Try to find Session from HTTP Parameters or create
+        
+        // Determine Session Cookie Host
+        //---------------
+        var host = "localhost"
+        (message.parameters.get("X-Forwarded-Host"),message.parameters.get("Host")) match {
+          case (Some(forwaredHost),_) => host = forwaredHost
+          case (None, Some(normalHost)) => host = normalHost.replaceAll(":[0-9]+","")
+          case _ => 
+        }
 
         // Try to create an ID
         //----------
-        var newSession = new Session(com.idyria.osi.tea.hash.Base64.encodeBytes(com.idyria.osi.tea.hash.HashUtils.hashBytes(Array(longGenerator.generate.toByte),"SHA-1")))
+        var newSession = new Session(host,java.lang.Math.abs(longGenerator.generate).toString)
 
         sessions = sessions + (newSession.id -> newSession)
 
