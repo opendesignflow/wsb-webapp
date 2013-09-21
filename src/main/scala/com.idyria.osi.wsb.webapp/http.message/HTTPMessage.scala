@@ -57,7 +57,7 @@ class HTTPRequest (
 
     if (name=="Cookie") {
 
-      """([\w]+)=(.+);?""".r.findFirstMatchIn(value) match {
+      """([\w]+)=(.+);?""".r.findAllMatchIn(value.trim).toList.lastOption match {
         case Some(matched) => 
 
           var (cookieName,cookieValue) = (matched.group(1) -> matched.group(2))
@@ -215,7 +215,7 @@ class HTTPResponse (
     var sessionId =""
     if (this.getSession!=null) {
 
-      sessionId=s"""Set-Cookie: SSID=${this.getSession.id}; Domain=localhost; Path=/; Expires=${this.getSession.validityString};"""
+      sessionId=s"""Set-Cookie: SSID=${this.getSession.id}; Domain=${this.getSession.host}; Path=/; Expires=${this.getSession.validityString};"""
       headerLines = headerLines :+ sessionId
     }
 
@@ -227,13 +227,14 @@ Cache-Control: no-cache
 Content-Length: ${content.capacity}
 $sessionId
 """*/
-    var header = headerLines.mkString("","\n","\n") + "\n"
+    var header = headerLines.mkString("","\n","\n\n")
 
-    println(s"Response Headers: $header")
+    println(s"Response Headers: $header //")
 
     var res = ByteBuffer.allocate(header.getBytes.size+content.capacity)
     res.put(header.getBytes)
     res.put(content)
+    //res.put(ByteBuffer.wrap("\n".getBytes))
   
     if (contentType=="text/html") {
       println(s"Sending: "+new String(res.array))

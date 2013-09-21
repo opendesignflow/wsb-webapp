@@ -82,12 +82,13 @@ class HTTPProtocolHandler (var localContext : NetworkContext) extends ProtocolHa
 	def receive(buffer : ByteBuffer) : Boolean = {
 
 		@->("http.connector.receive",buffer)
-    var bytesArray = buffer.array
+		var bytes = new Array[Byte](buffer.remaining)
+		buffer.get(bytes)
 		//println("Got HTTP Datas: "+new String(bytesArray))
     	
     	// Use SOurce to read from buffer
     	//--------------------
-      var bytes  = bytesArray
+      //var bytes  = bytesArray
     	//var bytesSource = Source.fromInputStream(new ByteArrayInputStream(buffer.array))
       var stop = false
 
@@ -108,6 +109,9 @@ class HTTPProtocolHandler (var localContext : NetworkContext) extends ProtocolHa
                 //  Read line
                 var currentLineBytes = bytes.takeWhile(_ != '\n')
                 bytes = bytes.drop(currentLineBytes.size+1)
+                if (bytes.length!=0 && bytes(0)=='\r')
+                  bytes.drop(1)
+                  
                 var line = new String(currentLineBytes.toArray).trim
 
                 //-- Parse protocol
@@ -170,12 +174,15 @@ class HTTPProtocolHandler (var localContext : NetworkContext) extends ProtocolHa
                   //-- Empty Line and no content
                   case line if (line=="" && contentLength==0) =>
 
-                    println(s"Empty Line and no content expected, end of section")
-
-                    //--> Write this message part to output
-                    this.availableDatas += this.currentPart 
-                    this.currentPart = new DefaultMimePart
-                    this.contentLength = 0
+                   
+                    if ( this.currentPart.contentLength!=0) {
+                       println(s"Empty Line and no content expected, end of section")
+                      //--> Write this message part to output
+                    	this.availableDatas += this.currentPart 
+            			this.currentPart = new DefaultMimePart
+            			this.contentLength = 0
+                    }
+                    
                   
                 }
 
@@ -189,7 +196,9 @@ class HTTPProtocolHandler (var localContext : NetworkContext) extends ProtocolHa
 
                 // Report read progress 
                 var progress = this.currentPart.bytes.size * 100.0 / contentLength
-                println(s"Read state: $progress %, $contentLength expected, and read bytes ${this.currentPart.bytes.size} and content length: ${this.currentPart.contentLength} ")
+                
+                //println(s"Read state: $progress %, $contentLength expected, and read bytes ${this.currentPart.bytes.size} and content length: ${this.currentPart.contentLength} ")
+                
                 if ( (contentLength -this.currentPart.contentLength) < 10 ) {
                 //if ( progress == 100 ) {
 

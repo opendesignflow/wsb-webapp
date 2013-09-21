@@ -122,7 +122,25 @@
               <url>http://www.idyria.com/access/osi/artifactory/libs-snapshot</url>
       </repository>
   </repositories>
-
+	
+	<distributionManagement>
+    <repository>
+      <id>idyria.central</id>
+      <name>Idyria Public Release Repository</name>
+      <url>http://www.idyria.com/access/osi/artifactory/libs-release-local</url>
+    </repository>
+    <snapshotRepository>
+      <id>idyria.snapshot</id>
+      <name>Idyria Public Snapshot Repository</name>
+      <url>http://www.idyria.com/access/osi/artifactory/libs-snapshot-local</url>
+    </snapshotRepository>
+    <site>
+      <id>idyria.central</id>
+      <url>scp://wurst.idyria.com/access/osi/com.idyria.osi.wsb/wsb-webapp/maven-site/superpom-scala/wsb-webapp</url>
+    </site>
+  </distributionManagement>
+  
+  
 	<dependencies>
 	   <dependency>
 	       <groupId>com.idyria.osi.wsb</groupId>
