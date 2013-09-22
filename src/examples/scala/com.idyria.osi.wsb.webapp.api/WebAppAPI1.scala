@@ -79,7 +79,7 @@ object WebAppAPI1 extends App with GridBuilder {
     // Upload
     //-------------------
     webApp.addControler("/upload/configure") {
-      message => 
+      (application,message) =>
 
           message.getURLParameter("name") match {
             case Some(name) if(name!="") => 
@@ -102,11 +102,11 @@ object WebAppAPI1 extends App with GridBuilder {
          
          
           
-    }
+    } 
 
     webApp.addControler("/upload") {
 
-      message  => 
+      (application,message)  =>
 
         var fName = message.getSession("name")
         println("Got PUT Message for upload: "+fName)

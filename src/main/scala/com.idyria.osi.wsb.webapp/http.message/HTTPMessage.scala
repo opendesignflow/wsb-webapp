@@ -8,7 +8,7 @@ import com.idyria.osi.wsb.core.Logsource
 import com.idyria.osi.wsb.core.message._
 
 import com.idyria.osi.wsb.webapp.http.session._
-
+ 
 import java.nio._
 
 
@@ -42,9 +42,26 @@ class HTTPRequest (
   // Standard Message Implementation
   //---------------------
 
-	// Use Path as qualifier
+  //-- Path may contain some URL encoded paramters, decode them
+  """([\w_-]+)=([\w_%]+)""".r.findAllMatchIn(path).foreach {
+    matchResult => 
+      
+      println(s"[HTTP] URL Parameter: ${matchResult.group(1)} ${matchResult.group(2)}")
+      this.addParameter(matchResult.group(1),matchResult.group(2))
+  }
+  
+  //-- Ensure path has no URL parameters
+  this.path = this.path.split("""\?""").head
+  
+  
+  // Use Path as qualifier
   this.qualifier = s"http:$path:$operation"
 
+  def changePath(newPath:String) = {
+    this.path = newPath
+    this.qualifier = s"http:$newPath:$operation"
+  }
+  
   def toBytes = ByteBuffer.wrap(s"$operation $path HTTP/$version".getBytes)
 
   // Cookies
@@ -229,16 +246,16 @@ $sessionId
 """*/
     var header = headerLines.mkString("","\n","\n\n")
 
-    println(s"Response Headers: $header //")
+    //println(s"Response Headers: $header //")
 
     var res = ByteBuffer.allocate(header.getBytes.size+content.capacity)
     res.put(header.getBytes)
     res.put(content)
     //res.put(ByteBuffer.wrap("\n".getBytes))
   
-    if (contentType=="text/html") {
+    /*if (contentType=="text/html") {
       println(s"Sending: "+new String(res.array))
-    }
+    }*/
     //println(s"Sending: "+new String(res.array))
 
     res.flip

@@ -1,0 +1,19 @@
+
+val html = <html>
+    <head></head>
+    <body>
+        <h1>Test</h1>
+        <div>
+            
+        </div>
+        <script>
+            console.log("Hello World")
+        </script>
+            
+    </body>
+</html>
+
+view.content { (application,request) => 
+  html
+
+}

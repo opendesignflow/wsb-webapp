@@ -86,7 +86,7 @@ object Session {
 
         sessions = sessions + (newSession.id -> newSession)
 
-        println(s"[Session] Saving new session id ${newSession.id} and instance ${newSession.hashCode}")
+        println(s"[Session] Saving new session id ${newSession.id} for host $host and instance ${newSession.hashCode}")
 
         newSession
     }
