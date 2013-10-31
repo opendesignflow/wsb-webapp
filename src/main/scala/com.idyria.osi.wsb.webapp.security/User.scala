@@ -1,8 +1,8 @@
 package com.idyria.osi.wsb.webapp.security
 
 import com.idyria.osi.ooxoo.core.buffers.datatypes.XSDStringBuffer
-import com.idyria.osi.ooxoo.core.buffers.structural.{xelement, ElementBuffer, xattribute,XList}
-  
+import com.idyria.osi.ooxoo.core.buffers.structural.{ xelement, ElementBuffer, xattribute, XList }
+
 /**
  * Represents a User
  * This object can be simply saved in authenticated session parameter to be seen as authenticated user informations
@@ -15,10 +15,9 @@ class User extends ElementBuffer {
    */
   @xattribute
   var name: XSDStringBuffer = null
-  
-  
-  @xelement(name="FederatedIdentity")
-  var identities = XList {new FederatedIdentity}
+
+  @xelement(name = "FederatedIdentity")
+  var identities = XList { new FederatedIdentity }
 
 }
 
@@ -38,8 +37,8 @@ class FederatedIdentity extends ElementBuffer {
   /**
    * The Token is an identifier always returned when authenticating to provider for this application
    */
-  @xelement(name="Token")
-  var token : XSDStringBuffer = null
+  @xelement(name = "Token")
+  var token: XSDStringBuffer = null
 
 }
 

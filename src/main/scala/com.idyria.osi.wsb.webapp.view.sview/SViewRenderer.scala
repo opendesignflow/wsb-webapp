@@ -15,14 +15,14 @@ import java.net.URL
  */
 class SViewRenderer(var path: URL) extends ViewRenderer {
 
-  def produce(application: WebApplication,request: HTTPRequest): String = {
+  def produce(application: WebApplication, request: HTTPRequest): String = {
 
     println(s"--> Our base file is: $path")
 
     // Create an SView Object based on base file
     //--------------------
-    SView(path).render(application,request) 
-     
+    SView(path).render(application, request)
+
   }
 
 }

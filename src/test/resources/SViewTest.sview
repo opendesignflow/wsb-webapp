@@ -1,4 +1,6 @@
 
+import com.idyria.osi.wsb.webapp.view._
+
 val html = <html>
     <head></head>
     <body>
@@ -13,7 +15,11 @@ val html = <html>
     </body>
 </html>
 
-view.content { (application,request) => 
-  html
+view.content { (view,application,request) =>
+
+    @Inject("test")
+    var tt = ""
+ 
+    html
 
 }

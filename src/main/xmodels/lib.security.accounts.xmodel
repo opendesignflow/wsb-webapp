@@ -1,0 +1,45 @@
+import com.idyria.osi.ooxoo.model.out.scala._
+
+import com.idyria.osi.ooxoo.model.out.scala._
+import com.idyria.osi.ooxoo.model.out.markdown._
+
+
+import com.idyria.osi.wsb.lib.soap._
+   
+@producers(Array(
+    new producer(value=classOf[ScalaProducer]),
+     new producer(value=classOf[MDProducer])
+)) 
+object SecurityAccountBuilder extends ModelBuilder with ProtocolBuilder {  
+
+    parameter("scalaProducer.targetPackage","com.idyria.osi.wsb.webapp.security.account")
+
+        
+    // Data Structures
+    //-------------------
+  
+    // Protocols
+    //---------------------
+     
+    message("CheckUserName") {
+        
+        request {
+          
+            withDescription("""Requests checking is the provided username is already known to the system""")
+            
+            "Username" ofType "string"
+            
+            
+        }
+        
+        response {
+            
+            withDescription("""Returns true if username is already in use, false otherwise""")
+            ofType("boolean")
+        }
+    
+    }
+
+
+
+}

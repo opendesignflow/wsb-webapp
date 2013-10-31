@@ -1,0 +1,23 @@
+import com.idyria.osi.ooxoo.model.out.scala._
+
+import com.idyria.osi.ooxoo.model.out.scala._
+import com.idyria.osi.ooxoo.model.out.markdown._
+
+
+@producers(Array(
+    new producer(value=classOf[ScalaProducer]),
+     new producer(value=classOf[MDProducer])
+)) 
+object SiteMapModel extends ModelBuilder {  
+
+    parameter("scalaProducer.targetPackage","com.idyria.osi.wsb.webapp.navigation.sitemap")
+
+    "SiteMap" is {
+    
+    
+    
+    
+    }
+
+
+}

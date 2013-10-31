@@ -13,151 +13,167 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
 import java.util.GregorianCalendar
-
 import com.idyria.osi.wsb.webapp._
 import com.idyria.osi.wsb.webapp.http.message._
+import com.idyria.osi.wsb.webapp.view.ViewRendererException
+
+import com.idyria.osi.wsb.webapp.view._
 
 class SView {
-   
+
   /**
    * Defined is the SView has been fetched from an URL
    */
-  var sourceURL : URL = null
-  
+  var sourceURL: URL = null
+
   /**
    * The main content of the sview
    */
-  var contentClosure : ( SView,WebApplication,HTTPRequest) => Any = null
-  
+  var contentClosure: (SView, WebApplication, HTTPRequest) => Any = null
+
   /**
    * Execute closure on this SView to configure the view
    */
-  def apply(cl : SView => Any) = {
+  def apply(cl: SView => Any) = {
     cl(this)
   }
-  
+
   /**
    * Define closure to produce content on request
    */
-  def content( cl: ( SView,WebApplication,HTTPRequest) => Any) = contentClosure = cl
-  
+  def content(cl: (SView, WebApplication, HTTPRequest) => Any) = contentClosure = cl
+
   // Current Request
   //--------------------------
-  var application : WebApplication = null 
-  var request : HTTPRequest = null
-  
+  var application: WebApplication = null
+  var request: HTTPRequest = null
+
   // Templating
   //------------------
 
-  var tiles = Map[String,( SView,WebApplication,HTTPRequest) => Any]()
-  
+  var tiles = Map[String, (SView, WebApplication, HTTPRequest) => Any]()
+
   /**
    * Define the base template to be first extracted for this view
    */
-  var template : String = null
+  var template: String = null
 
   /**
    * Define some content to be injected at a specific placeholder location
    */
-  def inject(placeHolder: String)(content: ( SView,WebApplication,HTTPRequest) => Any) = {
-	  
-	  this.tiles = this.tiles + (placeHolder -> content)
+  def inject(placeHolder: String)(content: (SView, WebApplication, HTTPRequest) => Any) = {
+
+    this.tiles = this.tiles + (placeHolder -> content)
   }
-  
-  def tile(placeHolder:String) : Any = {
-    
+
+  def tile(placeHolder: String): Any = {
+
     this.tiles.get(placeHolder) match {
-      case Some(closure) => closure(this,application,request)
-      case None => ""
+      case Some(closure) => closure(this, application, request)
+      case None          => ""
     }
   }
-  
+
+  // Sub View
+  //---------------
+
+  /**
+   * Renders and returns the content of anther sview
+   */
+  def subview(path: String): String = {
+
+    application.searchResource(path) match {
+
+      case None                  => throw new RuntimeException(s"Could not locate subview from file or classloader: path")
+      case Some(subviewLocation) => SView(subviewLocation).render(application, request)
+
+    }
+
+  }
+
   /**
    * Render Template or content
-   * 
+   *
    */
-  def render(application: WebApplication,request: HTTPRequest) : String = {
-    
+  def render(application: WebApplication, request: HTTPRequest): String = {
+
     this.application = application
     this.request = request
-    
-    (template,contentClosure) match {
-      case (template,_) if(template!=null) => 
-        
-        // Determine if we need to find template from class loader or file
-        //--------------
-        var templateLocation = getClass.getClassLoader.getResource(template) match {
-          case null => 
-            
-            //-- File possible locations are normal file or relative to current
-            var locations = List[File]()
-            
-            // Try to find template relative to this view path
-            (new File(template).getParentFile,sourceURL) match  {
-          		case (_,null) 		=>
-          		case(f,sourceURL) if (f.isAbsolute) 	=>
-          		case (f,sourceURL)	=> 
-          		  	//locations = new File(s"${sourceURL}"+File.separator+".."+File.separator+template) :: locations
-          		   println(s"*** Source URL $sourceURL ")
-          		  
-          		  var splittedURL = sourceURL.getFile.split("/")
-          		  locations = new File(s"${splittedURL.take(splittedURL.size-1).mkString(File.separator)}"+File.separator+template) :: locations
-            }
-            
-            // Add as a normal file
-            locations = new File(template) :: locations
-            
-            println(s"*** Searching from $locations ")
-            
-            //-- Search
-            locations.find(f => f.exists) match {
-              case Some(file) => file.toURI.toURL
-              case None => throw new RuntimeException(s"Could not locate template from file or classloader: $template")
-            }
-           
-          case url => url
-        }
-        
-        var templateView = SView(templateLocation)
-        contentClosure = templateView.contentClosure
-        contentClosure(this,application,request).toString
-        
-      case (null,contentClosure) => contentClosure(this,application,request).toString
 
+    // Resolve the template chain
+    // -- For each parent template, copy the template tiles to this SView
+    // -- The First template having content stops the chain, the contentClosure is copied to this SView and is rendered
+    var currentTemplate = this.template
+    while (currentTemplate != null) {
 
-        
+      // Search template
+      //-----------
+      application.searchResource(currentTemplate) match {
+
+        case None => throw new RuntimeException(s"Could not locate template from file or classloader: $template")
+        case Some(urlLocation) =>
+
+          // Create SView
+          var templateView = SView(urlLocation)
+
+          // Copy Tiles
+          templateView.tiles.foreach {
+            case (id, content) => this.inject(id)(content)
+          }
+
+          // Copy Content Closure
+          contentClosure = templateView.contentClosure
+
+          // Next Template
+          currentTemplate = templateView.template
+
+      }
+
     }
+
+    // Now Try to render
+    //-------------
+    contentClosure match {
+
+      // No content closure defined locally or from a template
+      case null =>
+        throw new ViewRendererException(s"Could not render view $sourceURL because no content closure is present locally or found in a template")
+
+      // Render
+      case closure => closure(this, application, request).toString
+
+    }
+
   }
 }
 
-class SViewCompilationResult(var view : SView) {
-  
+class SViewCompilationResult(var view: SView) {
+
   /**
    * TimeStamp at which the View has been created
    */
   var timestamp = new GregorianCalendar().getTimeInMillis
 }
- 
+
 object SView {
-  
+
   // Create Compiler
   //-------------
-  var compiler = new EmbeddedCompiler 
-  
+  var compiler = new EmbeddedCompiler
+
   // Map To retain Last compilations
   //-----------
-  var viewsMap = Map[URL,SViewCompilationResult]()
-  
-  
+  var viewsMap = Map[URL, SViewCompilationResult]()
+
   /**
    * Creates an SView from an URL source
    */
-  def apply(source: URL) : SView = {
-    
+  def apply(source: URL): SView = {
+
     // Read Content of file
     //---------
     var closureContent = scala.io.Source.fromInputStream(source.openStream).mkString
-    
+
     // Compile as Closure
     //---------------
     var closure = s"""
@@ -166,16 +182,25 @@ v.apply {
      $closureContent
 }
 """
-    
+
     var sview = new SView
     sview.sourceURL = source
-    
-    compiler.bind("v",sview)
-    
+
+    compiler.bind("v", sview)
+
     //compiler.compile(new File(source.getFile))
-    compiler.interpret(closure)
+    try {
+
+      compiler.interpret(closure)
+
+    } catch {
+      case e: Throwable =>
+
+        println(s"Compilation error in SView source file: @$source")
+        throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
+    }
     //
-  /*  
+    /*  
     var fClosure = s"""
     
 package compiledViews
@@ -196,14 +221,14 @@ class ${source.getFile.split('/').last.split('.').head} extends Function1[SView,
     */
     sview
   }
-  
+
   /**
-   * 
+   *
    * Creates an SView from the String source file.
    * @warning This source string is not a path to a file! It must contain valid code
    */
-  def apply(source: String) : SView = {
+  def apply(source: String): SView = {
     null
   }
-  
+
 }

@@ -1,0 +1,59 @@
+ import com.idyria.osi.wsb.webapp.navigation._
+ 
+ view.content  { (view,app,request) => s"""
+ 
+ ${
+                                   
+  def navElementToString(elt:Any) : String = {
+    
+    elt match {
+     //-- Group
+     //----------------
+     case g : Group => 
+         
+         // If only one View in the group, merge 
+         //--------
+         var groupLink = g.view match {
+             case null => "#"
+             case v    => g.fullPath+"/"+v
+         }
+         
+         // Do Sub Content
+         //---------
+         var groupContent = (g.views.size+g.groups.size) match {
+          
+          case 0 => ""
+          case _ =>
+             
+             "" 
+             // List(g.views.map(v => navElementToString(v)).mkString,g.groups.map(navElementToString(_)).mkString).mkString
+          
+         
+         }
+         // Gather in this group content
+         //--------
+         
+         s"""
+         <li>
+             <a href="${groupLink}">${g.name}</a>
+             ${groupContent}
+         </li> 
+         """
+    
+     //-- View
+     //-------------------
+     case v : View => s"""<li><a href="${v.fullPath}">${v.name}</a></li>"""
+
+     case _ => ""
+    
+    }
+    
+  }
+  
+  // Write Out Groups and views
+ List(app.navigationConfig.views.map(v => navElementToString(v)).mkString,app.navigationConfig.groups.map(navElementToString(_)).mkString).mkString
+  
+}
+ 
+ """
+ }

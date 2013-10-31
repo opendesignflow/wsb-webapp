@@ -15,7 +15,7 @@ import java.io._
 import java.nio._
 
 import com.idyria.osi.wsb.webapp.view._
-
+/*
 object WebAppAPI1 extends App with GridBuilder {
 
     println("Welcome to http example WebAppAPI1")
@@ -78,7 +78,7 @@ object WebAppAPI1 extends App with GridBuilder {
 
     // Upload
     //-------------------
-    webApp.addControler("/upload/configure") {
+    /*webApp.addControler("/upload/configure") {
       (application,message) =>
 
           message.getURLParameter("name") match {
@@ -135,7 +135,7 @@ object WebAppAPI1 extends App with GridBuilder {
         }
 
 
-    }
+    }*/
 
     // Start
     //-----------
@@ -252,4 +252,4 @@ object WebAppAPI1 extends App with GridBuilder {
 
     println("End of example")
 */
-}
+}*/

@@ -1,0 +1,250 @@
+package com.idyria.osi.wsb.webapp.view
+
+import java.net.URL
+import com.idyria.osi.aib.core.compiler.EmbeddedCompiler
+import com.idyria.osi.vui.core.components.scenegraph.SGNode
+import com.idyria.osi.vui.impl.html.HtmlTreeBuilder
+import com.idyria.osi.vui.lib.view.View
+import com.idyria.osi.wsb.webapp.WebApplication
+import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import com.idyria.osi.wsb.webapp.view.sview.SView
+import com.idyria.osi.wsb.webapp.view.sview.SViewCompilationResult
+import scala.language.implicitConversions
+import com.idyria.osi.vui.lib.placeholder.PlaceHolder
+import com.idyria.osi.vui.core.styling.ApplyTrait
+import com.idyria.osi.vui.impl.html.components.HTMLNode
+import com.idyria.osi.aib.core.compiler.SourceCompiler
+
+/**
+ *
+ */
+class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLNode] with ApplyTrait {
+
+  type Self = WWWView
+
+  // Current Request
+  //--------------------------
+  var application: WebApplication = null
+  var request: HTTPRequest = null
+
+  // Parts
+  //---------------
+
+  var parts = Map[String, WWWView]()
+
+  def part(name: String)(cl: (WebApplication, HTTPRequest) ⇒ HTMLNode): WWWView = {
+
+    println(s"Saving part: " + name)
+
+    //-- Create WWWView for part
+    var p = new WWWView {
+      this.contentClosure = { v ⇒ cl(v.application, v.request) }
+    }
+
+    //-- Save
+    parts = parts + (name -> p)
+
+    p
+
+  }
+
+  // View  Composition
+  //------------------
+
+  /**
+   * Shortcut to load a View File and create a view from it
+   * The path is mapped to URL using application resource search
+   */
+  def compose(path: String): WWWView = {
+
+    application.searchResource(path) match {
+      case Some(url) ⇒
+        var parentView = WWWView.compile(url)
+        parentView.application = this.application
+        parentView.request = this.request
+        parentView
+      case None ⇒ throw new ViewRendererException(s"Could not render current view because searched view @$path could not be found ")
+    }
+
+  }
+
+  def compose(baseClass: Class[_ <: WWWView]): WWWView = {
+
+    // Instanciate
+    //-------------
+    var instance = baseClass.newInstance()
+
+    // Set parameters
+    //---------
+    instance.application = this.application
+    instance.request = this.request
+
+    // Return
+    //-----------
+    instance
+  }
+
+  // Content/ Render
+  //----------------
+  var contentClosure: WWWView ⇒ HTMLNode = { v ⇒ null }
+
+  /**
+   * Record Content Closure
+   */
+  /*def apply(cl: WWWView => SGNode[Any]) = {
+    this.contentClosure = cl
+  }*/
+
+  def render: HTMLNode = contentClosure(this)
+
+  def produce(application: WebApplication, request: HTTPRequest): String = {
+
+    this.application = application
+    this.request = request
+
+    //-- Render full or part
+    request.getURLParameter("part") match {
+
+      //-- Try to render part
+      case Some(part) ⇒
+
+        println("Rendering with parts on view: " + hashCode())
+
+        //- Search
+        var p = this.parts.get(part) match {
+
+          //-- Remove part request and product
+          case Some(p) ⇒ p
+
+          //-- Maybe the complete view needs to be rerendered because the part definition is somwhere in the view
+          case None ⇒
+
+            //-- Try
+            println("Rendering View to get Part")
+            render.toString
+
+            println(s"parts: " + this.parts)
+
+            //-- Re/Search
+            this.parts.get(part) match {
+              case Some(p) ⇒ p
+              case None    ⇒ throw new RuntimeException(s"Requested part $part on view ${request.path} which has not been defined")
+
+            }
+
+        }
+
+        //-- If we reach this point, we have a part
+        request.parameters -= "part"
+        p.produce(application, request)
+
+      case None ⇒ render.toString()
+    }
+
+  }
+
+}
+object WWWView extends SourceCompiler[WWWView] {
+
+  implicit def viewToSGNode(v: WWWView): HTMLNode = v.render
+
+  // Configured Imports
+  //---------------
+  var compileImports = List[Class[_]]()
+
+  def addCompileImport(cl: Class[_]) = {
+    compileImports.contains(cl) match {
+      case false ⇒ compileImports = compileImports :+ cl
+      case _     ⇒
+    }
+  }
+
+  var compileTraits = List[Class[_]]()
+
+  def addCompileTrait(cl: Class[_]) = {
+    compileTraits.contains(cl) match {
+      case false ⇒ compileTraits = compileTraits :+ cl
+      case _     ⇒
+    }
+  }
+
+  // Compilation
+  //-----------------
+  def doCompile(source: URL): WWWView = {
+
+    // Read Content of file
+    //---------
+    var closureContent = scala.io.Source.fromInputStream(source.openStream).mkString
+
+    // Compile as Object
+    //------------------------------
+
+    println(s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
+
+    //-- Prepare traits
+    var traits = compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", "with ", "")
+
+    var viewString = s"""
+    
+    import com.idyria.osi.wsb.webapp.view._  
+    import  com.idyria.osi.wsb.webapp.injection.Injector._
+    import com.idyria.osi.wsb.webapp.injection._
+    
+    ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}
+    
+    
+    
+    var viewInstance = new WWWView $traits {
+    	
+	this.contentClosure = {
+    	view =>  
+    		
+    		$closureContent
+    
+    }
+    
+  }
+    
+    """
+
+    // Compile as Clousre, and apply to a new WWWView
+    //---------------
+    /*var closure = s"""    
+v.contentClosure =  { view => 
+   $closureContent
+}
+"""
+
+    var wwwview = new WWWView
+    //sview.sourceURL = source
+
+    compiler.bind("v", wwwview)
+
+    //compiler.compile(new File(source.getFile))
+    try {
+
+      compiler.interpret(closure)
+
+    } catch {
+      case e: Throwable ⇒
+
+        println(s"Compilation error in SView source file: @$source")
+        throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
+    }*/
+    //
+
+    // Compile and return 
+    //------------
+    compiler.interpret(viewString)
+    var wwwview = compiler.imain.valueOfTerm("viewInstance").get.asInstanceOf[WWWView]
+
+    println("Compiling view: " + source + " to " + wwwview.hashCode())
+
+    // Save as compiled Source
+    //------------
+
+    wwwview
+
+  }
+
+}
