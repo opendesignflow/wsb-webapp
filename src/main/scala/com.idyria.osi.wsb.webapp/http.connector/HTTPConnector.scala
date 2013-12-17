@@ -14,6 +14,10 @@ import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import com.idyria.osi.wsb.webapp.mime.DefaultMimePart
 import com.idyria.osi.wsb.webapp.mime.MimePart
 import com.idyria.osi.tea.logging.TLogSource
+import com.idyria.osi.wsb.webapp.http.connector.websocket.WebsocketProtocolhandler
+import com.idyria.osi.wsb.core.network.NetworkContext
+import com.idyria.osi.wsb.webapp.http.message.HTTPMessage
+import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
 
 class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ctx ⇒ new HTTPProtocolHandler(ctx)) with TLogSource {
 
@@ -39,6 +43,7 @@ class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ct
     //context.socket.socket.close
 
   }
+
 }
 
 object HTTPConnector {
@@ -72,6 +77,10 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
 
   // Take Lines and create message
   var currentPart = new DefaultMimePart()
+
+  // Protocol Switching
+  //-------------------------
+  var switchingProtocols = Map[String, Class[_ <: ProtocolHandler[_]]]("websocket" -> classOf[WebsocketProtocolhandler])
 
   // Send
   //---------------------
@@ -266,7 +275,36 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
 
   }
 
-  def send(buffer: ByteBuffer): ByteBuffer = {
+  /**
+   * Send Buffer May Support connection upgrade
+   */
+  def send(buffer: ByteBuffer, nc: NetworkContext): ByteBuffer = {
+
+    // Try to detecte protocol switching
+    //----------------
+    nc[HTTPResponse]("message") match {
+      case Some(httpResponse) =>
+
+        (httpResponse.parameters.get("Connection"), httpResponse.parameters.get("Upgrade")) match {
+
+          //-- Upgrade to Websocket
+          case (Some("Upgrade"), Some("websocket")) =>
+
+            logFine(s"Connector Update to websocket protocol detected")
+
+            // Record in Network Context the new protocol handler
+            nc("protocol.handler" -> new WebsocketProtocolhandler(nc))
+            nc("message.type" -> "json-soap")
+
+          case _ =>
+        }
+
+      case _ =>
+    }
+
+    // Normal Send
+    //-------------------
+
     buffer
   }
 

@@ -266,21 +266,34 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
 }
 
-class HTTPResponse(
+class HTTPResponse extends Message with HTTPMessage with MimePart with TLogSource {
 
-    var contentType: String,
-    var content: ByteBuffer) extends Message with HTTPMessage with TLogSource {
+  var contentType: String = null
+  var content: ByteBuffer = null
 
   var code = 200
 
   def toBytes: ByteBuffer = {
 
     var headerLines = List[String]()
-    headerLines = headerLines :+ s"HTTP/1.1 $code"
-    headerLines = headerLines :+ s"Status: ${HTTPErrorCodes.codeToStatus(code)}"
-    headerLines = headerLines :+ s"Content-Type: $contentType"
+    headerLines = headerLines :+ s"HTTP/1.1 ${HTTPErrorCodes.codeToStatus(code)}"
+
+    // Add Standard Parameters
+    //-----------------------------------
+
+    //headerLines = headerLines :+ s"Status: ${HTTPErrorCodes.codeToStatus(code)}"
+
+    contentType match {
+      case null =>
+      case ct   => headerLines = headerLines :+ s"Content-Type: $ct"
+    }
+
     headerLines = headerLines :+ "Cache-Control: no-cache"
-    headerLines = headerLines :+ s"Content-Length: ${content.capacity}"
+
+    content match {
+      case null =>
+      case c    => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
+    }
 
     var sessionId = ""
     if (this.getSession != null) {
@@ -293,6 +306,13 @@ class HTTPResponse(
       headerLines = headerLines :+ sessionId
     }
 
+    // Add Mime Defined Parameters
+    //-------------------------------
+    this.parameters.map(v => s"${v._1}: ${v._2}").foreach {
+      v => headerLines = headerLines :+ v
+
+    }
+
     /*var header = s"""HTTP/1.1 $code
 Status: 200 OK
 Content-Type: $contentType
@@ -300,13 +320,28 @@ Cache-Control: no-cache
 Content-Length: ${content.capacity}
 $sessionId
 """*/
-    var header = headerLines.mkString("", "\n", "\n\n")
+    var header = content match {
+      case null => headerLines.mkString("", "\r\n", "\r\n\r\n")
+      case _    => headerLines.mkString("", "\r\n", "\r\n\r\n")
+    }
 
     logFine(s"Response Headers: $header //")
 
-    var res = ByteBuffer.allocate(header.getBytes.size + content.capacity)
+    // Create Bytes
+    //-------------------
+    var totalSize = content match {
+      case null => header.getBytes.size
+      case _    => header.getBytes.size + content.capacity
+    }
+
+    var res = ByteBuffer.allocate(totalSize)
     res.put(header.getBytes)
-    res.put(content)
+
+    content match {
+      case null =>
+      case c    => res.put(c)
+    }
+
     //res.put(ByteBuffer.wrap("\n".getBytes))
 
     /*if (contentType=="text/html") {
@@ -324,13 +359,18 @@ object HTTPResponse {
 
   def apply(contentType: String, content: ByteBuffer): HTTPResponse = {
 
-    new HTTPResponse(contentType, content)
-
+    var r = new HTTPResponse
+    r.contentType = contentType
+    r.content = content
+    r
   }
 
   def apply(contentType: String, content: String): HTTPResponse = {
 
-    new HTTPResponse(contentType, ByteBuffer.wrap(content.getBytes))
+    var r = new HTTPResponse
+    r.contentType = contentType
+    r.content = ByteBuffer.wrap(content.getBytes)
+    r
 
   }
 
