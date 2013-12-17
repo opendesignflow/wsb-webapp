@@ -644,14 +644,19 @@ class WebApplication(
 
           // Default : HTML
           //----------------------
-          case _ ⇒
+          case _ =>
+
+            message.errors.foreach {
+              e =>
+                e.printStackTrace()
+            }
 
             var errorText = s"""       
         		Some errors happenned for view: ${message.asInstanceOf[HTTPRequest].path} :
 	        	${
               // message.errors.map(e => List(e.getMessage.replace("""\n""", "<br/>"), e.getStackTrace().mkString("<br/>")).mkString("<br/>")).mkString("<br/>")
 
-              message.errors.map(e ⇒ s"""<div><h3>Error: ${e.getMessage}</h3></div><div><pre>${List(e.getMessage, e.getStackTrace().mkString("\n")).mkString}</pre></div>""").mkString("\n\n")
+              message.errors.map(e ⇒ s"""<div><h3>Error: ${e.getClass().getCanonicalName()} : ${e.getLocalizedMessage()}</h3></div><div><pre>${List(e.getMessage, e.getStackTrace().mkString("\n")).mkString}</pre></div>""").mkString("\n\n")
 
             }
 	

@@ -185,7 +185,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   // Remote Access
   //----------------------
   this.on[PasswordLoginRequest] {
-    request ⇒
+    (message, request) ⇒
 
       //-- Authenticate (failure on exception is handled by SOAP handler)
       var authToken = this.authenticate(AuthenticationDatas("username" -> request.user.username.toString, "password" -> request.user.password.toString), null, null)
@@ -201,7 +201,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   }
 
   this.on[RegisterRequest] {
-    request ⇒
+    (message, request) ⇒
 
       //-- Register
       //---------------------

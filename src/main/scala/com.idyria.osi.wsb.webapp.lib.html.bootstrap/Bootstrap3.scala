@@ -10,6 +10,7 @@ import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.navigation.Group
 import com.idyria.osi.vui.impl.html.components.HTMLTextNode
 import com.idyria.osi.wsb.webapp.navigation.View
+import com.idyria.osi.vui.impl.html.components.Table
 
 /**
  * Inject points
@@ -179,30 +180,41 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
   }
   def bs3Col6(cl: ⇒ Any) = {
     div {
-      classes("col-md-6 col-ld-6")
+      classes("col-md-6")
       cl
     }
   }
 
   def bs3Col8(cl: ⇒ Any) = {
     div {
-      classes("col-md-8 col-ld-8")
+      classes("col-md-8")
       cl
     }
   }
 
   def bs3Col9(cl: ⇒ Any) = {
     div {
-      classes("col-md-9 col-ld-9")
+      classes("col-md-9")
       cl
     }
   }
 
   def bs3Col12(cl: ⇒ Any) = {
     div {
-      classes("col-md-12 col-ld-12")
+      classes("col-md-12")
       cl
     }
+  }
+
+  // Tables
+  //-----------
+  def bs3Table[OT](cl: Table[OT] => Any): Table[OT] = {
+
+    var r = table[OT].asInstanceOf[Table[OT]]
+    r("class" -> "table")
+    
+    cl(r)
+    r
   }
 
 }
@@ -211,8 +223,17 @@ object Bootstrap3 extends HtmlTreeBuilder {
 
   def stylesheets(nd: SGGroup[Any]): Unit = {
 
-    nd <= stylesheet("//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
-    nd <= stylesheet("//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css")
+    nd <= meta {
+      attribute(" http-equiv" -> "X-UA-Compatible")
+      attribute("content" -> "IE=edge")
+    }
+    nd <= meta {
+
+      attribute("name" -> "viewport")
+      attribute("content" -> "width=device-width, initial-scale=1.0")
+    }
+    nd <= stylesheet("http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
+    nd <= stylesheet("http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css")
 
   }
 

@@ -48,6 +48,22 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   }
 
+  /**
+   * This method creates the part, renders it with current request, and place it into the result tree
+   * The ID of resulting HTML node is set to part-$name
+   */
+  def placePart(name: String)(cl: (WebApplication, HTTPRequest) ⇒ HTMLNode): WWWView = {
+
+    //- Create
+    var view = part(name)(cl)
+
+    //- Render
+    var res = add(view.render(application, request))
+    res("id" -> s"part-$name")
+    view
+
+  }
+
   // View  Composition
   //------------------
 
@@ -96,6 +112,11 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
   }*/
 
   def render: HTMLNode = contentClosure(this)
+  def render(application: WebApplication, request: HTTPRequest): HTMLNode = {
+    this.application = (application)
+    this.request = (request)
+    contentClosure(this)
+  }
 
   def produce(application: WebApplication, request: HTTPRequest): String = {
 
@@ -144,6 +165,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
   }
 
 }
+
 object WWWView extends SourceCompiler[WWWView] {
 
   implicit def viewToSGNode(v: WWWView): HTMLNode = v.render
@@ -151,21 +173,37 @@ object WWWView extends SourceCompiler[WWWView] {
   // Configured Imports
   //---------------
   var compileImports = List[Class[_]]()
+  var compileImportPackages = List[Package]()
 
-  def addCompileImport(cl: Class[_]) = {
+  def addCompileImport(cl: Class[_]): Unit = {
     compileImports.contains(cl) match {
       case false ⇒ compileImports = compileImports :+ cl
       case _     ⇒
     }
   }
 
+  def addCompileImport(p: Package): Unit = {
+    compileImportPackages.contains(p) match {
+      case false ⇒ compileImportPackages = compileImportPackages :+ p
+      case _     ⇒
+    }
+  }
+
   var compileTraits = List[Class[_]]()
 
+  /**
+   * Add Trait as compile trait, and also as Import
+   */
   def addCompileTrait(cl: Class[_]) = {
+
+    //-- Add To compile traits
     compileTraits.contains(cl) match {
       case false ⇒ compileTraits = compileTraits :+ cl
       case _     ⇒
     }
+
+    //-- Add to imports
+    addCompileImport(cl)
   }
 
   // Compilation
@@ -191,6 +229,8 @@ object WWWView extends SourceCompiler[WWWView] {
     import com.idyria.osi.wsb.webapp.injection._
     
     ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}
+    
+    ${compileImportPackages.map { p ⇒ s"import ${p.getName()}._" }.mkString("\n")}
     
     
     
@@ -236,14 +276,24 @@ v.contentClosure =  { view =>
     // Compile and return 
     //------------
     compiler.interpret(viewString)
-    var wwwview = compiler.imain.valueOfTerm("viewInstance").get.asInstanceOf[WWWView]
+
+    compiler.imain.valueOfTerm("viewInstance") match {
+      case None =>
+
+        throw new RuntimeException("Nothing compiled: " + compiler.interpreterOutput.getBuffer().toString())
+
+      case Some(wwwview) =>
+        wwwview.asInstanceOf[WWWView]
+    }
+
+    /* var wwwview = compiler.imain.valueOfTerm("viewInstance").get.asInstanceOf[WWWView]
 
     println("Compiling view: " + source + " to " + wwwview.hashCode())
 
     // Save as compiled Source
     //------------
 
-    wwwview
+    wwwview*/
 
   }
 

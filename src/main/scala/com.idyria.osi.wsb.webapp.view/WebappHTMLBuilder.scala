@@ -35,8 +35,19 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
    */
   def cleanURL(url: String) = {
 
+    url.matches("""([a-z/]|\+)+:.*""") match {
+
+      //-- Absolute
+      case true => url
+
+      //-- Relative
+      case false =>
+
+        s"""${WebApplication.makePath(application.basePath, url)}"""
+    }
+
     // If Path is a relative URL, prepend the application path to it
-    try {
+    /*try {
       new URL(url).getProtocol()
 
       // Don't modify URL, as there is a protocol
@@ -53,7 +64,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
       case e: Throwable ⇒
         s"""${WebApplication.makePath(application.basePath, url)}"""
 
-    }
+    }*/
 
   }
 
@@ -306,11 +317,19 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   // Styling
   //-----------------
 
+  override def javaScript(path: String) = {
+    super.javaScript(cleanURL(path))
+  }
+
   override def stylesheet(path: String) = {
 
     link {
       attribute("rel" -> "stylesheet")
 
+      attribute("href" -> cleanURL(path))
+
+      /*
+      
       // If Path is a relative URL, prepend the application path to it
       try {
         new URL(path).getProtocol()
@@ -330,7 +349,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
           attribute("href" -> s"""${WebApplication.makePath(application.basePath, path)}""")
 
       }
-
+	*/
     }
   }
 

@@ -19,11 +19,15 @@ function reloadPart(id) {
  * 
  * @param remoteId
  */
-function loadPart(partId) {
+function loadPart(partId,remoteArguments) {
 
 	console.log("loading part: " + partId)
 
-	var deferred = $.post("?part=" + partId, {
+	if(!remoteArguments) {
+		remoteArguments = []
+	}
+	
+	var deferred = $.post("?part=" + partId+"&"+remoteArguments.join("&"), {
 		part : partId
 	})
 	
@@ -123,17 +127,17 @@ function openDialogPart(partId) {
  * 
  * @param source
  */
-function reRender(source) {
+function reRender(partId) {
 	
 	//-- Get ID
-	var partId = $(source).attr("reRender")
-	if(partId=="") {
-		
+	/*var partId = $(source).attr("reRender")
+	if(!partId) {
+		error("cannot reRender on ")
 		return
-	}
+	}*/
 	
 	//-- Get target
-	var targetElement = $("#"+partId)
+	var targetElement = $("#part-"+partId)
 	if (!targetElement) {
 		console.error("Could not reRender part: "+partId+" because no target element with id #"+partId+" has been found")
 		return

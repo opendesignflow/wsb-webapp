@@ -9,9 +9,10 @@ $(function() {
 	
 	$(scripts).each(function(i,e) {
 		
+		console.log("Trying to load: "+basePath+e)
 		$.getScript(basePath+e)
 		.fail(function( jqxhr, settings, exception) {
-		    console.log( exception + "- "+exception);
+		    console.log( "Error at line: "+exception.line+ ": "+exception.stack)
 		  })
 	
 	})
@@ -24,7 +25,7 @@ function loadScripts(scripts) {
 		
 		$.getScript(basePath+e)
 		.fail(function( jqxhr, settings, exception) {
-		    console.log( exception + "- "+exception);
+		    console.log( exception);
 		  })
 	
 	})

@@ -6,7 +6,6 @@ import com.idyria.osi.wsb.webapp.http.connector._
 
 import com.idyria.osi.wsb.webapp._
 
-
 /**
  *
  * The AppServer class can start applications and is used as embedded application
@@ -16,42 +15,42 @@ class AppServer {
   // Create WSB Engine
   //------------------------
   var engine = new WSBEngine()
- 
-  
+
   def start() = {
-    
-	  engine.lInit
-	  engine.lStart
-    
-  } 
-   
+
+    engine.lInit
+    engine.lStart
+
+  }
+
   // Connectors
   //------------------------
-   
+
   /**
    * Adds a new HTTP connector to the Engine
-   * 
+   *
    */
-  def addHTTPConnector(host: String,port:Int) = {
-	  
-	  var connector = HTTPConnector(port)
-	  engine.network.addConnector(connector)
-			  
+  def addHTTPConnector(host: String, port: Int) = {
+
+    var connector = HTTPConnector(port)
+    engine.network.addConnector(connector)
+
   }
-  
+
   // Application
   //----------------
-  
+
   /**
-   * Add an application as Broker tree candidate 
-   * 
+   * Add an application as Broker tree candidate
+   *
    */
-  def addApplication(app: WebApplication) = {
-    
+  def addApplication[T <: WebApplication](app: T): T = {
+
     engine.broker <= app
-  
+    app
+
   }
-  
+
 }
 
 object AppServer extends App {
