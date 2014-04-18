@@ -48,7 +48,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   }
 
-  /**
+  /*/**
    * This method creates the part, renders it with current request, and place it into the result tree
    * The ID of resulting HTML node is set to part-$name
    */
@@ -56,6 +56,25 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
     //- Create
     var view = part(name)(cl)
+
+    //- Render
+    var res = add(view.render(application, request))
+    res("id" -> s"part-$name")
+    view
+
+  }*/
+
+  /**
+   * This method creates the part, renders it with current request, and place it into the result tree
+   * The ID of resulting HTML node is set to part-$name
+   */
+  def placePart(name: String): WWWView = {
+
+    //- Create
+    var view = parts.get(name) match {
+      case Some(partView) => partView
+      case None           => throw new RuntimeException(s"Cannot place part $name because it has not been defined")
+    }
 
     //- Render
     var res = add(view.render(application, request))

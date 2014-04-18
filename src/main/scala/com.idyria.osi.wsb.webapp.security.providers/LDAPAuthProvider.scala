@@ -20,7 +20,6 @@ import javax.naming.ldap.LdapContext
 import com.idyria.osi.wsb.webapp.security.AuthToken
 import com.idyria.osi.wsb.webapp.view.ViewRenderer
 import com.idyria.osi.ooxoo.core.buffers.datatypes.StringMapBuffer
-import com.idyria.osi.wsb.webapp.security.Datas
 
 /**
  *
@@ -92,7 +91,7 @@ class LDAPAuthProvider extends ElementBuffer with ViewRenderer with Authenticati
           //-- Prepare Results
           var result = new AuthToken()
           result.token = s"""uid=${datas.getUserName.get},$baseDN"""
-          result.datas = new Datas
+          result.datas = new StringMapBuffer
 
           result.datas("username") = datas.getUserName.get
 

@@ -20,6 +20,7 @@ import com.idyria.osi.wsb.webapp.view.sview._
 import com.idyria.osi.ooxoo.db.store.fs.FSStore
 import com.idyria.osi.wsb.webapp.injection.Injector
 import com.idyria.osi.wsb.webapp.db.OOXOODatabase
+import java.net.URLEncoder
 
 /**
  * A Web Application can simply integrate as a Tree Intermediary
@@ -168,7 +169,7 @@ class WebApplication(
                 case null   ⇒ ""
                 case toView ⇒ toView.toString
               }
-              this.addRule(r._for, Thread.currentThread().getContextClassLoader().loadClass(r.id.toString).newInstance().asInstanceOf[NavigationRule], view)
+              this.addRule(r.for_, Thread.currentThread().getContextClassLoader().loadClass(r.id.toString).newInstance().asInstanceOf[NavigationRule], view)
             } catch {
               case e: Throwable ⇒ throw new RuntimeException(s"An Error occured while setting navigation rule ${r.fullPath} from $navigationURL: ${e.getMessage()} ")
             }
@@ -496,11 +497,27 @@ class WebApplication(
           searchResource(m) match {
             case Some(url) ⇒
 
-              response(HTTPResponse("text/html", WWWView.compile(url).produce(WebApplication.this, m).toString()))
+              // Support various outputs
+              //---------------------
+              m.parameters.get("Accept") match {
+
+                // JSON
+                //---------------
+                case Some(v) if (v.startsWith("application/json")) ⇒
+
+                  var rendered = WWWView.compile(url).produce(WebApplication.this, m).toString()
+                  var jsonRes = s"""{"content":"${URLEncoder.encode(rendered)}"}"""
+                  response(HTTPResponse("application/json", jsonRes))
+
+                // Otherwise -> HTML
+                //------------
+                case _ =>
+                  response(HTTPResponse("text/html", WWWView.compile(url).produce(WebApplication.this, m).toString()))
+              }
 
             case None ⇒
 
-              throw new RuntimeException("Cannot Server Resource because no view file could be found")
+              throw new RuntimeException("Cannot Serve Resource because no view file could be found")
           }
 
       }

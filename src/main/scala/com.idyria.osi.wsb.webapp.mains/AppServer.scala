@@ -23,6 +23,10 @@ class AppServer {
 
   }
 
+  def stop = {
+    engine.lStop
+  }
+
   // Connectors
   //------------------------
 
@@ -34,6 +38,7 @@ class AppServer {
 
     var connector = HTTPConnector(port)
     engine.network.addConnector(connector)
+    connector
 
   }
 

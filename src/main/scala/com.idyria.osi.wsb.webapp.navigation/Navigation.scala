@@ -58,7 +58,7 @@ class DefaultGroup extends GroupTrait with PathTrait {
     }
     this.rules.foreach {
       r =>
-        r.fullPath = this.fullPath + r._for;
+        r.fullPath = this.fullPath + r.for_;
         res = cl(r) :: res
     }
 
@@ -77,7 +77,7 @@ class DefaultGroup extends GroupTrait with PathTrait {
       v => v.fullPath = this.fullPath + "/" + v.id; cl(v)
     }
     this.rules.foreach {
-      r => r.fullPath = this.fullPath + r._for; cl(r)
+      r => r.fullPath = this.fullPath + r.for_; cl(r)
     }
 
   }

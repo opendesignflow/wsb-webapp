@@ -5,7 +5,6 @@ package com.idyria.osi.wsb.webapp.security.providers
 
 import org.scalatest.FunSuite
 import com.idyria.osi.wsb.webapp.security.AuthenticationDatas
-import org.scalatest.matchers.Matchers
 import com.idyria.osi.wsb.webapp.security.AuthenticationException
 import com.idyria.osi.wsb.webapp.TestWebApplication
 import com.idyria.osi.wsb.webapp.security.AuthenticationController
@@ -15,7 +14,7 @@ import com.idyria.osi.wsb.webapp.security.providers.password.PasswordProvider
  * @author rleys
  *
  */
-class AuthProvidersTest extends FunSuite with Matchers {
+class AuthProvidersTest extends FunSuite {
 
   test("LDAPProvider") {
 

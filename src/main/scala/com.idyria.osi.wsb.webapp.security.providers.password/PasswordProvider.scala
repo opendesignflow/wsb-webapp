@@ -88,7 +88,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
         // Create Salt
         //-----------------
         var salt = Salt()
-        salt._for = username
+        salt.for_ = username
         salt.data = PasswordProvider.sha256(RandomID.generateSmallBytes())
         saltsDatas.salts += salt
         database.container("authDatas").writeDocument("salts.xml", saltsDatas)
@@ -140,7 +140,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
             // Retrieve salt
             //----------------
-            var salt = saltsDatas.salts.find(s ⇒ s._for.toString == username) match {
+            var salt = saltsDatas.salts.find(s ⇒ s.for_.toString == username) match {
               case Some(salt) ⇒ salt
               case None       ⇒ throw new AuthenticationException(s"Password will never match, contact administrator (database content error)")
             }

@@ -11,6 +11,8 @@ import com.idyria.osi.wsb.webapp.navigation.Group
 import com.idyria.osi.vui.impl.html.components.HTMLTextNode
 import com.idyria.osi.wsb.webapp.navigation.View
 import com.idyria.osi.vui.impl.html.components.Table
+import com.idyria.osi.vui.core.components.table.TableBuilderInterface
+import com.idyria.osi.vui.core.components.table.SGTable
 
 /**
  * Inject points
@@ -208,16 +210,87 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
 
   // Tables
   //-----------
-  def bs3Table[OT](cl: Table[OT] => Any): Table[OT] = {
+  def bs3Table[OT](cl: BS3Table[OT] => Any): BS3Table[OT] = {
 
-    var r = table[OT].asInstanceOf[Table[OT]]
-    r("class" -> "table")
-    
+    var r = switchToNode(new BS3Table[OT], {})
+    // r("class" -> "table")
+
     cl(r)
     r
   }
 
+  // Button Groups
+  //-------------------
+
+  def bs3SingleDropdownButton(name: String, btnType: String = "default")(cl: => Any) = {
+
+    div {
+      attribute("class" -> "btn-group")
+
+      //-- Add Button
+      button(name) {
+        b =>
+          attribute("class" -> s"btn btn-${btnType} dropdown-toggle")
+          attribute("data-toggle" -> "dropdown")
+
+          // Add Caret
+          span {
+            classes("caret")
+          }
+      }
+
+      //-- Add Menu
+      ul {
+        classes("dropdown-menu")
+        attribute("role" -> "menu")
+
+        cl
+
+      }
+    }
+
+  }
+
+  def bs3Action(name: String, action: String = "#") = {
+
+    li {
+      a(name, action)
+    }
+  }
+
 }
+
+class BS3Table[OT] extends Table[OT] {
+
+  this("class" -> "table")
+
+  def condensed = {
+    this.attributeAppend("class", "table-condensed")
+    this
+  }
+  def bordered = {
+    this.attributeAppend("class", "table-bordered")
+    this
+  }
+
+  def hover = {
+    this.attributeAppend("class", "table-hover")
+    this
+  }
+}
+
+/*
+trait BS3TableBuilder extends TableBuilderInterface[Any] {
+
+  def table[OT]: SGTable[OT, Any] = {
+
+    return new BS3Table[OT] {
+
+    }
+
+  }
+
+}*/
 
 object Bootstrap3 extends HtmlTreeBuilder {
 

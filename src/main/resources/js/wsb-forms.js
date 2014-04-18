@@ -53,17 +53,24 @@ function submitForm( button ) {
 	//-- Serialize formular
 	var formSerialised = $(form).serialize()
 	
+	//-- If The button has a reRender attribute, then also load part at the same time
+	var partLoad ="noRender=true"
+
+	if ($(button).attr("reRender")) {
+		partLoad="part="+$(button).attr("reRender")
+	}
 	console.log("Serialized form: "+formSerialised)
 	
 	//-- Ajax Post
 	var deffered = $.ajax({
 	  type: "POST",
-	  url: "?noRender=true",
+	  url: "?"+partLoad,
 	  data: formSerialised,
 	  dataType: "json",
 	  accepts: {
 	      xml: "text/xml",
-	      json: "application/json"
+	      json: "application/json",
+	      html: "text/html"
 	  }
 	});
 	
@@ -76,9 +83,16 @@ function submitForm( button ) {
 		
 		console.log("Success AJax: ")
 		
+		if (data.content) {
+		
+			var decoded = decodeHTML(data.content)
+			console.log("Decoded: "+decoded)
+			setPartContent($(button).attr("reRender"),decoded)
+		}
+		//var content = eval(data)
 		// Done: Re-Render
 		//------------------------
-		reRender(button)
+		//reRender(button)
 		
 		
 	})

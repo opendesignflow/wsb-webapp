@@ -139,7 +139,7 @@ function reRender(partId) {
 	//-- Get target
 	var targetElement = $("#part-"+partId)
 	if (!targetElement) {
-		console.error("Could not reRender part: "+partId+" because no target element with id #"+partId+" has been found")
+		console.error("Could not reRender part: "+partId+" because no target element with id #part-"+partId+" has been found")
 		return
 	}
 	
@@ -187,4 +187,33 @@ function reRender(partId) {
 		targetElement.append(html)
 		
 	})
+}
+
+function setPartContent(partId,html) {
+	
+	//-- Get target
+	var targetElement = $("#part-"+partId)
+	if (!targetElement) {
+		console.error("Could not set content part: "+partId+" because no target element with id #part-"+partId+" has been found")
+		return
+	}
+	
+	// Empty target
+	targetElement.empty()
+	
+	// Set
+	targetElement.append(html)
+	
+}
+
+/**
+ * Decodes the URL Encoded HTML back to normal html that can be loaded in the page
+ * @param content
+ */
+function decodeHTML(uriHTML) {
+	return decodeURI(uriHTML).replace(/\++/g," ")
+				.replace(/(%2F)+/g,"/")
+				.replace(/(%3A)+/g,":")
+				.replace(/(%3D)+/g,"=")
+				.replace(/(%23)+/g,"#")
 }

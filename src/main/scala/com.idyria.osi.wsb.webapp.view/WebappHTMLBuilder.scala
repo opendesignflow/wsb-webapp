@@ -353,4 +353,10 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
     }
   }
 
+  //--------------------------
+  // Parts Logic
+  //-----------------------
+  def reRender(str: String) = {
+    attribute("reRender" -> str)
+  }
 }
