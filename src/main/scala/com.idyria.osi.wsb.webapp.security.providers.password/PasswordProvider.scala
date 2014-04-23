@@ -1,3 +1,24 @@
+/*
+ * #%L
+ * WSB Webapp
+ * %%
+ * Copyright (C) 2013 - 2014 OSI / Computer Architecture Group @ Uni. Heidelberg
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
 package com.idyria.osi.wsb.webapp.security.providers.password
 
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
@@ -29,8 +50,8 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
   // Required Parameters Setup
   //-----------------
-  this.requiredParameters = this.requiredParameters + ("username" -> "The User name for the user entry")
-  this.requiredParameters = this.requiredParameters + ("password" -> "The password for username, hased in SHA-256")
+  this.requiredParameters = this.requiredParameters + ("userName" -> "The User name for the user entry")
+  this.requiredParameters = this.requiredParameters + ("password" -> "The password for userName, hased in SHA-256")
 
   // Protocols Registration
   //------------
@@ -64,7 +85,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   //----------------------
 
   /**
-   * Register a new username and password
+   * Register a new userName and password
    *
    * - Password Storage:
    *
@@ -74,12 +95,12 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
    *
    * password = sha256(inputPassword + salt)
    */
-  def register(username: String, password: String) = {
+  def register(userName: String, password: String) = {
 
-    // Search to verify username does not already exist
+    // Search to verify userName does not already exist
     //---------------
-    authDatas.users.find(user ⇒ user.username.toString == username) match {
-      case Some(user) ⇒ throw new RuntimeException(s"Cannot register username $username which already exists")
+    authDatas.users.find(user ⇒ user.userName.toString == userName) match {
+      case Some(user) ⇒ throw new RuntimeException(s"Cannot register userName $userName which already exists")
 
       // We Can register
       //-----------------
@@ -87,8 +108,8 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
         // Create Salt
         //-----------------
-        var salt = Salt()
-        salt.for_ = username
+        var salt = SaltsSalt()
+        salt.for_ = userName
         salt.data = PasswordProvider.sha256(RandomID.generateSmallBytes())
         saltsDatas.salts += salt
         database.container("authDatas").writeDocument("salts.xml", saltsDatas)
@@ -96,7 +117,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
         // Record
         //----------------
         var user = new User()
-        user.username = username
+        user.userName = userName
         user.password = PasswordProvider.sha256(password + salt.data)
 
         //println(s"Setting passwd: to $password + ${salt.data} -> ${user.password} ")
@@ -111,9 +132,9 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   }
 
   // Update
-  //  - First initiate update for a username by authenticating and giving back an Update token
+  //  - First initiate update for a userName by authenticating and giving back an Update token
   //  - The application should decide how to deliver the token to the user
-  //  - The update takes place by delivering AuthToken + UpdateToken + username + password
+  //  - The update takes place by delivering AuthToken + UpdateToken + userName + password
   //----------------
 
   // Auth
@@ -128,11 +149,11 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
       // Everything is there
       //-----------------
-      case (Some(username), Some(password)) ⇒
+      case (Some(userName), Some(password)) ⇒
 
         // Search for user entry
         //-------------------
-        authDatas.users.find(user ⇒ user.username.toString == username) match {
+        authDatas.users.find(user ⇒ user.userName.toString == userName) match {
 
           // Try to authenticate
           //----------------
@@ -140,7 +161,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
             // Retrieve salt
             //----------------
-            var salt = saltsDatas.salts.find(s ⇒ s.for_.toString == username) match {
+            var salt = saltsDatas.salts.find(s ⇒ s.for_.toString == userName) match {
               case Some(salt) ⇒ salt
               case None       ⇒ throw new AuthenticationException(s"Password will never match, contact administrator (database content error)")
             }
@@ -159,7 +180,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
               case true ⇒
 
                 var result = new AuthToken()
-                result.token = s"""$username"""
+                result.token = s"""$userName"""
                 result
 
               // Password is wrong
@@ -170,13 +191,13 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
             }
 
           // User Unknown
-          case None ⇒ throw new AuthenticationException(s"User $username is unknown")
+          case None ⇒ throw new AuthenticationException(s"User $userName is unknown")
         }
 
       // Missing Stuff
       //-----------------
       case (None, None)           ⇒ throw new AuthenticationException("both User Name and Password are missing for this provider")
-      case (Some(username), None) ⇒ throw new AuthenticationException("A Password must be provided for this provider")
+      case (Some(userName), None) ⇒ throw new AuthenticationException("A Password must be provided for this provider")
       case (None, Some(password)) ⇒ throw new AuthenticationException("A User Name must be provided for this provider")
     }
 
@@ -188,14 +209,14 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
     (message, request) ⇒
 
       //-- Authenticate (failure on exception is handled by SOAP handler)
-      var authToken = this.authenticate(AuthenticationDatas("username" -> request.user.username.toString, "password" -> request.user.password.toString), null, null)
+      var authToken = this.authenticate(AuthenticationDatas("userName" -> request.user.userName.toString, "password" -> request.user.password.toString), null, null)
 
       //-- Send Back
       var resp = new PasswordLoginResponse
-      resp.code = new Code
+      resp.code = new PasswordLoginResponseCode
       resp.code.selectSUCCESS
 
-      resp.authtoken = authToken
+      resp.authToken = authToken
 
       response(resp)
   }
@@ -205,13 +226,13 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
       //-- Register
       //---------------------
-      this.register(request.user.username, request.user.password)
+      this.register(request.user.userName, request.user.password)
 
       println("Registering")
 
       //-- Answer
       var resp = new RegisterResponse
-      resp.code = new Code
+      resp.code = new RegisterResponseCode
       resp.code.selectSUCCESS
       response(resp)
 

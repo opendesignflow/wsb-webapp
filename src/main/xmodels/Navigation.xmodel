@@ -30,7 +30,7 @@ object NavigationModelBuilder extends ModelBuilder {
         
         isTrait
         withTrait("Info")
-        
+        withTrait("PathTrait")
 
         // Id For this subpath
         attribute("id")
@@ -64,7 +64,8 @@ object NavigationModelBuilder extends ModelBuilder {
      
         "Group" multiple {
             
-            classType("DefaultGroup")
+            //classType("DefaultGroup")
+             withTrait("GroupTrait")
             
          }
     }
@@ -73,7 +74,7 @@ object NavigationModelBuilder extends ModelBuilder {
     //----------
     "Navigation" is {
         
-        classType("Group")
+        withTrait("GroupTrait")
         
         
     

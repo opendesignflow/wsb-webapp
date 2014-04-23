@@ -4,7 +4,8 @@
 	<groupId>com.idyria.osi.wsb</groupId>
 	<artifactId>wsb-webapp</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
-	<name>WSB Webapp Extension</name>
+	<inceptionYear>2013</inceptionYear>
+	<name>WSB Webapp</name>
 
 
 	<parent>
@@ -20,6 +21,11 @@
 		<developerConnection>scm:git:git@bitbucket.org:osi/${project.artifactId}.git</developerConnection>
 		<url>http://bitbucket.org/osi/${project.artifactId}.git</url>
 	</scm>
+
+	<organization>
+        <name>OSI / Computer Architecture Group @ Uni. Heidelberg </name>
+        <url>https://github.com/richnou/wsb-webapp</url>
+    </organization>
 
 	<build>
 		<!-- Add Examples folder to compilation and resources -->
@@ -71,6 +77,37 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<!-- Licenses -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>1.6</version>
+				<configuration>
+				  <licenseName>gpl_v3</licenseName>
+				  <extraExtensions>
+				    <scala>java</scala>
+				  </extraExtensions>
+				</configuration>
+			</plugin>
+			<!-- Site --> 
+			<plugin>
+			  <groupId>com.github.github</groupId>
+			  <artifactId>site-maven-plugin</artifactId>
+			  <version>0.8</version>
+			  <configuration>
+			    <message>Creating site for ${project.version}</message>
+			    <path>maven/${project.version}</path>
+			    <merge>true</merge>
+			  </configuration>
+			  <executions>
+			    <execution>
+			      <goals>
+			        <goal>site</goal>
+			      </goals>
+			      <phase>site</phase>
+			    </execution>
+			  </executions>
 			</plugin>
 		</plugins>
 	</build>
