@@ -1,0 +1,188 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>message - WSB Webapp 1.0.0-SNAPSHOT API - com.idyria.osi.wsb.webapp.http.message</title>
+          <meta name="description" content="message - WSB Webapp 1.0.0 - SNAPSHOT API - com.idyria.osi.wsb.webapp.http.message" />
+          <meta name="keywords" content="message WSB Webapp 1.0.0 SNAPSHOT API com.idyria.osi.wsb.webapp.http.message" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../../index.html';
+            var hash = 'com.idyria.osi.wsb.webapp.http.message.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../../package.html" class="extype" name="com">com</a>.<a href="../../../../../package.html" class="extype" name="com.idyria">idyria</a>.<a href="../../../../package.html" class="extype" name="com.idyria.osi">osi</a>.<a href="../../../package.html" class="extype" name="com.idyria.osi.wsb">wsb</a>.<a href="../../package.html" class="extype" name="com.idyria.osi.wsb.webapp">webapp</a>.<a href="../package.html" class="extype" name="com.idyria.osi.wsb.webapp.http">http</a></p>
+        <h1>message</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">message</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.idyria.osi.wsb.webapp.http.message.HTTPIntermediary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HTTPIntermediaryextendsMessageIntermediary[com.idyria.osi.wsb.webapp.http.message.HTTPRequest]"></a>
+      <a id="HTTPIntermediary:HTTPIntermediary"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HTTPIntermediary.html"><span class="name">HTTPIntermediary</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.wsb.core.broker.tree.MessageIntermediary">MessageIntermediary</span>[<a href="HTTPRequest.html" class="extype" name="com.idyria.osi.wsb.webapp.http.message.HTTPRequest">HTTPRequest</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.http.message.HTTPMessage" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="HTTPMessageextendsAnyRef"></a>
+      <a id="HTTPMessage:HTTPMessage"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="HTTPMessage.html"><span class="name">HTTPMessage</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.http.message.HTTPRequest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HTTPRequestextendsMessagewithMimePartwithHTTPMessagewithTLogSource"></a>
+      <a id="HTTPRequest:HTTPRequest"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HTTPRequest.html"><span class="name">HTTPRequest</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.wsb.core.message.Message">Message</span> with <a href="../../mime/MimePart.html" class="extype" name="com.idyria.osi.wsb.webapp.mime.MimePart">MimePart</a> with <a href="HTTPMessage.html" class="extype" name="com.idyria.osi.wsb.webapp.http.message.HTTPMessage">HTTPMessage</a> with <span class="extype" name="com.idyria.osi.tea.logging.TLogSource">TLogSource</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Qualifier: s&quot;http:$path:$operation&quot;
+Example: http:/index:GET
+</p>
+    </li><li name="com.idyria.osi.wsb.webapp.http.message.HTTPResponse" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HTTPResponseextendsMessagewithHTTPMessagewithMimePartwithTLogSource"></a>
+      <a id="HTTPResponse:HTTPResponse"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HTTPResponse.html"><span class="name">HTTPResponse</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.wsb.core.message.Message">Message</span> with <a href="HTTPMessage.html" class="extype" name="com.idyria.osi.wsb.webapp.http.message.HTTPMessage">HTTPMessage</a> with <a href="../../mime/MimePart.html" class="extype" name="com.idyria.osi.wsb.webapp.mime.MimePart">MimePart</a> with <span class="extype" name="com.idyria.osi.tea.logging.TLogSource">TLogSource</span></span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="com.idyria.osi.wsb.webapp.http.message.HTTPErrorCodes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HTTPErrorCodes"></a>
+      <a id="HTTPErrorCodes:HTTPErrorCodes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HTTPErrorCodes$.html"><span class="name">HTTPErrorCodes</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.http.message.HTTPRequest" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HTTPRequest"></a>
+      <a id="HTTPRequest:HTTPRequest"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HTTPRequest$.html"><span class="name">HTTPRequest</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.wsb.core.message.MessageFactory">MessageFactory</span> with <span class="extype" name="com.idyria.osi.tea.logging.TLogSource">TLogSource</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.http.message.HTTPResponse" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HTTPResponse"></a>
+      <a id="HTTPResponse:HTTPResponse"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HTTPResponse$.html"><span class="name">HTTPResponse</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../../../lib/template.js"></script>
+    </body>
+      </html>
