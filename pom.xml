@@ -22,6 +22,12 @@
 		<url>http://bitbucket.org/osi/${project.artifactId}.git</url>
 	</scm>
 
+	<!-- Site -->
+    <!-- #### -->
+    <properties>
+        <github.global.server>github</github.global.server>
+    </properties>
+
 	<organization>
         <name>OSI / Computer Architecture Group @ Uni. Heidelberg </name>
         <url>https://github.com/richnou/wsb-webapp</url>
@@ -97,6 +103,8 @@
 			  <version>0.8</version>
 			  <configuration>
 			    <message>Creating site for ${project.version}</message>
+                <repositoryName>wsb-webapp</repositoryName>
+                <repositoryOwner>richnou</repositoryOwner>
 			    <path>maven/${project.version}</path>
 			    <merge>true</merge>
 			  </configuration>
