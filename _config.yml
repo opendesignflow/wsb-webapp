@@ -1,0 +1,9 @@
+name: WSB-Webapp
+markdown: redcarpet
+highlighter: pygments
+description: "WSB-Webapp provides HTTP communication support and message handling, with a ready-to-go brokering tree behaving like a web application framework"
+url: "http://richnou.io.github.com/wsb-webapp"
+exclude: [target/*,src/*]
+redcarpet:
+  extensions: [table]
+yaml_exclude: [.*\.gif]
