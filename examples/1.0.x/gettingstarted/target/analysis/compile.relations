@@ -1,0 +1,18 @@
+products:
+   src/main/scala/example/ExampleApp.scala -> target/classes/example/ExampleApp$.class
+   src/main/scala/example/ExampleApp.scala -> target/classes/example/ExampleApp$delayedInit$body.class
+   src/main/scala/example/ExampleApp.scala -> target/classes/example/ExampleApp.class
+binary dependencies:
+   src/main/scala/example/ExampleApp.scala -> /local/home/rleys/m2repository/com/idyria/osi/tea/tea/3.0.0/tea-3.0.0.jar
+   src/main/scala/example/ExampleApp.scala -> /local/home/rleys/m2repository/com/idyria/osi/wsb/wsb-core/3.0.0-RC2-SNAPSHOT/wsb-core-3.0.0-RC2-SNAPSHOT.jar
+   src/main/scala/example/ExampleApp.scala -> /local/home/rleys/m2repository/com/idyria/osi/wsb/wsb-webapp/1.0.0-SNAPSHOT/wsb-webapp-1.0.0-SNAPSHOT.jar
+   src/main/scala/example/ExampleApp.scala -> /local/home/rleys/m2repository/org/scala-lang/scala-library/2.10.3/scala-library-2.10.3.jar
+   src/main/scala/example/ExampleApp.scala -> /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/rt.jar
+source dependencies:
+
+external dependencies:
+
+class names:
+   src/main/scala/example/ExampleApp.scala -> example.ExampleApp
+   src/main/scala/example/ExampleApp.scala -> example.ExampleApp$
+   src/main/scala/example/ExampleApp.scala -> example.ExampleApp$delayedInit$body

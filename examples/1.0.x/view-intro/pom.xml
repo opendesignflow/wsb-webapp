@@ -1,0 +1,117 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>osi.webapp.examples</groupId>
+	<artifactId>gettingstarted</artifactId>
+	<version>1.0.x-SNAPSHOT</version>
+	<name>cable-tester</name>
+	<packaging>jar</packaging>
+
+	<!-- use OSI Scala Parent pom to have scala enabled -->
+	<!-- ################# -->
+	<parent>
+		<groupId>com.idyria.osi</groupId>
+		<artifactId>project-scala</artifactId>
+		<version>2.10.3.r2</version>
+	</parent>
+
+
+	<!-- Repositories to find packages -->
+	<!-- ############################################## -->
+	<pluginRepositories>
+		<pluginRepository>
+			<id>sonatype</id>
+			<name>Sonatype OSS Snapshots Repository</name>
+			<url>http://oss.sonatype.org/content/groups/public</url>
+		</pluginRepository>
+		<!-- For old snapshots, please use groupId `com.jnaerator` and the following 
+			repo -->
+		<pluginRepository>
+			<id>nativelibs4java-repo</id>
+			<url>http://nativelibs4java.sourceforge.net/maven</url>
+		</pluginRepository>
+		<pluginRepository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>idyria.central</id>
+			<name>plugins-release</name>
+			<url>http://www.idyria.com/access/osi/artifactory/libs-release</url>
+		</pluginRepository>
+		<pluginRepository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>idyria.snapshots</id>
+			<name>plugins-snapshot</name>
+			<url>http://www.idyria.com/access/osi/artifactory/libs-snapshot</url>
+		</pluginRepository>
+	</pluginRepositories>
+	<repositories>
+		<repository>
+			<id>sonatype</id>
+			<name>Sonatype OSS Snapshots Repository</name>
+			<url>http://oss.sonatype.org/content/groups/public</url>
+		</repository>
+		<!-- For old snapshots, please use groupId `com.jnaerator` and the following 
+			repo -->
+		<repository>
+			<id>nativelibs4java-repo</id>
+			<url>http://nativelibs4java.sourceforge.net/maven</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>idyria.central</id>
+			<name>libs-release</name>
+			<url>http://www.idyria.com/access/osi/artifactory/libs-release</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>idyria.snapshots</id>
+			<name>libs-snapshot</name>
+			<url>http://www.idyria.com/access/osi/artifactory/libs-snapshot</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>extoll.release</id>
+			<name>Extoll Public Release Repository</name>
+			<url>http://extoll.de/schloss/nexus/content/repositories/releases/</url>
+		</repository>
+		<repository>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+			<id>extoll.snapshot</id>
+			<name>Extoll Public Snapshot Repository</name>
+			<url>http://extoll.de/schloss/nexus/content/repositories/snapshots/</url>
+		</repository>
+		<repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>libs-release</name>
+            <url>http://dev:8081/artifactory/libs-release</url>
+        </repository>
+        <repository>
+            <snapshots />
+            <id>snapshots</id>
+            <name>libs-snapshot</name>
+            <url>http://dev:8081/artifactory/libs-snapshot</url>
+        </repository>
+	</repositories>
+	<dependencies>		
+		<dependency>
+			<groupId>com.idyria.osi.wsb</groupId>
+			<artifactId>wsb-webapp</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+	</dependencies>
+
+</project>

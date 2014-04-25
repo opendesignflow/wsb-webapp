@@ -7,4 +7,5 @@ url: "http://richnou.io.github.com/wsb-webapp"
 exclude: [target/*,src/*]
 redcarpet:
   extensions: [table]
-yaml_exclude: [.*\.gif]
+
+   

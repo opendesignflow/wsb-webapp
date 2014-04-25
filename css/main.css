@@ -398,3 +398,15 @@ a:visited { color: #205caa; }
     margin: 0 0 15px; }
 
 }
+
+
+.navbar {
+	background-color: transparent;
+	background-image: none;
+	border-image: initial;
+	border-style: initial;
+	border-color: transparent;
+	box-shadow: initial;
+}
+
+

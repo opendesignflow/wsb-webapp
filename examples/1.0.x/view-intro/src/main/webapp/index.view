@@ -1,0 +1,56 @@
+object UListBuilder {
+
+    def apply = {
+        
+        ul {
+            (0 until 6).map { 
+                i => 
+                    li {
+                        text(s"Map-Style list element: $i")
+                    }
+            }
+        }
+        
+    }
+
+}
+
+html {
+	
+	head {
+		title("Hello World!")
+	}
+	
+	body {
+		text("Hello World!")
+		
+		// Loop Based List
+		//--------------------
+		ul {	
+			
+		    for (i <- 0 until 6) {
+		        
+		       li {
+		        text(s"Loop based list element: $i")
+		       }
+		        
+		    }
+		
+		}
+		
+		// Map Style
+		//---------------
+		ul {
+			(0 until 6).map { 
+				i => 
+				 	li {
+				 		text(s"Map-Style list element: $i")
+				 	}
+			}
+		}
+		
+		
+		
+	}
+	
+}

@@ -6,12 +6,28 @@ title:  "Welcome!"
 WSB-Webapp is an HTTP message broker library with a light J2EE-Like webapp framework.
 It builds on top of the [wsb-core](https://github.com/richnou/wsb-core "WSB-Core") library which handles the communication layer and message brokering.
 
-It is so far not intended to be used as a Webapplication framework, but has been designed to be easily embedded to provide easy-to-design Web-based GUI for Scala/Java based applications.
 
 
+# Warning
+
+So far, this library not intended to be used as a Webapplication framework for big applications, 
+but has been designed to be easily embedded to provide easy-to-design Web-based GUI for Scala/Java based ones.
+
+
+It also does not provide compatibility with J2EE standards like servlets, but it could be added, it is only a matter of semantic.
 
    
 # Main features
+
+From our experience with J2EE frameworks like JSF (Apache MyFaces), Facelets etc... we put focus on supporting interesting features 
+which enable creating flexible and powerful user interfaces.
+
+The Scala Script webpage interface provides for example support for:
+
+- Templating (UI composition)
+- Page parts definition
+- Partial rendering and re-rendering for page parts (in the style of JSF, using a reRender attribute)
+- Websockets to integrate actions with Remote Procedure Calls
 
 # Versions
 

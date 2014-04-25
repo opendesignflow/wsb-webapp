@@ -1,0 +1,40 @@
+object UListBuilder {
+
+    def createList = {
+        
+        ul {
+            (0 until 6).map { 
+                i => 
+                    li {
+                        text(s"Object Builder list element: $i")
+                    }
+            }
+        }
+        
+    }
+
+}
+
+html {
+	
+	head {
+		title("Language binding example")
+	}
+	
+	body {
+		text("Hello World!")
+		
+		// Object based
+		//--------------------
+		UListBuilder.createList
+		
+		// Trait Based
+		//-------------
+		createList
+		
+		
+		
+		
+	}
+	
+}
