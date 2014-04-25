@@ -1,3 +1,24 @@
+/*
+ * #%L
+ * WSB Webapp
+ * %%
+ * Copyright (C) 2013 - 2014 OSI / Computer Architecture Group @ Uni. Heidelberg
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
 package com.idyria.osi.wsb.webapp
 
 import java.io._
@@ -219,13 +240,15 @@ class WebApplication(
       case None            => path
     }*/
 
+    logFine[WebApplication](s"**** Searching resource in : ${fileSources}")
+
     var res: Option[URL] = None
     this.fileSources.find {
       source ⇒
 
         // var possiblePath = new File(s"${source}${extractedPath}").toURI.toURL.toString
 
-        logFine(s"**** Searching as URL: ${extractedPath}")
+        logFine[WebApplication](s"**** Searching as URL: ${extractedPath}")
 
         // Try class Loader and stanadard file
         getClass.getClassLoader.getResource(extractedPath) match {
@@ -233,7 +256,7 @@ class WebApplication(
           case null ⇒
 
             var searchFile = new File(source, extractedPath.replace('/', File.separatorChar))
-            logFine(s"**** Searching as File: ${searchFile}")
+            logFine[WebApplication](s"**** Searching as File: ${searchFile}")
             searchFile match {
 
               case f if (f.exists) ⇒
@@ -245,30 +268,8 @@ class WebApplication(
               case f ⇒ false
             }
           case url ⇒
-            logFine(s"**** Found!")
+            logFine[WebApplication](s"**** Found!")
             res = Option(url);
-
-            /*
- * #%L
- * WSB Webapp
- * %%
- * Copyright (C) 2013 - 2014 OSI / Computer Architecture Group @ Uni. Heidelberg
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
             true
         }
     }
