@@ -59,7 +59,7 @@
         <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol><li name="com.idyria.osi.wsb.webapp.navigation.DefaultGroup" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DefaultGroupextendsPathTrait"></a>
+      <a id="DefaultGroupextendsGroupTraitwithPathTrait"></a>
       <a id="DefaultGroup:DefaultGroup"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -67,12 +67,12 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DefaultGroup.html"><span class="name">DefaultGroup</span></a><span class="result"> extends <a href="PathTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.PathTrait">PathTrait</a></span>
+        <a href="DefaultGroup.html"><span class="name">DefaultGroup</span></a><span class="result"> extends <a href="GroupTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.GroupTrait">GroupTrait</a> with <a href="PathTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.PathTrait">PathTrait</a></span>
       </span>
       </h4>
       <p class="comment cmt"></p>
     </li><li name="com.idyria.osi.wsb.webapp.navigation.DefaultNavigation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="DefaultNavigationextendsAnyRef"></a>
+      <a id="DefaultNavigationextendsNavigation"></a>
       <a id="DefaultNavigation:DefaultNavigation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -80,10 +80,106 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DefaultNavigation.html"><span class="name">DefaultNavigation</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+        <a href="DefaultNavigation.html"><span class="name">DefaultNavigation</span></a><span class="result"> extends <a href="Navigation.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.Navigation">Navigation</a></span>
       </span>
       </h4>
       <p class="comment cmt">The Base navigation class represents the configuration elements to define Views and navigation rules</p>
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTrait" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="GroupTraitextendsElementBufferwithInfowithPathTrait"></a>
+      <a id="GroupTrait:GroupTrait"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTrait.html"><span class="name">GroupTrait</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer">ElementBuffer</span> with <a href="Info.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.Info">Info</a> with <a href="PathTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.PathTrait">PathTrait</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@xelement</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTraitGroup" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GroupTraitGroupextendsElementBufferwithGroupTrait"></a>
+      <a id="GroupTraitGroup:GroupTraitGroup"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTraitGroup.html"><span class="name">GroupTraitGroup</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer">ElementBuffer</span> with <a href="GroupTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.GroupTrait">GroupTrait</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@xelement</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTraitRule" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GroupTraitRuleextendsElementBufferwithInfowithPathTrait"></a>
+      <a id="GroupTraitRule:GroupTraitRule"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTraitRule.html"><span class="name">GroupTraitRule</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer">ElementBuffer</span> with <a href="Info.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.Info">Info</a> with <a href="PathTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.PathTrait">PathTrait</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@xelement</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTraitView" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GroupTraitViewextendsElementBufferwithInfowithPathTrait"></a>
+      <a id="GroupTraitView:GroupTraitView"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTraitView.html"><span class="name">GroupTraitView</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer">ElementBuffer</span> with <a href="Info.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.Info">Info</a> with <a href="PathTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.PathTrait">PathTrait</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@xelement</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.Info" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="InfoextendsElementBuffer"></a>
+      <a id="Info:Info"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Info.html"><span class="name">Info</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer">ElementBuffer</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@xelement</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.Navigation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NavigationextendsElementBufferwithGroupTrait"></a>
+      <a id="Navigation:Navigation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Navigation.html"><span class="name">Navigation</span></a><span class="result"> extends <span class="extype" name="com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer">ElementBuffer</span> with <a href="GroupTrait.html" class="extype" name="com.idyria.osi.wsb.webapp.navigation.GroupTrait">GroupTrait</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@xelement</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="com.idyria.osi.wsb.webapp.navigation.NavigationRule" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="NavigationRuleextendsAnyRef"></a>
       <a id="NavigationRule:NavigationRule"></a>
@@ -131,6 +227,84 @@ A Rule performs some checks on the request and returns true or false if valid or
       </span>
       </h4>
       
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTrait" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GroupTrait"></a>
+      <a id="GroupTrait:GroupTrait"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTrait$.html"><span class="name">GroupTrait</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTraitGroup" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GroupTraitGroup"></a>
+      <a id="GroupTraitGroup:GroupTraitGroup"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTraitGroup$.html"><span class="name">GroupTraitGroup</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTraitRule" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GroupTraitRule"></a>
+      <a id="GroupTraitRule:GroupTraitRule"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTraitRule$.html"><span class="name">GroupTraitRule</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.GroupTraitView" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GroupTraitView"></a>
+      <a id="GroupTraitView:GroupTraitView"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GroupTraitView$.html"><span class="name">GroupTraitView</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.Info" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Info"></a>
+      <a id="Info:Info"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Info$.html"><span class="name">Info</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.Navigation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Navigation"></a>
+      <a id="Navigation:Navigation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Navigation$.html"><span class="name">Navigation</span></a>
+      </span>
+      </h4>
+      
     </li><li name="com.idyria.osi.wsb.webapp.navigation.controller" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="controller"></a>
       <a id="controller:controller"></a>
@@ -141,6 +315,19 @@ A Rule performs some checks on the request and returns true or false if valid or
       </span>
       <span class="symbol">
         <a href="controller/package.html"><span class="name">controller</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.idyria.osi.wsb.webapp.navigation.sitemap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sitemap"></a>
+      <a id="sitemap:sitemap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="sitemap/package.html"><span class="name">sitemap</span></a>
       </span>
       </h4>
       
