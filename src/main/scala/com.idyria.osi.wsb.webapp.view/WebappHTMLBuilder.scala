@@ -193,7 +193,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
       //---------------
       actionClosure(application, request) match {
         case null ⇒ ""
-        case res  ⇒ res.toString
+        case res ⇒ res.toString
       }
 
     }
@@ -327,7 +327,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
         lbl
       case input: FormInput ⇒ throw new RuntimeException("Using label(String) for a form input without name attribute defined")
-      case _                ⇒ throw new RuntimeException("Using label(String) method is only allowed direct under a form input subtree")
+      case _ ⇒ throw new RuntimeException("Using label(String) method is only allowed direct under a form input subtree")
     }
 
   }

@@ -260,7 +260,10 @@ object WWWView extends SourceCompiler[WWWView] {
     println(s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
 
     //-- Prepare traits
-    var traits = compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", "with ", "")
+    var traits = compileTraits.size match {
+      case 0 => ""
+      case _ => compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", "with ", "")
+    }
 
     var viewString = s"""
     
