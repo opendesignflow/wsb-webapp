@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.idyria.osi.wsb</groupId>
 	<artifactId>wsb-webapp</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<inceptionYear>2013</inceptionYear>
 	<name>WSB Webapp</name>
 
@@ -11,7 +11,7 @@
 	<parent>
 		<groupId>com.idyria.osi</groupId>
 		<artifactId>superpom-scala</artifactId>
-		<version>2.10.3.r2</version>
+		<version>2.11.2.r1</version>
 	</parent>
 
 	<!-- SCM -->
@@ -49,7 +49,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-ooxoo-plugin</artifactId>
-				<version>3.0.1-SNAPSHOT</version>
+				<version>3.1.0-SNAPSHOT</version>
 				<dependencies>
 					<dependency>
 						<groupId>com.idyria.osi.wsb</groupId>
@@ -208,7 +208,7 @@
 		<dependency>
 			<groupId>com.idyria.osi.wsb</groupId>
 			<artifactId>wsb-core</artifactId>
-			<version>3.0.0-RC2-SNAPSHOT</version>
+			<version>3.1.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.idyria.osi.java-utils</groupId>
@@ -218,7 +218,7 @@
 		<dependency>
 			<groupId>com.idyria.osi.vui</groupId>
 			<artifactId>vui-core</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>1.1.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sun.faces</groupId>
