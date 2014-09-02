@@ -53,10 +53,10 @@ import java.net.URLEncoder
  */
 class WebApplication(
 
-    /**
-     * The base URL path of the application
-     */
-    var basePath: String) extends Intermediary with Injector {
+  /**
+   * The base URL path of the application
+   */
+  var basePath: String) extends Intermediary with Injector {
 
   // Constructor
   //-----------
@@ -88,7 +88,7 @@ class WebApplication(
         // Get or create
         this.getDatabase(id) match {
           case Some(db) ⇒ Some(db.asInstanceOf[T])
-          case None     ⇒ Some(this.createDatabase(id).asInstanceOf[T])
+          case None ⇒ Some(this.createDatabase(id).asInstanceOf[T])
         }
 
       case t if (t == classOf[OOXOODatabase]) ⇒
@@ -96,7 +96,7 @@ class WebApplication(
         // Get or create
         this.getDatabase(id) match {
           case Some(db) ⇒ Some(db.asInstanceOf[T])
-          case None     ⇒ Some(this.createDatabase(id).asInstanceOf[T])
+          case None ⇒ Some(this.createDatabase(id).asInstanceOf[T])
         }
 
       case _ ⇒ None
@@ -187,7 +187,7 @@ class WebApplication(
 
             try {
               var view = r.toView match {
-                case null   ⇒ ""
+                case null ⇒ ""
                 case toView ⇒ toView.toString
               }
               this.addRule(r.for_, Thread.currentThread().getContextClassLoader().loadClass(r.id.toString).newInstance().asInstanceOf[NavigationRule], view)
@@ -407,7 +407,7 @@ class WebApplication(
 
                   //-- Change View Id to Result view ID if not ""
                   case resultView if (resultView != "") ⇒ httpMessage.changePath(resultView)
-                  case _                                ⇒
+                  case _ ⇒
                 }
 
                 //-- If no render, stop here
@@ -453,7 +453,7 @@ class WebApplication(
 
         } match {
           case Some((pathMatch, rule)) ⇒ httpMessage.changePath(WebApplication.makePath(basePath, rule.outcome))
-          case None                    ⇒
+          case None ⇒
         }
 
         // Special View intermediaries
@@ -522,11 +522,11 @@ class WebApplication(
 
               // Support various outputs
               //---------------------
-              m.parameters.get("Accept") match {
+              m.parameters.find(_._1 == "Accept") match {
 
                 // JSON
                 //---------------
-                case Some(v) if (v.startsWith("application/json")) ⇒
+                case Some(Tuple2(_, v)) if (v.startsWith("application/json")) ⇒
 
                   var rendered = WWWView.compile(url).produce(WebApplication.this, m).toString()
                   var jsonRes = s"""{"content":"${URLEncoder.encode(rendered)}"}"""
@@ -575,12 +575,12 @@ class WebApplication(
               // Standard file contents
               //-----------------------
               case path if (path.endsWith(".html")) ⇒ response(HTTPResponse("text/html", data))
-              case path if (path.endsWith(".css"))  ⇒ response(HTTPResponse("text/css", data))
-              case path if (path.endsWith(".js"))   ⇒ response(HTTPResponse("application/javascript", data))
-              case path if (path.endsWith(".png"))  ⇒ response(HTTPResponse("image/png", data))
-              case path if (path.endsWith(".jpg"))  ⇒ response(HTTPResponse("image/jpeg", data))
+              case path if (path.endsWith(".css")) ⇒ response(HTTPResponse("text/css", data))
+              case path if (path.endsWith(".js")) ⇒ response(HTTPResponse("application/javascript", data))
+              case path if (path.endsWith(".png")) ⇒ response(HTTPResponse("image/png", data))
+              case path if (path.endsWith(".jpg")) ⇒ response(HTTPResponse("image/jpeg", data))
               case path if (path.endsWith(".jpeg")) ⇒ response(HTTPResponse("image/jpeg", data))
-              case path if (path.endsWith(".gif"))  ⇒ response(HTTPResponse("image/gif", data))
+              case path if (path.endsWith(".gif")) ⇒ response(HTTPResponse("image/gif", data))
 
               // Special Views
               //------------------------
@@ -588,7 +588,7 @@ class WebApplication(
               //-- SView with not already created intermediary for this view
               //--  * Create the intermediary
               //case path if (path.endsWith(".sview")) =>
-              case _                                ⇒ response(HTTPResponse("text/plain", data), message)
+              case _ ⇒ response(HTTPResponse("text/plain", data), message)
 
             }
 
@@ -652,7 +652,7 @@ class WebApplication(
 
         println(s"********** ERROR 500 Error while answering Intermediary for (${message.qualifier}) **************")
 
-        var accept = message.asInstanceOf[HTTPRequest].parameters.get("Accept")
+        var accept = message.asInstanceOf[HTTPRequest].parameters.find(_._1 == "Accept")
 
         println("********** Error format: " + accept)
 
@@ -660,7 +660,7 @@ class WebApplication(
 
           // JSON
           //---------------
-          case Some(v) if (v.startsWith("application/json")) ⇒
+          case Some(Tuple2(_, v)) if (v.startsWith("application/json")) ⇒
 
             var errors = message.errors.collect {
               case e: ForException ⇒

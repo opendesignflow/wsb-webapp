@@ -94,7 +94,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
     //- Create
     var view = parts.get(name) match {
       case Some(partView) => partView
-      case None           => throw new RuntimeException(s"Cannot place part $name because it has not been defined")
+      case None => throw new RuntimeException(s"Cannot place part $name because it has not been defined")
     }
 
     //- Render
@@ -189,14 +189,14 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
             //-- Re/Search
             this.parts.get(part) match {
               case Some(p) ⇒ p
-              case None    ⇒ throw new RuntimeException(s"Requested part $part on view ${request.path} which has not been defined")
+              case None ⇒ throw new RuntimeException(s"Requested part $part on view ${request.path} which has not been defined")
 
             }
 
         }
 
         //-- If we reach this point, we have a part
-        request.parameters -= "part"
+        request.parameters -= request.parameters.find(_._1 == "part").get
         p.produce(application, request)
 
       case None ⇒ render.toString()
@@ -218,14 +218,14 @@ object WWWView extends SourceCompiler[WWWView] {
   def addCompileImport(cl: Class[_]): Unit = {
     compileImports.contains(cl) match {
       case false ⇒ compileImports = compileImports :+ cl
-      case _     ⇒
+      case _ ⇒
     }
   }
 
   def addCompileImport(p: Package): Unit = {
     compileImportPackages.contains(p) match {
       case false ⇒ compileImportPackages = compileImportPackages :+ p
-      case _     ⇒
+      case _ ⇒
     }
   }
 
@@ -239,7 +239,7 @@ object WWWView extends SourceCompiler[WWWView] {
     //-- Add To compile traits
     compileTraits.contains(cl) match {
       case false ⇒ compileTraits = compileTraits :+ cl
-      case _     ⇒
+      case _ ⇒
     }
 
     //-- Add to imports

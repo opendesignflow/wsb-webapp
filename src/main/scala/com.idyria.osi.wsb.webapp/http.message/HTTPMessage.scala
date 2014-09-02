@@ -27,8 +27,14 @@ import com.idyria.osi.wsb.webapp.http.session._
 import java.nio._
 import com.idyria.osi.wsb.webapp.mime.MimePart
 import com.idyria.osi.tea.logging.TLogSource
+import com.idyria.osi.wsb.core.network.connectors.tcp.TCPNetworkContext
+import com.idyria.osi.wsb.core.network.NetworkContext
+import java.net.URL
+import java.io.ByteArrayInputStream
+import java.util.zip.GZIPInputStream
+import java.io.ByteArrayOutputStream
 
-trait HTTPMessage {
+trait HTTPMessage extends Message {
 
   /**
    * The current session if available
@@ -37,7 +43,29 @@ trait HTTPMessage {
 
   def getSession: Session = session
 
+  // Cookies
+  //----------
+  var cookies = Map[String, String]()
+
 }
+
+object HTTPMessage extends MessageFactory {
+
+  def apply(data: Any): HTTPMessage = {
+
+    var part = data.asInstanceOf[MimePart]
+
+    println(s"Got http message for factory: " + part.protocolLines)
+
+    //-- Request or Response?
+    part.protocolLines(0) match {
+      case response if (response.startsWith("HTTP")) => HTTPResponse(data)
+      case request => HTTPRequest(data)
+    }
+
+  }
+}
+
 /**
  *
  * Qualifier: s"http:$path:$operation"
@@ -48,9 +76,9 @@ trait HTTPMessage {
  */
 class HTTPRequest(
 
-    var operation: String,
-    var path: String,
-    var version: String) extends Message with MimePart with HTTPMessage with TLogSource {
+  var operation: String,
+  var path: String,
+  var version: String) extends MimePart with HTTPMessage with TLogSource {
 
   // Path and URL parameters separation
   //---------------------
@@ -84,11 +112,20 @@ class HTTPRequest(
     this.qualifier = s"http:$newPath:$operation"
   }
 
-  def toBytes = ByteBuffer.wrap(s"$operation $path HTTP/$version".getBytes)
+  def toBytes = {
+
+    //-- Set Content Length if necessary
+    if (nextParts.size > 0) {
+      addParameter("Content-Length", nextParts.map(_.bytes.length).sum[Int].toString)
+    }
+
+    //-- Result
+    ByteBuffer.wrap(s"""$operation $path HTTP/$version\r\n${parameters.map(p => s"${p._1}: ${p._2}").mkString("\r\n")}\r\n\r\n${nextParts.map(p => new String(p.bytes)).mkString("", "\r\n", "\r\n\r\n")}""".getBytes("US-ASCII"))
+  }
 
   // Cookies
   //---------------
-  var cookies = Map[String, String]()
+
   /**
    * Catch Cookies
    */
@@ -134,8 +171,8 @@ class HTTPRequest(
     // Handle POST form parameters that can be in another MIME part
     // - Consume the MIME part containing the Parameters
     //----------------------------
-    this.parameters.get("Content-Type") match {
-      case Some(contentType) if (contentType.startsWith("application/x-www-form-urlencoded") && this.nextParts.size > 0) ⇒
+    this.parameters.find(_._1 == "Content-Type") match {
+      case Some(Tuple2(_, contentType)) if (contentType.startsWith("application/x-www-form-urlencoded") && this.nextParts.size > 0) ⇒
 
         var nextPart = this.nextParts.head
         this.nextParts = this.nextParts.drop(1)
@@ -151,7 +188,7 @@ class HTTPRequest(
     }
     //application/x-www-form-urlencoded
 
-    logFine(s"""[Content Type]${this.parameters.get("Content-Type")}""")
+    logFine(s"""[Content Type]${this.parameters.find(_._1 == "Content-Type")}""")
 
     /*this.parameters.foreach {
       case (pname, value) ⇒ println(s"[URLParameter] Available: ${pname}")
@@ -159,9 +196,9 @@ class HTTPRequest(
 
     // Try in Normal Part Parameters
     //---------------
-    this.parameters.get(name) match {
-      case Some(value) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
-      case None        ⇒ None
+    this.parameters.find(_._1 == name) match {
+      case Some(Tuple2(_, value)) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
+      case None ⇒ None
     }
     /* this.parameters.get(name) match {
       case Some(value) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
@@ -205,9 +242,9 @@ class HTTPRequest(
   //--------------
   def isMultipart: Boolean = {
 
-    this.parameters.get("Content-Type") match {
+    this.parameters.find(_._1 == "Content-Type") match {
 
-      case Some(contentType) if (contentType.matches("multipart/form-data.*")) ⇒ true
+      case Some(Tuple2(_, contentType)) if (contentType.matches("multipart/form-data.*")) ⇒ true
       case _ ⇒ false
     }
 
@@ -215,6 +252,79 @@ class HTTPRequest(
 }
 
 object HTTPRequest extends MessageFactory with TLogSource {
+
+  /**
+   * Create a request for an URL
+   */
+  def GET(urlStr: String): HTTPRequest = {
+
+    var request = prepareRequest(urlStr)
+
+    //-- Set to GET
+    request.operation = "GET"
+
+    request
+
+  }
+
+  def POST(urlStr: String): HTTPRequest = {
+
+    //-- Prepare
+    var request = prepareRequest(urlStr)
+
+    //-- Set to post
+    request.operation = "POST"
+
+    request
+  }
+
+  /**
+   * Prepare a request based on the URL, with GET action
+   */
+  def prepareRequest(urlStr: String): HTTPRequest = {
+
+    //-- Split URL
+    var url = new URL(urlStr)
+
+    //-- Create message
+    //------------------------
+    var request = new HTTPRequest("GET", url.getPath(), "1.1")
+
+    //-- Add Host to parameters
+    request.addParameter("Host", url.getHost())
+
+    //-- A few Parameters for webbrowsers
+    request.addParameter("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0")
+    request.addParameter("Accept", """text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8""")
+    request.addParameter("Accept-Encoding", "gzip")
+    request.addParameter("Accept-Language", "en-US,en;q=0.5")
+    request.addParameter("Connection", "keep-alive")
+
+    //-- If some Query parameters, set the content type, length and add part
+    url.getQuery() match {
+      case null =>
+      case "" =>
+      case query =>
+
+        //-- Set type
+        request.addParameter("Content-Type", "application/x-www-form-urlencoded")
+
+        //-- Create part for this
+        var part = new DefaultMimePart
+        part += query.getBytes()
+
+        request.append(part)
+
+    }
+
+    //-- Destination URL is a network context parameter
+    //-----------------------
+    var ctx = new TCPNetworkContext("tcp+http+http://" + url.getHost())
+    request.networkContext = ctx
+
+    request
+
+  }
 
   def apply(data: Any): HTTPRequest = {
 
@@ -264,7 +374,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
         logFine(s"[HTTP] -> Multipart element, create a request with the same path as previous message")
         var message = new HTTPRequest(lastFirstMessage.operation, lastFirstMessage.path, lastFirstMessage.version)
         message.cookies = lastFirstMessage.cookies
-        message.bytes = part.bytes
+        message += part.bytes
 
         // Add Parameters
         //-------------
@@ -284,12 +394,38 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
 }
 
-class HTTPResponse extends Message with HTTPMessage with MimePart with TLogSource {
+class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
 
   var contentType: String = null
   var content: ByteBuffer = null
 
   var code = 200
+
+  /**
+   * Catch Cookies
+   */
+  override def addParameter(name: String, value: String) = {
+
+    if (name == "Set-Cookie") {
+
+      value.trim.split(";").foreach("""([\w]+)=(.+)""".r.findFirstMatchIn(_) match {
+        case Some(matched) ⇒
+
+          var (cookieName, cookieValue) = (matched.group(1) -> matched.group(2))
+
+          logFine(s"Got cookie $cookieName -> $cookieValue")
+
+          cookies = cookies + (cookieName -> cookieValue)
+
+        case None ⇒
+
+          logFine(s"Cookie but value regexp did not match")
+      })
+
+    } else {
+      super.addParameter(name, value)
+    }
+  }
 
   def toBytes: ByteBuffer = {
 
@@ -303,14 +439,14 @@ class HTTPResponse extends Message with HTTPMessage with MimePart with TLogSourc
 
     contentType match {
       case null =>
-      case ct   => headerLines = headerLines :+ s"Content-Type: $ct"
+      case ct => headerLines = headerLines :+ s"Content-Type: $ct"
     }
 
     headerLines = headerLines :+ "Cache-Control: no-cache"
 
     content match {
       case null =>
-      case c    => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
+      case c => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
     }
 
     var sessionId = ""
@@ -340,7 +476,7 @@ $sessionId
 """*/
     var header = content match {
       case null => headerLines.mkString("", "\r\n", "\r\n\r\n")
-      case _    => headerLines.mkString("", "\r\n", "\r\n\r\n")
+      case _ => headerLines.mkString("", "\r\n", "\r\n\r\n")
     }
 
     logFine(s"Response Headers: $header //")
@@ -349,7 +485,7 @@ $sessionId
     //-------------------
     var totalSize = content match {
       case null => header.getBytes.size
-      case _    => header.getBytes.size + content.capacity
+      case _ => header.getBytes.size + content.capacity
     }
 
     var res = ByteBuffer.allocate(totalSize)
@@ -357,7 +493,7 @@ $sessionId
 
     content match {
       case null =>
-      case c    => res.put(c)
+      case c => res.put(c)
     }
 
     //res.put(ByteBuffer.wrap("\n".getBytes))
@@ -365,7 +501,7 @@ $sessionId
     /*if (contentType=="text/html") {
       println(s"Sending: "+new String(res.array))
     }*/
-    //println(s"Sending: "+new String(res.array))
+    //println(s"Sending: "+new String(res.array))))))))
 
     res.flip
     res
@@ -373,7 +509,87 @@ $sessionId
   }
 
 }
-object HTTPResponse {
+object HTTPResponse extends MessageFactory with TLogSource {
+
+  def apply(data: Any): HTTPResponse = {
+
+    var part = data.asInstanceOf[MimePart]
+
+    //-- Parse First line for result info
+    var firstLineRegexp = """(HTTP/1.1) ([0-9]+) (.+)""".r
+
+    var lastFirstMessage: HTTPResponse = null
+
+    firstLineRegexp.findFirstMatchIn(part.protocolLines(0)) match {
+
+      //-- Got First Message
+      case Some(matched) ⇒
+
+        logFine[HTTPResponse](s"[HTTP] -> First Message from part ${part.hashCode} with protocol line: " + part.protocolLines(0))
+        lastFirstMessage = new HTTPResponse
+        lastFirstMessage.code = matched.group(2).toInt
+
+        //logFine("Got HTTP Message for path: " + lastFirstMessage.path + " and operation " + lastFirstMessage.operation)
+
+        // Add part ot message
+        //-------------
+        lastFirstMessage(part)
+
+        //-- Decode Data if needed
+        logFine[HTTPResponse](s"Bytes available: " + lastFirstMessage.bytes.length)
+
+        lastFirstMessage.parameters.find(_._1 == "Content-Encoding") match {
+          case Some((_, "gzip")) =>
+
+            logFine[HTTPResponse]("Bytes are encoded using GZIP, unzip them")
+
+            //-- Create ZIP input stream from bytes
+            var zipInput = new GZIPInputStream(new ByteArrayInputStream(lastFirstMessage.bytes))
+
+            logFine[HTTPResponse]("Available: " + zipInput.available())
+
+            try {
+              // zipInput.getNextEntry()
+              //-- Look for the next entry
+              zipInput.available() match {
+
+                //-- Error If nothing to read
+                case 0 => throw new RuntimeException("No bytes available in ZIP stream (EOF)")
+
+                //-- Otherwise read in a new array stream
+                case 1 =>
+
+                  // Init with twice the size to avoid too much internal array resizing
+                  /* var outputStream = new ByteArrayOutputStream(lastFirstMessage.bytes.length*2)
+                  
+                  // Read loop (read in page size buffers)
+                  while(zipInput.available()==1) {
+                    zipInput.
+                  }
+                  
+                  lastFirstMessage.bytes = new Array[Byte](size)
+                  zipInput.read(lastFirstMessage.bytes)*/
+
+                  // rely on scala for now
+                  lastFirstMessage += scala.io.Source.fromInputStream(zipInput, "UTF-8").mkString.getBytes()
+              }
+            } finally {
+              zipInput.close()
+            }
+
+          case _ =>
+        }
+      //lastFirstMessage.bytes
+
+      //-- No Idea
+      case _ ⇒
+        logWarn(s"[HTTP] -> Not a first message and not a multipart part")
+
+    }
+
+    return lastFirstMessage
+
+  }
 
   def apply(contentType: String, content: ByteBuffer): HTTPResponse = {
 

@@ -86,14 +86,14 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
     // Select Provider
     //------------
     var selectedProvider = availableProviders.head
-    request.parameters.get("provider") match {
-      case Some(providerName) ⇒ availableProviders.find(_.getClass().getSimpleName() == providerName) match {
+    request.parameters.find(_._1 == "provider") match {
+      case Some(providerName) ⇒ availableProviders.find(_.getClass().getSimpleName() == providerName._2) match {
 
         //-- Provider Name provided and found
         case Some(provider) ⇒ selectedProvider
 
         //-- Provider Name provided and not found
-        case None           ⇒ throw new AuthenticationException(s"Whished Authentication provider $providerName has not been setup")
+        case None ⇒ throw new AuthenticationException(s"Whished Authentication provider ${providerName._2} has not been setup")
       }
 
       //-- Provider name not provided, use default
@@ -110,7 +110,7 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
         case Some(value) ⇒ authDatas(name -> value)
 
         //-- Required parameter not found
-        case None        ⇒ throw new AuthenticationException(s"Authentication provider ${selectedProvider} requires request parameter $name which has not bee supplied")
+        case None ⇒ throw new AuthenticationException(s"Authentication provider ${selectedProvider} requires request parameter $name which has not bee supplied")
       }
     }
 
@@ -128,7 +128,7 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
     var user = new User
     authResult.datas.get("username") match {
       case Some(username) ⇒ user.name = username
-      case None           ⇒
+      case None ⇒
     }
 
     request.getSession("authenticated" -> user)

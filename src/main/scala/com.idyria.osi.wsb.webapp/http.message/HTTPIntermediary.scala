@@ -28,3 +28,9 @@ class HTTPIntermediary extends MessageIntermediary[HTTPRequest] {
   def messageType = classOf[HTTPRequest]
 
 }
+
+class HTTPResponseIntermediary extends MessageIntermediary[HTTPResponse] {
+
+  def messageType = classOf[HTTPResponse]
+
+}

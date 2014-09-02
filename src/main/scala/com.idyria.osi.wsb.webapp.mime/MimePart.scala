@@ -1,7 +1,30 @@
+/**
+ *
+ * #%L
+ * WSB Webapp
+ * %%
+ * Copyright (C) 2013 - 2014 OSI / Computer Architecture Group @ Uni. Heidelberg
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/gpl-3.0.html>.
+ * #L%
+ */
 package com.idyria.osi.wsb.webapp.mime
 
 import scala.Array.canBuildFrom
 import com.idyria.osi.tea.logging.TLogSource
+import scala.collection.mutable.LinkedHashSet
 
 /**
  * Data Type to gatehr data as MimePart
@@ -13,7 +36,7 @@ trait MimePart extends TLogSource {
 
   var protocolLines = List[String]()
 
-  var parameters = Map[String, String]()
+  var parameters = LinkedHashSet[(String, String)]()
 
   val parameterLineRegexp = """([\w-]+): (.+)""".r
 
@@ -29,7 +52,9 @@ trait MimePart extends TLogSource {
   //-------------
   var contentLength = 0
 
-  var bytes = Array[Byte]()
+  private var _bytes = Array[Byte]()
+
+  def bytes = this._bytes
 
   // Copy MimeParts
   //------------------------
@@ -41,8 +66,8 @@ trait MimePart extends TLogSource {
     }
     //this.parameters = this.parameters ++ part.parameters
 
-    // Bytes
-    this.bytes = part.bytes
+    // _bytes
+    this._bytes = part._bytes
 
     // Append Next parts
     part.nextParts.foreach {
@@ -88,7 +113,7 @@ trait MimePart extends TLogSource {
   // Content
   //----------------
   def +=(inputBytes: Array[Byte]): Unit = {
-    this.bytes = this.bytes ++ inputBytes
+    this._bytes = this._bytes ++ inputBytes
     this.contentLength += inputBytes.size
   }
 
@@ -99,40 +124,18 @@ trait MimePart extends TLogSource {
    * Search in parameters like this:
    *
    * Content-Disposition: form-data;
-
-/*
- * #%L
- * WSB Webapp
- * %%
- * Copyright (C) 2013 - 2014 OSI / Computer Architecture Group @ Uni. Heidelberg
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
-name="Filedata"; filename="javafx-2_2_25-apidocs.zip"
+   * name="Filedata"; filename="javafx-2_2_25-apidocs.zip"
    */
   def getFileName(): Option[String] = {
 
-    this.parameters.get("Content-Disposition") match {
+    this.parameters.find(_._1 == "Content-Disposition") match {
 
       case Some(value) ⇒
 
         println(s"-> Found Content Disposition: $value")
-        """.+; filename="(.+)"\s*""".r.findFirstMatchIn(value) match {
+        """.+; filename="(.+)"\s*""".r.findFirstMatchIn(value._2) match {
           case Some(matched) ⇒ Option(matched.group(1))
-          case None          ⇒ None
+          case None ⇒ None
         }
 
       case None ⇒ None
