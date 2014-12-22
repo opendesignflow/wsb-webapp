@@ -61,6 +61,9 @@ class WebApplication(
   // Constructor
   //-----------
 
+  //-- Base path must start with /
+  basePath = s"/$basePath".replace("//", "/")
+  
   //-- Message filter for this base URL path
   this.filter = s"""http:$basePath(.*):.*""".r
 

@@ -1,0 +1,17 @@
+
+
+html {
+
+    head {
+        importbs3
+    }
+    
+    body {
+    
+        h1("Welcome")
+        text("Hello")
+    
+    
+    }
+
+}

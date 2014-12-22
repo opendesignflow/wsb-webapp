@@ -51,7 +51,7 @@ class TopNavbar extends Div with HtmlTreeBuilder {
 
     this.searchByName("header") match {
       case Some(h) ⇒ h.@->("content", cl)
-      case None    ⇒
+      case None ⇒
     }
 
   }
@@ -81,7 +81,7 @@ class TopNavbar extends Div with HtmlTreeBuilder {
           //--------
           var groupLink = g.view match {
             case null ⇒ "#"
-            case v    ⇒ g.fullPath + "/" + v
+            case v ⇒ g.fullPath + "/" + v
           }
 
           // Do Sub Content
@@ -154,6 +154,28 @@ class TopNavbar extends Div with HtmlTreeBuilder {
 }
 
 trait BootstrapBuilder extends HtmlTreeBuilder {
+
+  // Init
+  //---------------
+  def importbs3 = {
+
+    meta {
+      attribute(" http-equiv" -> "X-UA-Compatible")
+      attribute("content" -> "IE=edge")
+    }
+    meta {
+
+      attribute("name" -> "viewport")
+      attribute("content" -> "width=device-width, initial-scale=1.0")
+    }
+    stylesheet("http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
+    stylesheet("http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css")
+
+    script {
+      attribute("src" -> "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
+    }
+
+  }
 
   // Form
   //----------------

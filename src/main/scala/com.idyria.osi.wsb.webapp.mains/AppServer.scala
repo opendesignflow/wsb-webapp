@@ -84,5 +84,15 @@ object AppServer extends App {
   println("Welcome to WSB Webapp App Server")
 
   println("This Web Server tries to start webapplications2")
-
+  
+   // Gather some parameters
+   //----------------------
+   var port = args
+  
+  // Create App server
+  //------------------------
+  var server = new AppServer
+  server.addHTTPConnector("localhost", 8080)
+    
+  
 }
