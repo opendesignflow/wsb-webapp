@@ -39,11 +39,12 @@ import com.idyria.osi.wsb.webapp.security.providers.extern.GoogleProviderCompone
 import com.idyria.osi.aib.core.compiler.EmbeddedCompiler
 import java.net.URLClassLoader
 import com.idyria.osi.wsb.webapp.injection.Injector
+import com.idyria.osi.tea.logging.TLogSource
 
 /**
  *
  */
-class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLNode] with ApplyTrait {
+class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLNode] with ApplyTrait with TLogSource {
 
   type Self = WWWView
 
@@ -66,9 +67,9 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
       this.contentClosure = { v ⇒ cl(v.application, v.request) }
     }
     
-     println(s"[RW] Inside view: $hashCode , registering part $name with prt View ${p.hashCode}")
+     logFine[WWWView](s"[RW] Inside view: $hashCode , registering part $name with prt View ${p.hashCode}")
     
-     //println(s"Saving part: " + name+" -> "+p.hashCode+" -> "+p.contentClosure.hashCode())
+     //logFine[WWWView](s"Saving part: " + name+" -> "+p.hashCode+" -> "+p.contentClosure.hashCode())
 
     //-- Save
     parts = parts + (name -> p)
@@ -97,9 +98,9 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
    * This method creates the part, renders it with current request, and place it into the result tree
    * The ID of resulting HTML node is set to part-$name
    */
-  def placePart(name: String): WWWView = {
+  def placePart(name: String): HTMLNode = {
 
-    println(s"[RW] Inside view: $hashCode looking up part $name")
+    logFine[WWWView](s"[RW] Inside view: $hashCode looking up part $name")
     
     //- Create
     var view = parts.get(name) match {
@@ -108,16 +109,21 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
     }
 
     //- Render
+    var resNode = view.render(application, request)
+    resNode("id" -> s"part-$name")
+    add(resNode)
+    resNode
+    
    /* var resNode = view.render(application, request)
-   println(s"Rendered page part: $name with ${view.hashCode}//${this.hashCode}, top nodes: "+this.topNodes.size)
-    println(s"Res node: $resNode")
+   logFine[WWWView](s"Rendered page part: $name with ${view.hashCode}//${this.hashCode}, top nodes: "+this.topNodes.size)
+    logFine[WWWView](s"Res node: $resNode")
     view.topNodes.foreach {
       n =>  add(n)
     }
     add(resNode)
     //var res = add(view.render(application, request))
     resNode("id" -> s"part-$name")*/
-    view
+    //view
 
   }
 
@@ -141,7 +147,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
         parentView.application = this.application
         parentView.request = this.request
       
-         println(s"[RW] Inside view: $hashCode , composing with $path -> ${parentView.hashCode}")
+         logFine[WWWView](s"[RW] Inside view: $hashCode , composing with $path -> ${parentView.hashCode}")
         
        // parentView.contentClosure(parentView)
         
@@ -184,7 +190,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
   }*/
 
   def render: HTMLNode = {
-    println(s"[RW] Rendering view: "+this.hashCode)
+    logFine[WWWView](s"[RW] Rendering view: "+this.hashCode)
     Injector.inject(this)
     contentClosure(this)
   }
@@ -200,7 +206,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
         e.printStackTrace()
         ""
     }
-    //println(s"-- Rendered res: $res "+this.hashCode)
+    //logFine[WWWView](s"-- Rendered res: $res "+this.hashCode)
     //res
   }
 
@@ -216,7 +222,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
       //-- Try to render part or element id
       case Some(part) ⇒
 
-        println("Rendering with parts on view: " + hashCode())
+        logFine[WWWView]("Rendering with parts on view: " + hashCode())
 
         //- Search
         var p = this.parts.get(part) match {
@@ -228,10 +234,10 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
           case None ⇒
 
             //-- Try
-            println("Rendering View to get Part")
+            logFine[WWWView]("Rendering View to get Part")
             render.toString
 
-            println(s"parts: " + this.parts)
+            logFine[WWWView](s"parts: " + this.parts)
 
             //-- Re/Search full part
             (this :: composedViews).collectFirst { case v if(v.parts.get(part)!=None) => v.parts.get(part).get} match {
@@ -308,12 +314,12 @@ object WWWView extends SourceCompiler[WWWView] {
     
     //this.compiler = new EmbeddedCompiler
     
-    /*println(s"In WWWView domCpile -> "+Thread.currentThread().getId)
+    /*logFine[WWWView](s"In WWWView domCpile -> "+Thread.currentThread().getId)
     
     Thread.currentThread().getContextClassLoader.getParent match {
       case urlcl : URLClassLoader => 
         urlcl.getURLs.foreach {
-          url => println(s"----> compilingin with: "+url)
+          url => logFine[WWWView](s"----> compilingin with: "+url)
         }
         
       case _ => 
@@ -321,7 +327,7 @@ object WWWView extends SourceCompiler[WWWView] {
     
     // File Name
     //--------------
-    /*println(s"VIEW IS AT: "+source.getPath)
+    /*logFine[WWWView](s"VIEW IS AT: "+source.getPath)
     var targetName = source.getPath.split("/").last.replace(".", "_")*/
     
     // Read Content of file
@@ -331,8 +337,8 @@ object WWWView extends SourceCompiler[WWWView] {
     // Compile as Object
     //------------------------------
 
-    //println(s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
-   // println(s"Adding traits: ${ compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")}")
+    //logFine[WWWView](s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
+   // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")}")
 
     //-- Prepare traits
     var traits = compileTraits.size match {
@@ -386,7 +392,7 @@ v.contentClosure =  { view =>
     } catch {
       case e: Throwable ⇒
 
-        println(s"Compilation error in SView source file: @$source")
+        logFine[WWWView](s"Compilation error in SView source file: @$source")
         throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
     }*/
     //
@@ -406,7 +412,7 @@ v.contentClosure =  { view =>
 
     /* var wwwview = compiler.imain.valueOfTerm("viewInstance").get.asInstanceOf[WWWView]
 
-    println("Compiling view: " + source + " to " + wwwview.hashCode())
+    logFine[WWWView]("Compiling view: " + source + " to " + wwwview.hashCode())
 
     // Save as compiled Source
     //------------
@@ -464,12 +470,12 @@ class WWWViewCompiler extends SourceCompiler[WWWView] {
 
     //this.compiler = new EmbeddedCompiler
     
-    /*println(s"In WWWView domCpile -> "+Thread.currentThread().getId)
+    /*logFine[WWWView](s"In WWWView domCpile -> "+Thread.currentThread().getId)
     
     Thread.currentThread().getContextClassLoader.getParent match {
       case urlcl : URLClassLoader => 
         urlcl.getURLs.foreach {
-          url => println(s"----> compilingin with: "+url)
+          url => logFine[WWWView](s"----> compilingin with: "+url)
         }
         
       case _ => 
@@ -482,8 +488,8 @@ class WWWViewCompiler extends SourceCompiler[WWWView] {
     // Compile as Object
     //------------------------------
 
-    //println(s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
-   // println(s"Adding traits: ${ compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")}")
+    //logFine[WWWView](s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
+   // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")}")
 
     //-- Prepare traits
     var traits = compileTraits.size match {
@@ -537,7 +543,7 @@ v.contentClosure =  { view =>
     } catch {
       case e: Throwable ⇒
 
-        println(s"Compilation error in SView source file: @$source")
+        logFine[WWWView](s"Compilation error in SView source file: @$source")
         throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
     }*/
     //
@@ -557,7 +563,7 @@ v.contentClosure =  { view =>
 
     /* var wwwview = compiler.imain.valueOfTerm("viewInstance").get.asInstanceOf[WWWView]
 
-    println("Compiling view: " + source + " to " + wwwview.hashCode())
+    logFine[WWWView]("Compiling view: " + source + " to " + wwwview.hashCode())
 
     // Save as compiled Source
     //------------
