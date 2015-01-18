@@ -92,6 +92,7 @@ function submitForm( button ) {
 	console.log("Serialized form: "+formSerialised)
 	
 	//-- Ajax Post
+	$(button).button('loading')
 	var deffered = $.ajax({
 	  type: "POST",
 	  url: "?"+partLoad,
@@ -111,6 +112,7 @@ function submitForm( button ) {
 	//-- Success
 	deffered.done(function(data){
 		
+		$(button).button('reset')
 		console.log("Success AJax: "+data)
 		
 		if (data.content) {
@@ -118,6 +120,7 @@ function submitForm( button ) {
 			var decoded = decodeHTML(data.content)
 			console.log("Decoded: "+decoded)
 			if ($(form).attr("reRender")) {
+				console.log("Updating page to: "+$(form).attr("reRender"))
 				setPartContent($(form).attr("reRender"),decoded)
 			}
 			
@@ -133,7 +136,7 @@ function submitForm( button ) {
 	//-- Fail
 	deffered.fail(function(jqXHR, textStatus, errorThrown ) {
 		console.log("Errors: "+jqXHR.responseText)
-		
+		$(button).button('reset')
 		// Parse as JSON
 		var errors = eval("("+jqXHR.responseText+")")
 		
@@ -153,6 +156,7 @@ function submitForm( button ) {
 		//----------------------
 		$(errors.errors).each(function(i,e){
 			
+		
 			console.log("Error: "+e.error)
 			
 			form.addClass("has-error")
