@@ -23,15 +23,15 @@
 	</scm>
 
 	<!-- Site -->
-    <!-- #### -->
-    <properties>
-        <github.global.server>github</github.global.server>
-    </properties>
+	<!-- #### -->
+	<properties>
+		<github.global.server>github</github.global.server>
+	</properties>
 
 	<organization>
-        <name>OSI / Computer Architecture Group @ Uni. Heidelberg </name>
-        <url>https://github.com/richnou/wsb-webapp</url>
-    </organization>
+		<name>OSI / Computer Architecture Group @ Uni. Heidelberg </name>
+		<url>https://github.com/richnou/wsb-webapp</url>
+	</organization>
 
 	<build>
 		<!-- Add Examples folder to compilation and resources -->
@@ -44,15 +44,18 @@
 				<directory>${basedir}/src/main/javascript</directory>
 			</resource>
 			<resource>
-                <directory>${basedir}/src/test/scala</directory>
-            </resource>
+				<directory>${basedir}/src/test/scala</directory>
+			</resource>
+			<resource>
+				<directory>${basedir}/src/main/resources</directory>
+			</resource>
 		</resources>
 
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-ooxoo-plugin</artifactId>
-				<version>3.1.0</version>
+				<version>3.1.1-SNAPSHOT</version>
 				<dependencies>
 					<dependency>
 						<groupId>com.idyria.osi.wsb</groupId>
@@ -93,32 +96,32 @@
 				<artifactId>license-maven-plugin</artifactId>
 				<version>1.6</version>
 				<configuration>
-				  <licenseName>gpl_v3</licenseName>
-				  <extraExtensions>
-				    <scala>java</scala>
-				  </extraExtensions>
+					<licenseName>gpl_v3</licenseName>
+					<extraExtensions>
+						<scala>java</scala>
+					</extraExtensions>
 				</configuration>
 			</plugin>
-			<!-- Site --> 
+			<!-- Site -->
 			<plugin>
-			  <groupId>com.github.github</groupId>
-			  <artifactId>site-maven-plugin</artifactId>
-			  <version>0.8</version>
-			  <configuration>
-			    <message>Creating site for ${project.version}</message>
-                <repositoryName>wsb-webapp</repositoryName>
-                <repositoryOwner>richnou</repositoryOwner>
-			    <path>maven/${project.version}</path>
-			    <merge>true</merge>
-			  </configuration>
-			  <executions>
-			    <execution>
-			      <goals>
-			        <goal>site</goal>
-			      </goals>
-			      <phase>site</phase>
-			    </execution>
-			  </executions>
+				<groupId>com.github.github</groupId>
+				<artifactId>site-maven-plugin</artifactId>
+				<version>0.8</version>
+				<configuration>
+					<message>Creating site for ${project.version}</message>
+					<repositoryName>wsb-webapp</repositoryName>
+					<repositoryOwner>richnou</repositoryOwner>
+					<path>maven/${project.version}</path>
+					<merge>true</merge>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>site</goal>
+						</goals>
+						<phase>site</phase>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -203,11 +206,11 @@
 
 
 	<dependencies>
-	   <dependency>
-            <groupId>com.idyria.osi.aib</groupId>
-            <artifactId>aib-core</artifactId>
-            <version>3.1.1-SNAPSHOT</version>
-        </dependency>
+		<dependency>
+			<groupId>com.idyria.osi.aib</groupId>
+			<artifactId>aib-core</artifactId>
+			<version>3.1.1-SNAPSHOT</version>
+		</dependency>
 		<dependency>
 			<groupId>com.idyria.osi.ooxoo</groupId>
 			<artifactId>ooxoo-db</artifactId>
@@ -226,7 +229,7 @@
 		<dependency>
 			<groupId>com.idyria.osi.vui</groupId>
 			<artifactId>vui-core</artifactId>
-			<version>1.1.0</version>
+			<version>1.1.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sun.faces</groupId>
@@ -238,6 +241,18 @@
 			<artifactId>aib-appserv</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>com.paypal.sdk</groupId>
+			<artifactId>rest-api-sdk</artifactId>
+			<version>0.12.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.commonjava.googlecode.markdown4j</groupId>
+			<artifactId>markdown4j</artifactId>
+			<version>2.2-cj-1.0</version>
+		</dependency>
+
+
 	</dependencies>
 
 </project>
