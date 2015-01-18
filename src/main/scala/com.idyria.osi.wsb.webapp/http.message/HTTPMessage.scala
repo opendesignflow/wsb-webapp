@@ -82,7 +82,11 @@ class HTTPRequest(
 
   // Path and URL parameters separation
   //---------------------
-
+  path = path.replace("//","/")
+  
+  var originalPath = this.path.split("""\?""").head
+  def originalURL = "http://"+(this.getParameter("Host").get+"/"+originalPath).replace("//","/")
+  
   //-- Path may contain some URL encoded parameters, decode them
   path.split("""\?""").lastOption match {
 
@@ -107,6 +111,8 @@ class HTTPRequest(
   // Use Path as qualifier
   this.qualifier = s"http:$path:$operation"
 
+  def getCurrentURL = "http://"+this.getParameter("Host").get+"/"+this.path
+  
   def changePath(newPath: String) = {
     this.path = newPath
     this.qualifier = s"http:$newPath:$operation"
@@ -171,10 +177,24 @@ class HTTPRequest(
     // Handle POST form parameters that can be in another MIME part
     // - Consume the MIME part containing the Parameters
     //----------------------------
+   // println(s"******** Message CTYPE: ${this.parameters.find(_._1 == "Content-Type")}")
     this.parameters.find(_._1 == "Content-Type") match {
-      case Some(Tuple2(_, contentType)) if (contentType.startsWith("application/x-www-form-urlencoded") && this.nextParts.size > 0) ⇒
+      
+      // Some URL parameters can be in content -> in bytes
+      case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded") ) ⇒
 
-        var nextPart = this.nextParts.head
+        
+      
+        var content = new String(this.bytes)
+      
+      //println(s"******** Loogin for URL parameter in form content $content")
+      
+        ("""([\w%+_\.-]+)=([\w%+_\.-]+)(?:&|$)""").r.findAllMatchIn(content).foreach {
+          m ⇒
+            this.addParameter(java.net.URLDecoder.decode(m.group(1), "UTF-8"), m.group(2))
+        }
+      
+       /* var nextPart = this.nextParts.head
         this.nextParts = this.nextParts.drop(1)
 
         //-- The Content will only be of One Line, meaning it is in the protocol Line 
@@ -183,7 +203,7 @@ class HTTPRequest(
           m ⇒
             this.addParameter(java.net.URLDecoder.decode(m.group(1), "UTF-8"), m.group(2))
         }
-
+*/
       case _ ⇒
     }
     //application/x-www-form-urlencoded
@@ -359,7 +379,8 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
         lastFirstMessage.operation match {
           case "POST" ⇒
-            println(s"Post message content: ${new String(lastFirstMessage.bytes)}");
+            println(s"Post message content: ${new String(part.bytes)}");
+          
 
           case _ ⇒
         }
@@ -511,6 +532,8 @@ $sessionId
 }
 object HTTPResponse extends MessageFactory with TLogSource {
 
+  
+  def apply() : HTTPResponse = new HTTPResponse
   def apply(data: Any): HTTPResponse = {
 
     var part = data.asInstanceOf[MimePart]

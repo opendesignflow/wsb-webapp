@@ -41,7 +41,7 @@ import com.idyria.osi.wsb.webapp.view.Inject
  *
  * - Result is saved under session "authenticated" name
  */
-@ManagedBean(name = "com.idyria.osi.wsb.webapp.security.authenticate")
+/*@ManagedBean(name = "com.idyria.osi.wsb.webapp.security.authenticate")
 class AuthenticationController(defaultProvider: AuthenticationProvider) extends Controller {
 
   /**
@@ -53,6 +53,7 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
   // Init
   //-------------
   Injector.inject(defaultProvider)
+  Injector(defaultProvider)
   defaultProvider.init
   //addProvider(defaultProvider)
 
@@ -72,6 +73,7 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
    */
   def addProvider(p: AuthenticationProvider) = {
     Injector.inject(p)
+    Injector(defaultProvider)
     p.init
     availableProviders = availableProviders :+ p
   }
@@ -85,19 +87,18 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
 
     // Select Provider
     //------------
-    var selectedProvider = availableProviders.head
-    request.parameters.find(_._1 == "provider") match {
-      case Some(providerName) ⇒ availableProviders.find(_.getClass().getSimpleName() == providerName._2) match {
+    var selectedProvider =  request.getURLParameter("provider") match {
+      case Some(providerName) ⇒ availableProviders.find(_.getClass().getSimpleName() == providerName) match {
 
         //-- Provider Name provided and found
-        case Some(provider) ⇒ selectedProvider
+        case Some(provider) ⇒ provider
 
         //-- Provider Name provided and not found
-        case None ⇒ throw new AuthenticationException(s"Whished Authentication provider ${providerName._2} has not been setup")
+        case None ⇒ throw new AuthenticationException(s"Whished Authentication provider ${providerName} has not been setup")
       }
 
       //-- Provider name not provided, use default
-      case None ⇒
+      case None ⇒ availableProviders.head
     }
 
     // Extract Parameters from request
@@ -126,6 +127,7 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
     // Save Result to session
     //--------------
     var user = new User
+    user.authTokens = user.authTokens :+ authResult
     authResult.datas.get("username") match {
       case Some(username) ⇒ user.name = username
       case None ⇒
@@ -136,4 +138,4 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
     ""
   }
 
-}
+}*/

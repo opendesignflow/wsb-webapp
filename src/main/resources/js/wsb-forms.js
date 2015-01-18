@@ -64,9 +64,14 @@ function submitForm( button ) {
 		error("Cannot submit form from button if not form is surrounding the button")
 	}
 	
+	var errorsContainer = $(form).find(".errors") 
+	
 	// Validation
 	//---------------
-
+	form.validate()
+	if (!form.valid()) {
+		error("Cannot submit form from button if it is not valid")
+	}
 	
 	// Ajax Submit
 	//-----------------
@@ -80,6 +85,10 @@ function submitForm( button ) {
 	if ($(button).attr("reRender")) {
 		partLoad="part="+$(button).attr("reRender")
 	}
+	if ($(form).attr("reRender")) {
+		partLoad="part="+$(form).attr("reRender")
+	}
+	
 	console.log("Serialized form: "+formSerialised)
 	
 	//-- Ajax Post
@@ -102,13 +111,16 @@ function submitForm( button ) {
 	//-- Success
 	deffered.done(function(data){
 		
-		console.log("Success AJax: ")
+		console.log("Success AJax: "+data)
 		
 		if (data.content) {
 		
 			var decoded = decodeHTML(data.content)
 			console.log("Decoded: "+decoded)
-			setPartContent($(button).attr("reRender"),decoded)
+			if ($(form).attr("reRender")) {
+				setPartContent($(form).attr("reRender"),decoded)
+			}
+			
 		}
 		//var content = eval(data)
 		// Done: Re-Render
@@ -127,7 +139,8 @@ function submitForm( button ) {
 		
 		// Look for a container
 		//-------------------------
-		var errorsContainer = $(form).find(".errors") 
+		
+		console.log("Errors container "+errorsContainer)
 		if (errorsContainer) {
 			
 			// Clear
@@ -140,7 +153,9 @@ function submitForm( button ) {
 		//----------------------
 		$(errors.errors).each(function(i,e){
 			
-			console.log("Error: "+e)
+			console.log("Error: "+e.error)
+			
+			form.addClass("has-error")
 			
 			// If There is a "source" attribute, then try to map to matching input element
 			//---------------
@@ -151,7 +166,9 @@ function submitForm( button ) {
 				
 				
 			} else if (errorsContainer) {
-				errorsContainer.append("<div>"+e.error+"</div>")
+				console.log("Adding: "+e.error)
+				errorsContainer.append("<p class=\"bg-danger help-block has-error\">"+e.error+"</p>")
+				console.log("Errors is now: "+errorsContainer)
 			}
 			
 				

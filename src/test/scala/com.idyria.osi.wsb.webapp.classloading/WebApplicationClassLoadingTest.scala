@@ -9,9 +9,12 @@ import com.idyria.osi.tea.thread.ThreadLanguage
 import com.idyria.osi.aib.core.compiler.EmbeddedCompiler
 import javax.script.ScriptEngineManager
 import scala.collection.JavaConversions._
+import org.scalatest.Ignore
 
+@Ignore
 class WebApplicationClassLoadingTest extends FunSuite with ThreadLanguage {
 
+  
   test("Classloader reloading") {
 
     //-- Test get

@@ -43,6 +43,8 @@ trait PathTrait {
  */
 class DefaultNavigation extends Navigation {
 
+
+  
   /**
    * Execute a closure on all of this Group elements
    * It is not per default recursive, user has to create recursivity

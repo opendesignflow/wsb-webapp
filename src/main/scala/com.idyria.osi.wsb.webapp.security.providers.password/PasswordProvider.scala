@@ -21,25 +21,27 @@
  */
 package com.idyria.osi.wsb.webapp.security.providers.password
 
-import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
-import com.idyria.osi.ooxoo.core.buffers.structural.xelement
-import com.idyria.osi.ooxoo.core.buffers.structural.XList
-import com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer
-import com.idyria.osi.ooxoo.core.buffers.datatypes.XSDStringBuffer
-import com.idyria.osi.wsb.webapp.db.OOXOODatabase
-import com.idyria.osi.tea.hash.HashUtils
-import com.idyria.osi.tea.hash.Base64
-import com.idyria.osi.wsb.webapp.security.AuthenticationProvider
-import com.idyria.osi.wsb.webapp.view.Inject
-import com.idyria.osi.wsb.webapp.security.AuthenticationDatas
-import com.idyria.osi.wsb.webapp.WebApplication
-import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
-import com.idyria.osi.ooxoo.core.buffers.datatypes.CDataBuffer
-import com.idyria.osi.wsb.webapp.security.AuthToken
-import com.idyria.osi.wsb.webapp.security.AuthenticationException
-import com.idyria.osi.wsb.core.message.soap.SOAPMessagesHandler
-import uni.hd.cag.utils.security.utils.RandomID
+import com.idyria.osi.ooxoo.core.buffers.datatypes.CDataBuffer.convertStringToCDataBuffer
+import com.idyria.osi.ooxoo.core.buffers.datatypes.XSDStringBuffer.convertStringToXSDStringBuffer
+import com.idyria.osi.ooxoo.core.buffers.datatypes.XSDStringBuffer.convertXSDStringBufferToString
 import com.idyria.osi.ooxoo.core.buffers.structural.AnyXList
+import com.idyria.osi.ooxoo.core.buffers.structural.xelement
+import com.idyria.osi.tea.hash.Base64
+import com.idyria.osi.tea.hash.HashUtils
+import com.idyria.osi.tea.logging.TLogSource
+import com.idyria.osi.wsb.core.message.soap.SOAPMessagesHandler
+import com.idyria.osi.wsb.webapp.WebApplication
+import com.idyria.osi.wsb.webapp.db.OOXOODatabase
+import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import com.idyria.osi.wsb.webapp.navigation.controller.Controller
+import com.idyria.osi.wsb.webapp.security.AuthToken
+import com.idyria.osi.wsb.webapp.security.AuthenticationDatas
+import com.idyria.osi.wsb.webapp.security.AuthenticationException
+import com.idyria.osi.wsb.webapp.security.AuthenticationProvider
+import com.idyria.osi.wsb.webapp.security.FederatedIdentity
+import com.idyria.osi.wsb.webapp.view.Inject
+
+import uni.hd.cag.utils.security.utils.RandomID
 
 /**
  *
@@ -51,7 +53,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   // Required Parameters Setup
   //-----------------
   this.requiredParameters = this.requiredParameters + ("userName" -> "The User name for the user entry")
-  this.requiredParameters = this.requiredParameters + ("password" -> "The password for userName, hased in SHA-256")
+  this.requiredParameters = this.requiredParameters + ("password" -> "The password for userName, hashed in SHA-256")
 
   // Protocols Registration
   //------------
@@ -61,7 +63,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   // Init
   //-----------
 
-  @Inject("security.auth.password")
+  @Inject("main")
   var database: OOXOODatabase = _
 
   var authDatas = new Users
@@ -74,10 +76,10 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   override def init = {
 
     // Open Users
-    database.container("authDatas").document("users.xml", authDatas)
+    database.container("security.auth.password").document("users.xml", authDatas)
 
     // Open Salts
-    database.container("authDatas").document("salts.xml", saltsDatas)
+    database.container("security.auth.password").document("salts.xml", saltsDatas)
 
   }
 
@@ -112,7 +114,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
         salt.for_ = userName
         salt.data = PasswordProvider.sha256(RandomID.generateSmallBytes())
         saltsDatas.salts += salt
-        database.container("authDatas").writeDocument("salts.xml", saltsDatas)
+        database.container("security.auth.password").writeDocument("salts.xml", saltsDatas)
 
         // Record
         //----------------
@@ -125,7 +127,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
         authDatas.users += user
 
         // Save
-        database.container("authDatas").writeDocument("users.xml", authDatas)
+        database.container("security.auth.password").writeDocument("users.xml", authDatas)
 
     }
 
@@ -145,7 +147,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
    */
   def authenticate(datas: AuthenticationDatas, application: WebApplication, request: HTTPRequest): AuthToken = {
 
-    (datas.getUserName, datas.getPassword) match {
+    (datas.datas.get("userName"), datas.datas.get("password")) match {
 
       // Everything is there
       //-----------------
@@ -179,7 +181,9 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
               // Return results
               case true ⇒
 
-                var result = new AuthToken()
+                var result = new PasswordAuthToken()
+              result.federatedIdentity = new PasswordFederatedIdentity
+               result.federatedIdentity.token = s"""$userName"""
                 result.token = s"""$userName"""
                 result
 
@@ -191,7 +195,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
             }
 
           // User Unknown
-          case None ⇒ throw new AuthenticationException(s"User $userName is unknown")
+          case None ⇒ throw new UserNotFoundException(s"User $userName is unknown")
         }
 
       // Missing Stuff
@@ -239,6 +243,42 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   }
 
 }
+
+
+class PasswordRegisterController extends Controller with TLogSource {
+  
+  @Inject("com.idyria.osi.wsb.webapp.security.providers.password.PasswordProvider")
+  var passwordProvider : PasswordProvider = _
+  
+  @Inject("com.idyria.osi.wsb.webapp.security.identity.authenticate")
+  var authenticateController : Controller = _
+  
+  def execute(application: WebApplication, request: HTTPRequest): String = {
+    
+    logFine("Registering User")
+    
+    // Get Parameters through provider
+    //-------------
+    var data = passwordProvider.checkParameters(request)
+    
+    // Register
+    //--------------
+    passwordProvider.register(data.datas.get("userName").get, data.datas.get("password").get)
+    
+    // Authenticate
+    //------------------
+    authenticateController.execute(application, request)
+    
+    
+    
+    ""
+  }
+}
+
+// Some Usefule exception
+class UserNotFoundException(msg:String) extends AuthenticationException(msg)
+//class UserNotFoundException(msg:String) extends AuthenticationException(msg)
+
 object PasswordProvider {
 
   /**
@@ -259,5 +299,11 @@ object PasswordProvider {
 
   }
 
+}
+
+class PasswordAuthToken extends AuthToken
+
+class PasswordFederatedIdentity extends FederatedIdentity {
+  this.providerId = classOf[PasswordProvider].getCanonicalName
 }
 

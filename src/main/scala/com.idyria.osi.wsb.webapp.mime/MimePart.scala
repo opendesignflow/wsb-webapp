@@ -67,6 +67,7 @@ trait MimePart extends TLogSource {
     //this.parameters = this.parameters ++ part.parameters
 
     // _bytes
+    //this.append(part)
     this._bytes = part._bytes
 
     // Append Next parts
@@ -108,6 +109,11 @@ trait MimePart extends TLogSource {
         protocolLines = line :: protocolLines
     }
 
+  }
+  
+  def getParameter(sname:String) : Option[String] = parameters.find{ case (name,value) => name ==sname } match {
+    case Some((name,value)) => Some(value)
+    case None => None
   }
 
   // Content

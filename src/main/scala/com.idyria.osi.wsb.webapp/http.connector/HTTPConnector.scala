@@ -42,6 +42,7 @@ import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
 import com.idyria.osi.wsb.core.network.connectors.ConnectorFactory
 import com.idyria.osi.wsb.core.network.connectors.AbstractConnector
 import java.net.URL
+import com.idyria.osi.wsb.core.network.connectors.tcp.SSLTCPProtocolHandlerConnector
 
 class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ctx ⇒ new HTTPProtocolHandler(ctx)) with TLogSource {
 
@@ -70,6 +71,58 @@ class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ct
 
   }
 
+}
+
+class HTTPSConnector(cport: Int)  extends SSLTCPProtocolHandlerConnector[MimePart](ctx ⇒ new HTTPProtocolHandler(ctx)) with TLogSource {
+  
+  this.address = "0.0.0.0"
+  this.port = cport
+  this.messageType = "http"
+  this.protocolType = "tcp+https"
+
+  Message("http", HTTPMessage)
+
+  /**
+   * After sending response data to a client, one must close the socket
+   */
+  override def send(buffer: ByteBuffer, context: TCPNetworkContext) = {
+    super.send(buffer, context)
+
+
+  }
+  
+ 
+}
+
+object HTTPSConnector extends ConnectorFactory {
+  
+  /**
+   * Registers classes in various factories
+   */
+  def init = {
+
+    ConnectorFactory("tcp+https", this)
+
+  }
+  
+  def apply(port: Int): HTTPSConnector = new HTTPSConnector(port)
+  
+  /**
+   * Factory for Client mode connectors
+   */
+  def newInstance(connectionString: String): AbstractConnector[_ <: NetworkContext] = {
+
+    //-- Parse Conn String URL (Connection string has no protocol anymore, so add it to use the URL class)
+    var url = new URL("https://" + connectionString)
+
+    //-- Create connector
+    var connector = new HTTPSConnector(443)
+    connector.address = url.getHost()
+    //var connString = new
+
+    connector
+
+  }
 }
 
 object HTTPConnector extends ConnectorFactory {
@@ -177,7 +230,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
     var bytes = new Array[Byte](buffer.remaining)
     buffer.get(bytes)
 
-    //logFine("Got HTTP Datas: " + new String(bytes))
+    logFine("Got HTTP Datas: " + new String(bytes))
 
     // Use SOurce to read from buffer
     //--------------------
@@ -469,7 +522,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
     // buffer
     /*var newBuffer = ByteBuffer.allocate(buffer.remaining())
     newBuffer.put(buffer)
-    newBuffer.flip()
+    newBuffer.flip()))))
     newBuffer*/
 
   }

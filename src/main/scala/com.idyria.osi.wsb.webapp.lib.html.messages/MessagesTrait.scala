@@ -28,28 +28,6 @@ import com.idyria.osi.wsb.webapp.view.WebappHTMLBuilder
  */
 trait MessagesBuilder extends WebappHTMLBuilder {
 
-  /**
-   * Handle Errors
-   */
-  def errors = {
 
-    div {
-      id("errors")
-
-      /**
-       * Consume Errors
-       */
-      request.consumeErrors {
-        error =>
-
-          //-- Produce message div for current error
-          div {
-            classes("alert alert-danger")
-            text(error.getMessage())
-          }
-      }
-    }
-
-  }
 
 }

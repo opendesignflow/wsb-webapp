@@ -53,10 +53,10 @@ class Session(var id: String, var host: String) extends TLogSource {
 
   }
 
-  def apply(name: String): Option[Any] = {
+  def apply[T<:Any](name: String): Option[T] = {
 
     logFine(s"[Session] Searching value from id $id and instance ${hashCode}")
-    this.values.get(name)
+    this.values.get(name).asInstanceOf[Option[T]]
   }
 
   /**

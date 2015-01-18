@@ -33,10 +33,7 @@ import com.idyria.osi.wsb.webapp._
  */
 trait NavigationRule {
 
-  /**
-   * The View ID String to which we are going if the rule fails
-   */
-  var outcome = ""
+  var specification : GroupTraitRule = null
 
   def evaluate(application: WebApplication, request: HTTPRequest): Boolean
 

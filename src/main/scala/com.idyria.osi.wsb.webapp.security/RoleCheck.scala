@@ -24,44 +24,40 @@ package com.idyria.osi.wsb.webapp.security
 import com.idyria.osi.wsb.webapp.navigation._
 import com.idyria.osi.wsb.webapp.http.message._
 import com.idyria.osi.wsb.webapp._
+import com.idyria.osi.tea.logging.TLogSource
 
 /**
- * 
+ *
  * Thsi checks if a User object under the authenticated session variable is present
  */
-class AuthenticatedRule extends NavigationRule {
-  
-  def evaluate(application: WebApplication, request: HTTPRequest) : Boolean = {
-     
-    request.getSession("token") match {
-      case Some(authenticated) => 
-        
-        println("[Authenticated] Yes")
-        true
-      case None => 
-        
-        println("[Authenticated] No")
-        false
-    }
-    
-  }
-}
+class RoleCheck extends IdentifiedRule with TLogSource {
 
-class IdentifiedRule extends NavigationRule {
-  
-  def evaluate(application: WebApplication, request: HTTPRequest) : Boolean = {
-     
-    request.getSession("user") match {
-      case Some(authenticated) => 
-        
-        println("[Authenticated] Yes")
-        true
-      case None => 
-        
-        println("[Authenticated] No")
+  override def evaluate(application: WebApplication, request: HTTPRequest): Boolean = {
+
+    super.evaluate(application, request) match {
+
+      // Check the provided parameter role is present on user
+      case true =>
+
+        println(s"--> Rolecheck: "+this.specification.parameters.keys.mkString(","))
+        this.specification.parameters.get("role") match {
+          case Some(roleToCheck) =>
+
+           
+            // Take user and search
+            var user = request.getSession[User]("user").get
+
+             println(s"Checking role $roleToCheck to ${user.roles.map { sr =>sr.roleId.toString }}")
+            
+            user.roles.find { r => r.roleId.toString == roleToCheck.toString } != None
+
+          case None =>
+            logWarn("Cannot check role because not name Entry was define on tule parameters")
+            false
+        }
+
+      case false =>
         false
     }
-    
   }
-  
 }

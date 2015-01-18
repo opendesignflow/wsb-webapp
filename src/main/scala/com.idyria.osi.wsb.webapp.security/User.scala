@@ -39,6 +39,14 @@ class User extends ElementBuffer {
 
   @xelement(name = "FederatedIdentity")
   var identities = XList { new FederatedIdentity }
+  
+  /**
+   * Roles
+   */
+  @xelement(name = "SecurityRole")
+  var roles = XList { new SecurityRole}
+
+  var authTokens = List[AuthToken]()
 
 }
 
@@ -61,6 +69,10 @@ class FederatedIdentity extends ElementBuffer {
   @xelement(name = "Token")
   var token: XSDStringBuffer = null
 
+}
+
+object FederatedIdentity {
+  def apply() = new FederatedIdentity
 }
 
 /**

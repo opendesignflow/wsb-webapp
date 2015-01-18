@@ -71,5 +71,8 @@ class SimpleFolderWebApplication(var baseDir: File, basePathc: String) extends W
     }
 
   }
+  
+  //-- Change database location
+  this.databaseBasePath = new File(baseDir,"db")
 
 }

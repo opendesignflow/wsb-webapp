@@ -29,13 +29,12 @@ import com.idyria.osi.ooxoo.model.out.scala.ScalaProducer
 
 @producers(Array(
   new producer(value = classOf[ScalaProducer]),
-  new producer(value = classOf[MDProducer])
-))
+  new producer(value = classOf[MDProducer])))
 object SecurityModelsBuilder extends ProtocolBuilder {
 
   // Config
   //-----------
-  parameter("scalaProducer.targetPackage", "com.idyria.osi.wsb.webapp.security")
+  //parameter("scalaProducer.targetPackage", "com.idyria.osi.wsb.webapp.security")
   namespace("s" -> "http://www.idyria.com/osi/wsb-wbapp/security")
 
   // Authentication Tokens
@@ -50,6 +49,30 @@ object SecurityModelsBuilder extends ProtocolBuilder {
     "s:Datas" ofType ("map") withDocumentation {
 
       """Provides some extra data entries to be used by the authenticator as extra informations for the user, like email etc... """
+    }
+
+    importElement("FederatedIdentity")
+    // "s:FederatedIdentity" ofType("FederatedIdentity")
+
+  }
+
+  // Roles
+  //---------------
+  "s:SecurityConfig" is {
+  
+    "s:SecurityRole" multiple {
+      attribute("roleId")
+    }
+
+    // Rights
+    //--------------
+    "s:SecurityRights" is {
+      "s:ForRole" is {
+        attribute("id")
+        "Right" is {
+
+        }
+      }
     }
 
   }

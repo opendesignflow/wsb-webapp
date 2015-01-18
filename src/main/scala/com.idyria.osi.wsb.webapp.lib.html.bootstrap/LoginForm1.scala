@@ -22,7 +22,6 @@
 package com.idyria.osi.wsb.webapp.lib.html.bootstrap
 
 import com.idyria.osi.wsb.webapp.view.WWWView
-import com.idyria.osi.wsb.webapp.security.AuthenticationController
 import com.idyria.osi.wsb.webapp.lib.html.messages.MessagesBuilder
 
 /**
@@ -35,7 +34,7 @@ class LoginForm1 extends WWWView with MessagesBuilder {
       classes("form-signin")
 
       // Form Action
-      action(classOf[AuthenticationController])
+     // action(classOf[AuthenticationController])
 
       // Infos
       //---------------

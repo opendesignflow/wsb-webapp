@@ -4,6 +4,7 @@ import scala.collection.JavaConversions
 import com.idyria.osi.wsb.webapp.view.Inject
 import scala.reflect.runtime.universe._
 import scala.reflect._
+import com.idyria.osi.tea.logging.TLogSource
 
 /**
  * Trait to be implemented by classes that could provide injection support for certain data types
@@ -22,7 +23,19 @@ trait Injector {
 
 }
 
-object Injector {
+class AnyIDInjector(val target : AnyRef) extends Injector {
+  
+ // this.supportedTypes = this.supportedTypes +: target.getClass
+  
+  def supportedTypes = List(target.getClass)
+  
+   def inject[T](id: String, dataType: Class[T]): Option[T] = {
+    Some(target.asInstanceOf[T])
+  }
+  
+}
+
+object Injector extends TLogSource {
 
   /**
    * Implicit Class used by string context for string interpolation injection:
@@ -48,6 +61,10 @@ object Injector {
 
   var supportedTypes = Map[Class[_], List[Injector]]()
 
+  def clear = {
+    supportedTypes = Map[Class[_], List[Injector]]()
+  }
+  
   /**
    * Record an injector in local types support
    */
@@ -59,6 +76,17 @@ object Injector {
     }
 
   }
+  
+  /**
+   * Record an object to be injectable by any ID or a specific ID if it is an injectable type
+   */
+  def apply(obj:AnyRef) = {
+    
+    logFine[Injector]("Making available type : " + obj.getClass)
+    
+    this.supportedTypes = supportedTypes + (obj.getClass -> List(new AnyIDInjector(obj)))
+    
+  }
 
   /**
    * Return an object or null matching the provided id
@@ -66,7 +94,7 @@ object Injector {
   def inject[T](id: String)(implicit tag: ClassTag[T]): T = {
 
     Injector.injectOption[T](id)(tag) match {
-      case None        ⇒ throw new RuntimeException(s"Injecting value for id $id did not yield any result")
+      case None ⇒ throw new RuntimeException(s"Injecting value for id $id did not yield any result")
       case Some(value) ⇒ value.asInstanceOf[T]
     }
 
@@ -103,8 +131,15 @@ object Injector {
   def inject(targetObject: Any) = {
 
     //println("Doing Injection for: " + targetObject)
-
-    (targetObject.getClass.getDeclaredFields().toList ::: targetObject.getClass.getFields().toList).filter {
+    var currentClass = targetObject.getClass()
+    var classes = List[Class[_]]()
+    while(currentClass!=null) {
+      classes = classes :+ currentClass
+      currentClass = currentClass.getSuperclass
+    }
+    
+    // Map classes to fields and flatten to go on
+    classes.map(cl => cl.getDeclaredFields().toList ::: cl.getFields().toList ).flatten.filter {
 
       // Filter unsupported types and ones without inject annotation
       field ⇒
@@ -121,7 +156,7 @@ object Injector {
         // Find Id through inject annotation
         var id = field.getAnnotation(classOf[Inject]).value()
 
-        //println("Supported field: " + field.getName() + " with id " + id)
+        logFine[Injector]("Supported field: " + field.getName() + " with id " + id)
 
         // Find Values
         var values = supportedTypes(field.getType()).map(_.inject(id, field.getType())).filterNot(_ == None)
@@ -133,33 +168,15 @@ object Injector {
           case 0 ⇒
             field.setAccessible(true);
 
-/*
- * #%L
- * WSB Webapp
- * %%
- * Copyright (C) 2013 - 2014 OSI / Computer Architecture Group @ Uni. Heidelberg
- * %%
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public
- * License along with this program.  If not, see
- * <http://www.gnu.org/licenses/gpl-3.0.html>.
- * #L%
- */
-field.set(targetObject, null)
+            field.set(targetObject, null)
           case 1 ⇒
 
             //println("Setting value  " + values.head)
+          logFine[Injector]("Setting value  " + values.head)
             field.setAccessible(true); field.set(targetObject, values.head.get)
-          case _ ⇒ throw new RuntimeException(s"Injection on field ${field.getName()} (id: $id) of class ${targetObject.getClass} failed because multiple values are available")
+          case _ ⇒ 
+          
+          throw new RuntimeException(s"Injection on field ${field.getName()} (id: $id) of class ${targetObject.getClass} failed because multiple values are available")
 
         }
 

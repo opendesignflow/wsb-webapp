@@ -29,8 +29,15 @@ import com.idyria.osi.wsb.webapp.NamedBean
 /**
  * A trait implemented by All navigation Controlers
  */
-trait Controller extends NamedBean {
+abstract class Controller extends NamedBean {
 
+  this.name = getClass.getCanonicalName
+  
+  getClass.getAnnotation(classOf[ManagedBean]) match {
+    case null =>  this.name = getClass.getCanonicalName
+    case annotation =>   this.name = annotation.name()
+  }
+  
   /**
    * Execute the Controller, and return the navigation outcome
    */

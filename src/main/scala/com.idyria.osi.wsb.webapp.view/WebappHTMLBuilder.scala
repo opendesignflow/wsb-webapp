@@ -40,6 +40,7 @@ import com.idyria.osi.vui.impl.html.components.Label
 import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.vui.impl.html.components.FormInput
+import com.idyria.osi.wsb.webapp.security.providers.extern.GoogleProviderComponents
 
 trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLanguage {
 
@@ -56,7 +57,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
    */
   def cleanURL(url: String) = {
 
-    url.matches("""([a-z/]|\+)+:.*""") match {
+    url.matches("""((?:([a-z/]|\+)+:)|(?://)).*""") match {
 
       //-- Absolute
       case true => url
@@ -102,7 +103,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
       //-- JQuery
       //---------------
       script {
-        attribute("src" -> "http://code.jquery.com/jquery-2.0.3.min.js")
+        attribute("src" -> "//code.jquery.com/jquery-2.0.3.min.js")
         //attribute("src" -> "http://code.jquery.com/jquery-1.9.1.js")
 
       }
@@ -115,9 +116,9 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
         attribute("src" -> " http://code.jquery.com/ui/1.10.3/jquery-ui.js")
       }*/
 
-      stylesheet("http://code.jquery.com/ui/1.9.2/themes/smoothness/jquery-ui.css")
+      stylesheet("//code.jquery.com/ui/1.9.2/themes/smoothness/jquery-ui.css")
       script {
-        attribute("src" -> "http://code.jquery.com/ui/1.9.2/jquery-ui.min.js")
+        attribute("src" -> "//code.jquery.com/ui/1.9.2/jquery-ui.min.js")
       }
 
       // Validation Stuff
@@ -207,12 +208,36 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
     currentNode match {
       case n: Form ⇒
+
+        // Bean Name can be used to find an actual name, otherwise it is just the class instance
+        application.controllers.find { case (name, instance) => name == beanName } match {
+          case Some((name, instance)) =>
+          case None =>
+            
+            var loaded = Thread.currentThread().getContextClassLoader.loadClass(beanName).asInstanceOf[Class[ _ <: Controller]]
+            var instance = loaded.newInstance()
+            println(s"---- Loaded ${loaded.getCanonicalName} with parent is: ${loaded.getSuperclass.getCanonicalName}")
+            application.addController(instance)
+        }
+
         formParameter("action" -> beanName) {
 
         }
       case _ ⇒
     }
 
+  }
+
+  def action(controller: Controller): Unit = {
+    currentNode match {
+      case n: Form ⇒
+
+        application.addController(controller)
+        formParameter("action" -> controller.getClass.getCanonicalName) {
+
+        }
+      case _ ⇒
+    }
   }
 
   /**
@@ -263,7 +288,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   def action[AT <: Controller](bean: Class[AT]): Unit = {
 
     bean.getAnnotation(classOf[ManagedBean]) match {
-      case null ⇒
+      case null ⇒ bean.getCanonicalName
       case annotation ⇒
 
         action(annotation.name())
@@ -332,12 +357,25 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
   }
 
+  //-- validation
+  def validateEmail = {
+    attribute("type" -> "email")
+  }
+  
+  override def required = {
+    attribute("required" -> "true")
+    super.required
+  }
+  
   // Views parts calls
   //--------------------
 
   // Styling
   //-----------------
 
+  /**
+   * Load javascript from URL
+   */
   override def javaScript(path: String) = {
     super.javaScript(cleanURL(path))
   }
@@ -380,4 +418,70 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   def reRender(str: String) = {
     attribute("reRender" -> str)
   }
+
+  //--------------------
+  // JS
+  //--------------------
+  def jsOnLoad(s: String) = {
+
+    script {
+      text("""
+// Shorthand for $( document ).ready()
+$(function() {
+   """ + s + """
+});
+""")
+    }
+
+  }
+  
+  
+  //-----------
+  // Messages
+  //---------------
+  
+  def displayErrors = {
+    div {
+      classes("errors")
+
+      /**
+       * Consume Errors
+       */
+      request.errors.foreach {
+        error =>
+
+          //-- Produce message div for current error
+          div {
+            classes("alert alert-danger")
+            text(error.getMessage())
+          }
+      }
+    }
+  }
+  
+   /**
+   * Handle Errors
+   */
+  def errors = {
+
+    div {
+      classes("errors")
+
+      /**
+       * Consume Errors
+       */
+      request.consumeErrors {
+        error =>
+
+          //-- Produce message div for current error
+          div {
+            classes("alert alert-danger")
+            text(error.getMessage())
+          }
+      }
+    }
+
+  }
+  
+
 }

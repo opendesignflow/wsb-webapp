@@ -237,4 +237,6 @@ function decodeHTML(uriHTML) {
 				.replace(/(%3A)+/g,":")
 				.replace(/(%3D)+/g,"=")
 				.replace(/(%23)+/g,"#")
+				.replace(/(%40)+/g,"@")
+				.replace(/(%2C)+/g,",")
 }

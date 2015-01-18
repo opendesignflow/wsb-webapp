@@ -155,8 +155,18 @@ class TopNavbar extends Div with HtmlTreeBuilder {
 
 trait BootstrapBuilder extends HtmlTreeBuilder {
 
+  
+  
   // Init
   //---------------
+  
+  override def head(cl: => Any) = {
+    
+    super.head {
+      importbs3
+      cl
+    }
+  }
   def importbs3 = {
 
     meta {
@@ -168,8 +178,8 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
       attribute("name" -> "viewport")
       attribute("content" -> "width=device-width, initial-scale=1.0")
     }
-    stylesheet("http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
-    stylesheet("http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css")
+    stylesheet("//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css")
+    stylesheet("//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css")
 
     script {
       attribute("src" -> "//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js")
@@ -183,6 +193,7 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
 
     form {
       attribute("role" -> "form")
+      attribute("method" -> "POST")
       cl
     }
   }
@@ -195,6 +206,10 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
     }
   }
 
+  def bs3PlaceHolder(text:String) = {
+    attribute("placeHolder"->text)
+  }
+  
   // Grid
   //----------------
 
@@ -272,7 +287,7 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
 
       //-- Add Button
       button(name) {
-        b =>
+        //b =>
           attribute("class" -> s"btn btn-${btnType} dropdown-toggle")
           attribute("data-toggle" -> "dropdown")
 
@@ -298,6 +313,16 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
 
     li {
       a(name, action)
+    }
+  }
+  
+  
+  // Styled elements
+  //-----------------------
+  def bs3Header(cl: => Any) = {
+    div {
+      classes("page-header")
+      cl
     }
   }
 

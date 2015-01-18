@@ -22,10 +22,12 @@
 package com.idyria.osi.wsb.webapp.mains
 
 import com.idyria.osi.wsb.core.WSBEngine
-
 import com.idyria.osi.wsb.webapp.http.connector._
-
 import com.idyria.osi.wsb.webapp._
+import com.idyria.osi.wsb.core.broker.tree.Intermediary
+import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
+import com.idyria.osi.wsb.webapp.view.sview.SView
 
 /**
  *
@@ -63,6 +65,18 @@ class AppServer {
 
   }
 
+  /**
+   * Adds a new HTTPS connector to the Engine
+   *
+   */
+  def addHTTPSConnector(host: String, port: Int) = {
+
+    var connector = HTTPSConnector(port)
+    engine.network.addConnector(connector)
+    connector
+
+  }
+  
   // Application
   //----------------
 
@@ -72,8 +86,41 @@ class AppServer {
    */
   def addApplication[T <: WebApplication](app: T): T = {
 
-    engine.broker <= app
+    engine.broker.prepend(app)
     app
+
+  }
+
+  def removeApplication[T <: WebApplication](app: T): T = {
+
+    engine.broker -= app
+    app
+
+  }
+
+  // Fallback for non handled http messages
+  //-----------------------
+  engine.broker <= new Intermediary {
+
+    name = "Global 404 Not Found"
+
+    acceptDown { message ⇒ (message.errors.isEmpty && message.upped == false) }
+
+    downClosure = {
+
+      message ⇒
+
+        println(s"********** Global ERROR 404 Not Found Intermediary for (${message.qualifier}) **************")
+
+        var errorText = s"""
+      Could not Find Content for view: ${message.asInstanceOf[HTTPRequest].path} 
+      """
+        var responseMessage = HTTPResponse("text/html", errorText)
+        responseMessage.code = 404
+
+        response(responseMessage, message)
+
+    }
 
   }
 
@@ -84,15 +131,14 @@ object AppServer extends App {
   println("Welcome to WSB Webapp App Server")
 
   println("This Web Server tries to start webapplications2")
-  
-   // Gather some parameters
-   //----------------------
-   var port = args
-  
+
+  // Gather some parameters
+  //----------------------
+  var port = args
+
   // Create App server
   //------------------------
   var server = new AppServer
   server.addHTTPConnector("localhost", 8080)
-    
-  
+
 }

@@ -21,20 +21,18 @@
  */
 package com.idyria.osi.wsb.webapp.view.sview
 
-import org.scalatest.FunSuite
-import com.idyria.osi.vui.impl.html.HtmlTreeBuilder
-import com.idyria.osi.wsb.webapp.lib.html.bootstrap.Bootstrap3
-import com.idyria.osi.wsb.webapp.WebApplication
-import com.idyria.osi.wsb.webapp.view.WebappHTMLBuilder
-import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
-import com.idyria.osi.wsb.webapp.security.AuthenticationController
-import com.idyria.osi.wsb.webapp.view.WWWView
-import com.idyria.osi.vui.core.components.scenegraph.SGNode
 import scala.language.implicitConversions
-import com.idyria.osi.wsb.webapp.view.WebappHTMLBuilder
-import com.idyria.osi.wsb.webapp.lib.html.messages.MessagesBuilder
+
+import org.scalatest.FunSuite
+
+import com.idyria.osi.ooxoo.core.buffers.datatypes.XSDStringBuffer.convertStringToXSDStringBuffer
+import com.idyria.osi.ooxoo.core.buffers.structural.xelement
+import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import com.idyria.osi.wsb.webapp.lib.html.bootstrap.Bootstrap3
+import com.idyria.osi.wsb.webapp.lib.html.messages.MessagesBuilder
 import com.idyria.osi.wsb.webapp.navigation.GroupTraitView
+import com.idyria.osi.wsb.webapp.view.WebappHTMLBuilder
 
 class HTMLWebappTest extends FunSuite
     with WebappHTMLBuilder with MessagesBuilder {
@@ -92,7 +90,7 @@ class HTMLWebappTest extends FunSuite
         this.form {
 
           // Form Action
-          action(classOf[AuthenticationController])
+          //action(classOf[AuthenticationController])
 
           // Infos
           //---------------

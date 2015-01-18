@@ -12,7 +12,7 @@ class HTTPContentTypeTest extends FunSuite with GivenWhenThen {
 
   test("ChunkedEncoding one pass") {
 
-    TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
+   // TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
 
     //-- Read Response and print
     var bytes = Source.fromInputStream(getClass().getClassLoader().getResourceAsStream("com.idyria.osi.wsb.webapp.http/stream.bin")).grouped(2).map {
@@ -44,7 +44,7 @@ class HTTPContentTypeTest extends FunSuite with GivenWhenThen {
 
   test("ChunkedEncoding two passes") {
 
-    TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
+    //TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
 
     //-- Read Response and print
     var bytes = Source.fromInputStream(getClass().getClassLoader().getResourceAsStream("com.idyria.osi.wsb.webapp.http/stream.bin")).grouped(2).map {

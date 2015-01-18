@@ -90,6 +90,24 @@ trait AuthenticationProvider {
    */
   def authenticate(datas: AuthenticationDatas, application: WebApplication, request: HTTPRequest): AuthToken
 
+  def checkParameters(request: HTTPRequest)  : AuthenticationDatas = {
+    
+    var authDatas = new AuthenticationDatas
+    requiredParameters.foreach {
+      case (name, description) ⇒ request.getURLParameter(name) match {
+
+        //-- Provided, gather
+        case Some(value) ⇒ authDatas(name -> value)
+
+        //-- Required parameter not found
+        case None ⇒ throw new AuthenticationException(s"Authentication provider ${getClass.getCanonicalName} requires request parameter $name which has not bee supplied")
+      }
+    }
+    
+    authDatas
+    
+  }
+  
 }
 
 /**

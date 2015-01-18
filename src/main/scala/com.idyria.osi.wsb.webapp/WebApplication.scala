@@ -63,11 +63,13 @@ class WebApplication(
 
   //-- Base path must start with /
   basePath = s"/$basePath".replace("//", "/")
-  
+
   //-- Message filter for this base URL path
-  this.filter = s"""http:$basePath(.*):.*""".r
+  this.filter = s"""http:(.*):.*""".r
 
   this.name = s"Application on $basePath"
+
+  var classloader = Thread.currentThread().getContextClassLoader
 
   // Injection Support for various components
   //----------------------
@@ -77,6 +79,8 @@ class WebApplication(
   def supportedTypes: List[Class[_]] = List(classOf[Database], classOf[OOXOODatabase], classOf[WebApplication])
 
   def inject[T](id: String, dataType: Class[T]): Option[T] = {
+
+    println(s"---- WEBAPP doing injection for type: " + dataType.getCanonicalName)
 
     dataType match {
 
@@ -98,8 +102,12 @@ class WebApplication(
 
         // Get or create
         this.getDatabase(id) match {
-          case Some(db) ⇒ Some(db.asInstanceOf[T])
-          case None ⇒ Some(this.createDatabase(id).asInstanceOf[T])
+          case Some(db) ⇒
+            println(s"---- Returning DB : " + id + " -> " + db)
+            Some(db.asInstanceOf[T])
+          case None ⇒
+            println(s"---- Creating DB : " + id)
+            Some(this.createDatabase(id).asInstanceOf[T])
         }
 
       case _ ⇒ None
@@ -170,6 +178,7 @@ class WebApplication(
 
         // Parse
         //---------
+        navigationConfig = new DefaultNavigation
         var io = new StAXIOBuffer(navigationURL)
         navigationConfig.appendBuffer(io)
         io.streamIn
@@ -181,7 +190,7 @@ class WebApplication(
         //--------------
 
         // List of current path components to create views at the right place
-        var currentPath = List(basePath)
+        var currentPath = List("/")
 
         // Call Transform to find out all the Rules
         //------
@@ -189,19 +198,33 @@ class WebApplication(
           case r: GroupTraitRule ⇒
 
             try {
-              var view = r.toView match {
+              /*var view = r.toView match {
                 case null ⇒ ""
                 case toView ⇒ toView.toString
               }
-              this.addRule(r.for_, Thread.currentThread().getContextClassLoader().loadClass(r.id.toString).newInstance().asInstanceOf[NavigationRule], view)
+              */
+              var ruleImpl = Thread.currentThread().getContextClassLoader().loadClass(r.id.toString).newInstance().asInstanceOf[NavigationRule]
+              ruleImpl.specification = r
+              this.addRule(r.for_, ruleImpl)
             } catch {
-              case e: Throwable ⇒ throw new RuntimeException(s"An Error occured while setting navigation rule ${r.fullPath} from $navigationURL: ${e.getMessage()} ")
+              case e: Throwable =>
+                e.printStackTrace()
+                throw new RuntimeException(s"An Error occured while setting navigation rule ${r.fullPath} from $navigationURL: ${e.getLocalizedMessage()} ")
             }
           case _ ⇒
         }
 
       case None ⇒
     }
+  }
+
+  /**
+   * Don't know what to do
+   */
+  def lStop = {
+
+    Injector.clear
+
   }
 
   // Resources and File Sources
@@ -288,7 +311,7 @@ class WebApplication(
 
     // Extract Base Path of application from path
     //----------
-    var extractedPath = WebApplication.this.filter.findFirstMatchIn(request.qualifier)
+    var extractedPath = WebApplication.this.filter.findFirstMatchIn(s"/${request.qualifier}".replace("//", "/"))
     var res = this.searchResource(extractedPath.get.group(1))
 
     // var res = this.searchResource(request.qualifier)
@@ -297,36 +320,6 @@ class WebApplication(
 
     res
 
-  }
-
-  // Main Web App intermediary
-  //----------------------------
-  downClosure = {
-
-    message ⇒
-
-    //---- Session
-    //--------------------
-    //println("[Session] In Session Intermediary")
-
-  }
-
-  upClosure = {
-
-    message ⇒
-
-      //---- Session
-      //---------------------
-      if (message.relatedMessage != null && message.relatedMessage.isInstanceOf[HTTPRequest] && message.relatedMessage.asInstanceOf[HTTPRequest].session != null) {
-
-        var httpMessage = message.relatedMessage.asInstanceOf[HTTPRequest]
-
-        // Copy Session info to response if there is one
-        message.asInstanceOf[HTTPResponse].session = httpMessage.session
-
-        // Update Session Object Path
-        message.asInstanceOf[HTTPResponse].session.path = WebApplication.this.basePath
-      }
   }
 
   // Controllers
@@ -359,10 +352,16 @@ class WebApplication(
     // Inject
     Injector.inject(controller)
 
-    // Add
-    this.controllers = this.controllers + (controller.name -> controller)
+    // Add only if non existing
+    this.controllers.get(controller.name) match {
+      case Some(entry) =>
+      case None =>
+        this.controllers = this.controllers + (controller.name -> controller)
 
-    //println(s"Registering Controller: " + controller.name)
+        // Make available for injection
+        Injector(controller)
+        println(s"Registering Controller: " + controller.name)
+    }
 
   }
 
@@ -372,7 +371,7 @@ class WebApplication(
   /**
    * Default Navigation configuration that can be enriched
    */
-  val navigationConfig = new DefaultNavigation
+  var navigationConfig = new DefaultNavigation
   navigationConfig.fullPath = basePath
 
   /**
@@ -380,9 +379,48 @@ class WebApplication(
    */
   var navigationRules = Map[Regex, NavigationRule]()
 
-  def addRule(paths: Regex, rule: NavigationRule, view: String) = {
-    rule.outcome = view
+  def addRule(paths: Regex, rule: NavigationRule) = {
+
     this.navigationRules = this.navigationRules + (paths -> rule)
+  }
+
+  //-- Main Web App intermediary
+  //----------------------
+  downClosure = {
+
+    message ⇒
+
+      //---- Session
+      //--------------------
+      //println("[Session] In Session Intermediary")
+
+      // Swtich classloader 
+      Thread.currentThread().setContextClassLoader(this.classloader)
+
+      println(s"In base Webapp intermediary on thread -> " + Thread.currentThread().getId)
+
+      // Remove base path from path
+      //----------------
+      message.qualifier = message.qualifier.replace(s"$basePath", "").replace("//", "")
+      message.asInstanceOf[HTTPRequest].changePath(message.asInstanceOf[HTTPRequest].path.replace(s"$basePath", "").replace("//", ""))
+  }
+
+  upClosure = {
+
+    message ⇒
+
+      //---- Session
+      //---------------------
+      if (message.relatedMessage != null && message.relatedMessage.isInstanceOf[HTTPRequest] && message.relatedMessage.asInstanceOf[HTTPRequest].session != null) {
+
+        var httpMessage = message.relatedMessage.asInstanceOf[HTTPRequest]
+
+        // Copy Session info to response if there is one
+        message.asInstanceOf[HTTPResponse].session = httpMessage.session
+
+        // Update Session Object Path
+        message.asInstanceOf[HTTPResponse].session.path = WebApplication.this.basePath
+      }
   }
 
   // Controlers Intermediary
@@ -402,27 +440,50 @@ class WebApplication(
 
             println(s"[Action] Should be running action '${action}'")
 
-            WebApplication.this.controllers.get(action) match {
-              case Some(controller) ⇒
+            try {
+              WebApplication.this.controllers.get(action) match {
+                case Some(controller) ⇒
 
-                //-- Execute Closure
-                controller.execute(WebApplication.this, httpMessage) match {
+                  //-- Execute controller
+                  Injector.inject(controller)
+                  controller.execute(WebApplication.this, httpMessage) match {
 
-                  //-- Change View Id to Result view ID if not ""
-                  case resultView if (resultView != "") ⇒ httpMessage.changePath(resultView)
-                  case _ ⇒
-                }
+                    //-- Redirect
+                    case resultView if (resultView.startsWith("redirect:")) =>
 
-                //-- If no render, stop here
-                httpMessage.getURLParameter("noRender") match {
-                  case Some(_) ⇒
+                      // Create response and set code to redirect
+                      var redirectResponse = HTTPResponse()
+                      redirectResponse.addParameter("Location", resultView.replace("redirect:", ""))
+                      redirectResponse.code = 302
+                      response(redirectResponse)
 
-                    response(HTTPResponse("application/json", "{}"), message)
+                    //-- Change View Id to Result view ID if not ""
+                    case resultView if (resultView != "") ⇒
+                      println(s"Changing path to $resultView")
+                      httpMessage.changePath(resultView)
+                    case _ ⇒
+                  }
 
-                  case None ⇒
-                }
+                  //-- If no render, stop here
+                  httpMessage.getURLParameter("noRender") match {
+                    case Some(_) ⇒
 
-              case None ⇒ throw new RuntimeException(s"[Action] ...no handler found for action '${action}'")
+                      response(HTTPResponse("application/json", "{}"), message)
+
+                    case None ⇒
+                  }
+
+                case None ⇒ throw new RuntimeException(s"[Action] ...no handler found for action '${action}'")
+              }
+            } catch {
+              
+              case e : ResponseException => 
+                throw e
+              // Erros during action processing
+              case e: Throwable =>
+                logFine[WebApplication]("Caught error during action processing")
+                e.printStackTrace()
+                httpMessage.errors = httpMessage.errors :+ e
             }
           case None ⇒
         }
@@ -441,7 +502,7 @@ class WebApplication(
 
     name = "Views"
 
-    acceptDown { message ⇒ (message.errors.isEmpty && message.upped == false) }
+    acceptDown { message ⇒ (message.upped == false) }
 
     downClosure = {
       message ⇒
@@ -450,52 +511,30 @@ class WebApplication(
 
         // Navigation Rules 
         //-----------------------
-        WebApplication.this.navigationRules.find {
+        logFine[WebApplication](s"Searching rules for ${httpMessage.path} ")
 
-          case (pathMatch, rule) ⇒ (!pathMatch.findFirstIn(httpMessage.path).isEmpty) && ((rule.evaluate(WebApplication.this, message.asInstanceOf[HTTPRequest])) != true)
-
-        } match {
-          case Some((pathMatch, rule)) ⇒ httpMessage.changePath(WebApplication.makePath(basePath, rule.outcome))
-          case None ⇒
+        //-- Find rules for the current view 
+        var viewRules = WebApplication.this.navigationRules.filter {
+          case (pathMatch, rule) =>
+            !pathMatch.findFirstIn(httpMessage.path).isEmpty
         }
 
-        // Special View intermediaries
-        //-------------------
-        if (message.asInstanceOf[HTTPRequest].path.endsWith(".sview") && !this.intermediaries.exists { i ⇒ i.name.toString == message.asInstanceOf[HTTPRequest].path }) {
+        //-- Execute in order
+        viewRules.foreach {
+          case (pathMatch, rule) =>
 
-          println(s"**** Path for SView, need to create View Intermediary ${message.asInstanceOf[HTTPRequest].path}")
+            logFine[WebApplication](s"Found rule ${rule.getClass.getCanonicalName} wit spec: ${rule.specification} ")
+            rule.evaluate(WebApplication.this, message.asInstanceOf[HTTPRequest]) match {
+              case true if (rule.specification.successTo != null) =>
 
-          // Try to locate
-          //---------------------
-          WebApplication.this.searchResource(message.asInstanceOf[HTTPRequest]) match {
-            case Some(url) ⇒
-
-              this <= new Intermediary {
-
-                this.name = message.asInstanceOf[HTTPRequest].path
-                this.filter = (s"http:${message.asInstanceOf[HTTPRequest].path}:.*").r
-
-                // Prepare an SView Renderer 
-                var sviewRenderer = new SViewRenderer(url)
-
-                println(s"Created new SView intermediary for : $filter and source file: ${sviewRenderer.path}")
-
-                downClosure = {
-                  message ⇒
-                    println("--> Producing content from SView from Intermediary")
-                    response(HTTPResponse("text/html", sviewRenderer.produce(WebApplication.this, message.asInstanceOf[HTTPRequest])), message)
-
-                }
-
-                upClosure = {
-                  message ⇒
-
-                }
-
-              }
-
-            case None ⇒
-          }
+                logFine[WebApplication](s"Success rule ${rule.getClass.getCanonicalName} for $pathMatch -> ${rule.specification.successTo} ")
+                httpMessage.changePath(rule.specification.successTo)
+              case false if (rule.specification.failTo != null) =>
+                logFine[WebApplication](s"Failed rule ${rule.getClass.getCanonicalName} for $pathMatch -> ${rule.specification.failTo} ")
+                httpMessage.changePath(rule.specification.failTo)
+              case res =>
+                logFine[WebApplication](s"Rule ${rule.getClass.getCanonicalName} evaluated to $res but no specific outcome was defined, staying where we are ")
+            }
 
         }
 
@@ -506,23 +545,69 @@ class WebApplication(
 
     }
 
+    // Redirection handler
+    //---------------------------
+    this <= new HTTPIntermediary {
+      name = "Redirection handler"
+
+      this.acceptDown { m => m.asInstanceOf[HTTPRequest].path.startsWith("redirect") }
+
+      // Perform redirection
+      this.onDownMessage {
+        m =>
+
+          // Redirect to app if starts with /
+          var targetPath = m.path.replace("redirect:", "")
+          targetPath = targetPath.startsWith("/") match {
+            case true => s"/$basePath/$targetPath".replace("//", "/")
+            case false => targetPath
+          }
+          var redirectResponse = HTTPResponse()
+          redirectResponse.addParameter("Location", targetPath)
+          redirectResponse.code = 302
+          response(redirectResponse)
+
+      }
+
+    }
+
     // Add WWWView intermediary
     //-------------------------
     this <= new HTTPIntermediary {
 
-      filter = """http:.*.view:.*""".r
+      filter = """http:.*\.view:.*""".r
       name = "WWView"
 
+      // Don't acceppt upped messages
+      this.acceptDown { m => !m.upped && m.asInstanceOf[HTTPRequest].getURLParameter("noRender")==None}
+      
       var baseView = new WWWView
       baseView.application = WebApplication.this
 
       this.onDownMessage {
-        m ⇒
+        m =>
 
           // Search Resource 
-          searchResource(m) match {
+          var resURL = searchResource(m) match {
+            case Some(url) => Some(url)
+
+            //-- Try with an extension
+            case None =>
+
+              // Extract Base Path of application from path
+              var extractedPath = WebApplication.this.filter.findFirstMatchIn(m.qualifier)
+              searchResource(extractedPath.get.group(1) + ".scala")
+            //println("View search as: "+m.path)
+            //searchResource(m.path+".scala")
+          }
+
+          resURL match {
             case Some(url) ⇒
 
+              // Prepare view
+              //-----------------
+              var view = WWWView.compile(url).getClass.newInstance()
+            
               // Support various outputs
               //---------------------
               m.parameters.find(_._1 == "Accept") match {
@@ -531,14 +616,14 @@ class WebApplication(
                 //---------------
                 case Some(Tuple2(_, v)) if (v.startsWith("application/json")) ⇒
 
-                  var rendered = WWWView.compile(url).produce(WebApplication.this, m).toString()
+                  var rendered = view.produce(WebApplication.this, m).toString()
                   var jsonRes = s"""{"content":"${URLEncoder.encode(rendered)}"}"""
                   response(HTTPResponse("application/json", jsonRes))
 
                 // Otherwise -> HTML
                 //------------
                 case _ =>
-                  response(HTTPResponse("text/html", WWWView.compile(url).produce(WebApplication.this, m).toString()))
+                  response(HTTPResponse("text/html", view.produce(WebApplication.this, m).toString()))
               }
 
             case None ⇒

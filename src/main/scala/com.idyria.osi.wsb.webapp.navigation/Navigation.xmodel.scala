@@ -1,7 +1,11 @@
-import com.idyria.osi.ooxoo.model.out.scala._
+package com.idyria.osi.wsb.webapp.navigation
 
 import com.idyria.osi.ooxoo.model.out.scala._
+import com.idyria.osi.ooxoo.model.out.scala._
 import com.idyria.osi.ooxoo.model.out.markdown._
+import com.idyria.osi.ooxoo.model.producers
+import com.idyria.osi.ooxoo.model.ModelBuilder
+import com.idyria.osi.ooxoo.model.producer
 
 
 @producers(Array(
@@ -10,7 +14,7 @@ import com.idyria.osi.ooxoo.model.out.markdown._
 )) 
 object NavigationModelBuilder extends ModelBuilder {  
 
-    parameter("scalaProducer.targetPackage","com.idyria.osi.wsb.webapp.navigation")
+   // parameter("scalaProducer.targetPackage","com.idyria.osi.wsb.webapp.navigation")
 
     // Trait to Describe elements
     //---------
@@ -49,7 +53,15 @@ object NavigationModelBuilder extends ModelBuilder {
                 "Defines the regexp filter for which this Rule will apply."
                 
             } 
-            attribute("toView")
+            attribute("failTo")
+            attribute("successTo")
+            
+            //-- parameters
+            "Parameters" ofType("map")
+            /*"Parameter" multiple {
+              attribute("name")
+              "Value" ofType "cdata"
+            }*/
         
         }   
         
