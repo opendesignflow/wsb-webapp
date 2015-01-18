@@ -44,7 +44,7 @@ class User extends ElementBuffer {
    * Roles
    */
   @xelement(name = "SecurityRole")
-  var roles = XList { new SecurityRole}
+  var roles = XList { new SecurityConfigSecurityRole}
 
   var authTokens = List[AuthToken]()
 
