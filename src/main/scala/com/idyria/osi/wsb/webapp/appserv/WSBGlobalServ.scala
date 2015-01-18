@@ -94,8 +94,8 @@ object WSBGlobalServ extends AIBAppServ with App {
  /// TLog.setLevel(classOf[SSLTCPConnector], TLog.Level.FULL)
   //TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
   
-  TLog.setLevel(classOf[WebApplication], TLog.Level.FULL)
-  TLog.setLevel(classOf[Injector], TLog.Level.FULL)
+ /* TLog.setLevel(classOf[WebApplication], TLog.Level.FULL)
+  TLog.setLevel(classOf[Injector], TLog.Level.FULL)*/
   
   start
   //applicationWrappers(0).init
