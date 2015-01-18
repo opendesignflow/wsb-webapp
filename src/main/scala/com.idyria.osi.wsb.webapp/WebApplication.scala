@@ -641,15 +641,23 @@ class WebApplication(
   // -- Try to find requested path as plain resource
   // -- Skip if the request message has previous errors
   //------------------------------
-  this <= new Intermediary {
+  this <= new HTTPIntermediary {
 
     name = "Simple File Resources"
 
-    acceptDown { message ⇒ (message.errors.isEmpty && message.upped == false) }
-
-    downClosure = {
-
-      message ⇒
+    
+    acceptDown { message => 
+      (message.errors.isEmpty && message.upped == false) }
+      
+    //Refuse messages with a path containing WEB-INF
+    acceptDown { message => 
+      
+      !message.asInstanceOf[HTTPRequest].path.contains("WEB-INF")
+    }
+    
+    this.onDownMessage { 
+      
+      message => 
 
         WebApplication.this.searchResource(message.asInstanceOf[HTTPRequest]) match {
 
@@ -683,7 +691,7 @@ class WebApplication(
           //-- Nothing found -> Continue to handler
           case None ⇒
         }
-
+      
     }
     // EOF down closure for content handler intermediary
   }
