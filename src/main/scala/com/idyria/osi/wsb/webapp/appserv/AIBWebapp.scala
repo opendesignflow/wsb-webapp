@@ -26,7 +26,7 @@ abstract class AIBWebapp extends AIBApplication {
         this.webinfFile = webinfFile
         this.applicationBaseFile = webinfFile.getParentFile
       case None =>
-        throw new RuntimeException("Cannot find WEB-INF folder as parent or super-parent of application location")
+        throw new RuntimeException(s"Cannot find WEB-INF folder as parent or super-parent of application location $this.location")
     }
 
     // Update compiler output
