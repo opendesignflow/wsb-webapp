@@ -82,11 +82,11 @@ class HTTPRequest(
 
   // Path and URL parameters separation
   //---------------------
-  path = path.replace("//","/")
-  
+  path = path.replace("//", "/")
+
   var originalPath = this.path.split("""\?""").head
-  def originalURL = "http://"+(this.getParameter("Host").get+"/"+originalPath).replace("//","/")
-  
+  def originalURL = "http://" + (this.getParameter("Host").get + "/" + originalPath).replace("//", "/")
+
   //-- Path may contain some URL encoded parameters, decode them
   path.split("""\?""").lastOption match {
 
@@ -111,8 +111,8 @@ class HTTPRequest(
   // Use Path as qualifier
   this.qualifier = s"http:$path:$operation"
 
-  def getCurrentURL = "http://"+this.getParameter("Host").get+"/"+this.path
-  
+  def getCurrentURL = "http://" + this.getParameter("Host").get + "/" + this.path
+
   def changePath(newPath: String) = {
     this.path = newPath
     this.qualifier = s"http:$newPath:$operation"
@@ -174,41 +174,103 @@ class HTTPRequest(
    */
   def getURLParameter(name: String): Option[String] = {
 
+    // First Try based on Content Type
+    this.parameters.find(_._1 == "Content-Type") match {
+
+      // Some URL parameters can be in content -> in bytes
+      //-----------------
+      case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded")) =>
+
+        var content = new String(this.bytes)
+        ("""\b"""+name+"""\b"""+"""=([\w%+_\.-]+)(?:&|$$)""").r.findFirstMatchIn(content) match {
+          case Some(matched) ⇒ Option(java.net.URLDecoder.decode(matched.group(1), "UTF-8"))
+          case None ⇒ 
+          
+          // Look in normal URL parameters
+          this.parameters.collectFirst { case param if (param._1 == name) => java.net.URLDecoder.decode( param._2, "UTF-8") }
+        }
+
+      // Multi part form data -> explore other parts
+      case Some((_, contentType)) if (contentType.trim.startsWith("multipart/form-data")) =>
+
+      //  println(s"------- Searching part with parameter name")
+        this.nextParts.foreach {
+          p =>
+           /* println(s"----> Part plline: " + p.protocolLines.mkString("\n"))
+            println(s"----> Part params: " + p.parameters.mkString("\n"))
+            println(s"----> Part content: " + new String(p.bytes))*/
+
+        }
+        this.nextParts.collectFirst {
+          case p if (p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;\\s*name=\"" + name + "\".*")) =>
+
+            java.net.URLDecoder.decode(new String(p.bytes), "UTF-8")
+      
+          /* """.+; name="(.+)"\s*""".r.findFirstMatchIn(p.getParameter("Content-Disposition").get) match {
+              case Some(matched) ⇒matched.group(1)
+              case None ⇒ ""
+            }*/
+
+        }
+
+      // Normal parameters
+      case _ => this.parameters.collectFirst { case param if (param._1 == name) => java.net.URLDecoder.decode( param._2, "UTF-8") }
+
+    }
+
+    // Try in all parts, including current
+    //-------------------
+    /*this.parameters.find(_._1 == name) match {
+      case Some(Tuple2(_, value)) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
+      case None ⇒
+      
+      
+        // handle Standard URL Encoded
+        this.parameters.find(_._1 == "Content-Type") match {
+  
+        // Some URL parameters can be in content -> in bytes
+        case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded")) ⇒
+  
+          var content = new String(this.bytes)
+  
+          //println(s"******** Loogin for URL parameter in form content $content")
+  
+          ("""([\w%+_\.-]+)=([\w%+_\.-]+)(?:&|$)""").r.findAllMatchIn(content).foreach {
+            m ⇒
+              this.addParameter(java.net.URLDecoder.decode(m.group(1), "UTF-8"),m.group(2) )
+              
+              m.group(2)
+          }
+  
+        
+        case _ ⇒
+      }
+      
+      
+        // Search other parts for form data with right name
+        //---------------------
+        this.nextParts.filter {
+          p => p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.startsWith("form-data")
+        }.collectFirst {
+          case p if (p.getParameter("Content-Disposition").get.contains(s"name=\"$name\""))=>
+
+            """.+; name="(.+)"\s*""".r.findFirstMatchIn(p.getParameter("Content-Disposition").get) match {
+              case Some(matched) ⇒matched.group(1)
+              case None ⇒ ""
+            }
+
+        }
+
+    }*/
+
     // Handle POST form parameters that can be in another MIME part
     // - Consume the MIME part containing the Parameters
     //----------------------------
-   // println(s"******** Message CTYPE: ${this.parameters.find(_._1 == "Content-Type")}")
-    this.parameters.find(_._1 == "Content-Type") match {
-      
-      // Some URL parameters can be in content -> in bytes
-      case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded") ) ⇒
+    // println(s"******** Message CTYPE: ${this.parameters.find(_._1 == "Content-Type")}")
 
-        
-      
-        var content = new String(this.bytes)
-      
-      //println(s"******** Loogin for URL parameter in form content $content")
-      
-        ("""([\w%+_\.-]+)=([\w%+_\.-]+)(?:&|$)""").r.findAllMatchIn(content).foreach {
-          m ⇒
-            this.addParameter(java.net.URLDecoder.decode(m.group(1), "UTF-8"), m.group(2))
-        }
-      
-       /* var nextPart = this.nextParts.head
-        this.nextParts = this.nextParts.drop(1)
-
-        //-- The Content will only be of One Line, meaning it is in the protocol Line 
-        //-- Search for all key=value elements
-        ("""([\w%+_\.-]+)=([\w%+_\.-]+)(?:&|$)""").r.findAllMatchIn(nextPart.protocolLines(0)).foreach {
-          m ⇒
-            this.addParameter(java.net.URLDecoder.decode(m.group(1), "UTF-8"), m.group(2))
-        }
-*/
-      case _ ⇒
-    }
     //application/x-www-form-urlencoded
 
-    logFine(s"""[Content Type]${this.parameters.find(_._1 == "Content-Type")}""")
+    //logFine(s"""[Content Type]${this.parameters.find(_._1 == "Content-Type")}""")
 
     /*this.parameters.foreach {
       case (pname, value) ⇒ println(s"[URLParameter] Available: ${pname}")
@@ -216,10 +278,7 @@ class HTTPRequest(
 
     // Try in Normal Part Parameters
     //---------------
-    this.parameters.find(_._1 == name) match {
-      case Some(Tuple2(_, value)) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
-      case None ⇒ None
-    }
+
     /* this.parameters.get(name) match {
       case Some(value) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
 
@@ -264,8 +323,24 @@ class HTTPRequest(
 
     this.parameters.find(_._1 == "Content-Type") match {
 
-      case Some(Tuple2(_, contentType)) if (contentType.matches("multipart/form-data.*")) ⇒ true
+      case Some(Tuple2(_, contentType)) if (contentType.trim.matches("multipart/form-data.*")) ⇒ true
       case _ ⇒ false
+    }
+
+  }
+
+  def getMultiPartBoundary: Option[String] = {
+
+    this.parameters.find(_._1 == "Content-Type") match {
+
+      case Some(Tuple2(_, contentType)) if (contentType.matches("multipart/form-data.*")) ⇒
+
+        """.+; boundary=(.+)\s*""".r.findFirstMatchIn(contentType) match {
+          case Some(matched) ⇒ Option(matched.group(1))
+          case None ⇒ None
+        }
+
+      case _ ⇒ None
     }
 
   }
@@ -379,8 +454,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
         lastFirstMessage.operation match {
           case "POST" ⇒
-            println(s"Post message content: ${new String(part.bytes)}");
-          
+            //println(s"Post message content: ${new String(part.bytes)}");
 
           case _ ⇒
         }
@@ -388,6 +462,41 @@ object HTTPRequest extends MessageFactory with TLogSource {
         // Add part ot message
         //-------------
         lastFirstMessage(part)
+
+        // Handle Multipart 
+        //--------------------
+        //println(s"MP: "+lastFirstMessage.isMultipart+"//"+lastFirstMessage.getParameter("Content-Type"))
+        if (lastFirstMessage.isMultipart) {
+          var boundary = lastFirstMessage.getMultiPartBoundary.get
+
+          //println(s"Split to $boundary")
+
+          // Split
+          new String(lastFirstMessage.bytes).split("--" + boundary).dropRight(1).drop(1).filter { p => p.trim != "" }.map { _.trim }.foreach {
+            lines =>
+
+              //println(s"**--> part: $lines")
+
+              var part = new DefaultMimePart
+              lastFirstMessage.append(part)
+
+              /*  lines.split("\r\n").foreach {
+                l => println(s"**-----> line $l")
+              }*/
+
+              // Add all first lines as parameter, if we find a new line, the remaining goes as content
+              var contents = lines.split("\r\n\r\n")
+              contents(0).split("\r\n").foreach {
+                pl => part.addParameter(pl)
+
+              }
+
+              // Add content if any 
+              if (contents.size > 1) {
+                part += contents(1).getBytes
+              }
+          }
+        }
 
       //-- Maybe a Continued Content in case of a multipart message
       case None if (lastFirstMessage != null && lastFirstMessage.isMultipart) ⇒
@@ -532,8 +641,7 @@ $sessionId
 }
 object HTTPResponse extends MessageFactory with TLogSource {
 
-  
-  def apply() : HTTPResponse = new HTTPResponse
+  def apply(): HTTPResponse = new HTTPResponse
   def apply(data: Any): HTTPResponse = {
 
     var part = data.asInstanceOf[MimePart]

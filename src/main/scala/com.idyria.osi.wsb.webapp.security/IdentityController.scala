@@ -33,6 +33,7 @@ abstract class IdentityController {
   
   WWWView.addCompileTrait(classOf[IdentityInterfaceProvider])
   Injector.inject(this)
+  Injector(this)
 
   
   // Roles and stuff
@@ -56,14 +57,16 @@ abstract class IdentityController {
    */
   def addProvider(p: AuthenticationProvider) = {
     Injector.inject(p)
-    //Injector(p)
+    Injector(p)
     p.init
     availableProviders = availableProviders :+ p
   }
 
   // init
   application.addController(new AuthenticationController)
-  application.addController(new FederationController)
+  
+  var fedController = new FederationController
+  application.addController(fedController)
 
   // Interface
   //-----------------
@@ -196,6 +199,7 @@ abstract class IdentityController {
 
       // Extract Parameters from request
       //-----------------
+      //Injector.inject(selectedProvider)
       var authDatas = new AuthenticationDatas
       selectedProvider.requiredParameters.foreach {
         case (name, description) ⇒ request.getURLParameter(name) match {

@@ -58,6 +58,14 @@ class Session(var id: String, var host: String) extends TLogSource {
     logFine(s"[Session] Searching value from id $id and instance ${hashCode}")
     this.values.get(name).asInstanceOf[Option[T]]
   }
+  
+  /**
+   * Clear a key in the values
+   */
+  def clear(name:String)  = values.contains(name) match {
+    case true => values = values - name; true
+    case false => false
+  }
 
   /**
    *

@@ -21,28 +21,34 @@
  */
 package com.idyria.osi.wsb.webapp.view
 
-import com.idyria.osi.vui.impl.html.HtmlTreeBuilder
-import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
-import com.idyria.osi.wsb.webapp.WebApplication
-import java.net.URL
-import com.idyria.osi.wsb.webapp.navigation.controller.Controller
-import com.idyria.osi.vui.impl.html.components.Form
-import javax.faces.bean.ManagedBean
-import com.idyria.osi.vui.impl.html.components.Head
 import com.idyria.osi.vui.core.components.controls.VUIButton
+import com.idyria.osi.vui.core.components.scenegraph.SGNode
+import com.idyria.osi.vui.core.validation.ValidationSupport
+import com.idyria.osi.vui.core.validation.ValidationTreeBuilderLanguage
+import com.idyria.osi.vui.impl.html.HtmlTreeBuilder
+import com.idyria.osi.vui.impl.html.components.Form
+import com.idyria.osi.vui.impl.html.components.FormInput
 import com.idyria.osi.vui.impl.html.components.FormSubmit
 import com.idyria.osi.vui.impl.html.components.HTMLNode
-import com.idyria.osi.vui.core.validation.ValidationTreeBuilderLanguage
-import com.idyria.osi.vui.core.validation.ValidationSupport
+import com.idyria.osi.vui.impl.html.components.Head
+import com.idyria.osi.vui.impl.html.components.Label
+import com.idyria.osi.wsb.core.broker.tree.ResponseException
 import com.idyria.osi.wsb.webapp.ForException
 import com.idyria.osi.wsb.webapp.WebApplication
-import com.idyria.osi.vui.impl.html.components.Label
 import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.WebApplication
-import com.idyria.osi.vui.impl.html.components.FormInput
-import com.idyria.osi.wsb.webapp.security.providers.extern.GoogleProviderComponents
+import com.idyria.osi.wsb.webapp.WebApplication
+import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import com.idyria.osi.wsb.webapp.navigation.controller.Controller
+import javax.faces.bean.ManagedBean
+import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
+import com.idyria.osi.vui.impl.html.components.Button
 
 trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLanguage {
+
+  // Utility constant
+  //---------------
+  val formSubmitJSName = "formSubmit"
 
   // Current Request
   //---------------------
@@ -213,8 +219,8 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
         application.controllers.find { case (name, instance) => name == beanName } match {
           case Some((name, instance)) =>
           case None =>
-            
-            var loaded = Thread.currentThread().getContextClassLoader.loadClass(beanName).asInstanceOf[Class[ _ <: Controller]]
+
+            var loaded = Thread.currentThread().getContextClassLoader.loadClass(beanName).asInstanceOf[Class[_ <: Controller]]
             var instance = loaded.newInstance()
             println(s"---- Loaded ${loaded.getCanonicalName} with parent is: ${loaded.getSuperclass.getCanonicalName}")
             application.addController(instance)
@@ -253,7 +259,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
         // Add Form parameter
         //-----------------------
-        var actionPath = s"${request.path}@$name"
+        var actionPath = s"${request.originalPath}@$name"
         formParameter("action" -> actionPath) {
 
         }
@@ -320,6 +326,22 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
   }
 
+  def buttonSubmit(text: String)(cl: ⇒ Any): Button = {
+
+    var b = button(text) {
+      attr("type" -> "submit")
+      cl
+    }
+
+    //-- Add action
+    /* b {
+      b ⇒ b.onClick("submitForm(this)")
+    }*/
+
+    b
+
+  }
+
   /**
    *
    * Labels for Inputs
@@ -361,12 +383,12 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   def validateEmail = {
     attribute("type" -> "email")
   }
-  
+
   override def required = {
     attribute("required" -> "true")
     super.required
   }
-  
+
   // Views parts calls
   //--------------------
 
@@ -434,12 +456,11 @@ $(function() {
     }
 
   }
-  
-  
+
   //-----------
   // Messages
   //---------------
-  
+
   def displayErrors = {
     div {
       classes("errors")
@@ -458,8 +479,8 @@ $(function() {
       }
     }
   }
-  
-   /**
+
+  /**
    * Handle Errors
    */
   def errors = {
@@ -482,6 +503,173 @@ $(function() {
     }
 
   }
-  
+
+  // Parts Actions
+  //-------------------------
+
+  def onChangeSubmit = {
+    attr("onchange" -> "submitForm(this)")
+  }
+
+  /**
+   * Binds the current HTML Element with an onchange event submitting the local form
+   */
+  def onChangeReact(name: String)(actioncl: (WebApplication, HTTPRequest) => Unit): Unit = {
+
+    //-- On Change submit
+    onChangeSubmit
+
+    // Place reaction action infor on parent of this form component
+    onNode(currentNode.getParent) {
+
+      embedReact(name)(actioncl)
+
+    }
+
+  }
+
+  def embedReactMatch(f: PartialFunction[Option[String], Unit]): Unit = {
+
+    request.getURLParameter("eaction") match {
+      case Some(fullPath) =>
+        try {
+          f(Some(fullPath.replace(s"${request.originalPath}@", "")))
+        } catch {
+          case e: MatchError => f(None)
+        }
+      case None => f(None)
+    }
+    // f(request.getURLParameter("eaction"))
+    /*request.getURLParameter("eaction") match {
+      case Some(action) => f()
+    }*/
+
+  }
+
+  /**
+   * Runn Embedded or matches against none, to produce alternative UIs
+   */
+  def embedReactOtherwise(name: String)(f: PartialFunction[Option[(WebApplication, HTTPRequest)], Unit]): Unit = {
+
+    // Add Form parameter
+    //-----------------------
+    var actionPath = s"${request.originalPath}@$name"
+    formParameter("eaction" -> actionPath) {
+
+    }
+
+    // Add a special Node to current Node
+    //------------------
+    /*this.currentNode <= new SGNode[Any] {
+
+      def base: Any = null
+      def revalidate {
+
+      }*/
+
+    // When adding this node, check action presence in request
+    //-------------------
+    println(s"[Action] Should be running E action '${request.getURLParameter("eaction")}'")
+    request.getURLParameter("eaction") match {
+      case Some(action) if (action == actionPath) ⇒
+
+        //Execute controller
+        try {
+          f(Some(application, request))
+          //actioncl(application, request)
+
+          //-- If no render, stop here
+          request.getURLParameter("noRender") match {
+            case Some(_) ⇒
+
+              throw new ResponseException(HTTPResponse("application/json", "{}"))
+
+            case None ⇒
+          }
+        } catch {
+
+          case e: ResponseException =>
+            throw e
+          // Erros during action processing
+          case e: Throwable =>
+            println("[Action] Caught error during action processing")
+            e.printStackTrace()
+            request.errors = request.errors :+ e
+        }
+
+      // Nothing to do
+      case _ ⇒ f(None)
+    }
+
+  }
+
+  def embedAction(name: String) = {
+    var actionPath = s"${request.originalPath}@$name"
+    formParameter("eaction" -> actionPath) {
+
+    }
+  }
+
+  /**
+   *
+   */
+  def embedReact(name: String)(actioncl: (WebApplication, HTTPRequest) => Unit): Unit = {
+
+    // Add Form parameter
+    //-----------------------
+    var actionPath = s"${request.originalPath}@$name"
+    formParameter("eaction" -> actionPath) {
+
+    }
+
+    // Add a special Node to current Node
+    //------------------
+    /*this.currentNode <= new SGNode[Any] {
+
+      def base: Any = null
+      def revalidate {
+
+      }*/
+
+    // When adding this node, check action presence in request
+    //-------------------
+    println(s"[Action] Should be running E action '${request.getURLParameter("eaction")}'")
+    request.getURLParameter("eaction") match {
+      case Some(action) if (action == actionPath) ⇒
+
+        //Execute controller
+        try {
+          try {
+            actioncl(application, request)
+
+          } catch {
+            case e: MatchError =>
+          }
+
+          //-- If no render, stop here
+          request.getURLParameter("noRender") match {
+            case Some(_) ⇒
+
+              throw new ResponseException(HTTPResponse("application/json", "{}"))
+
+            case None ⇒
+          }
+        } catch {
+
+          case e: ResponseException =>
+            throw e
+          // Erros during action processing
+          case e: Throwable =>
+            println("[Action] Caught error during action processing")
+            e.printStackTrace()
+            request.errors = request.errors :+ e
+        }
+
+      case _ ⇒
+    }
+
+    //}
+
+  }
 
 }

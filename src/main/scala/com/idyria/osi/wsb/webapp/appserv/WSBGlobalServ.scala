@@ -17,6 +17,7 @@ import com.idyria.osi.wsb.webapp.http.connector.HTTPSConnector
 import java.io.File
 import com.idyria.osi.wsb.core.network.connectors.tcp.SSLTCPConnector
 import com.idyria.osi.wsb.webapp.injection.Injector
+import com.idyria.osi.aib.appserv.FolderWatcher
 
 object WSBGlobalServ extends AIBAppServ with App {
 
@@ -93,6 +94,7 @@ object WSBGlobalServ extends AIBAppServ with App {
  // TLog.setLevel(classOf[TCPConnector], TLog.Level.FULL)
  /// TLog.setLevel(classOf[SSLTCPConnector], TLog.Level.FULL)
   //TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
+  //TLog.setLevel(classOf[FolderWatcher], TLog.Level.FULL)
   
  /* TLog.setLevel(classOf[WebApplication], TLog.Level.FULL)
   TLog.setLevel(classOf[Injector], TLog.Level.FULL)*/

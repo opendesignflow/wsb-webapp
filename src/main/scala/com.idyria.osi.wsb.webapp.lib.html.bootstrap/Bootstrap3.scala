@@ -34,6 +34,7 @@ import com.idyria.osi.vui.core.components.table.TableBuilderInterface
 import com.idyria.osi.vui.core.components.table.SGTable
 import com.idyria.osi.wsb.webapp.navigation.GroupTrait
 import com.idyria.osi.wsb.webapp.navigation.GroupTraitView
+import  com.idyria.osi.vui.impl.html.components._ 
 
 /**
  * Inject points
@@ -195,6 +196,12 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
       attribute("role" -> "form")
       attribute("method" -> "POST")
       cl
+      
+      // Add form-control to all
+      /*currentNode.onSubNodesMatch {
+        case nd : FormInputNode => switchToNode(nd, {classes("form-control")})
+        case _ => 
+      }*/
     }
   }
 
@@ -204,6 +211,10 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
       classes("form-group")
       cl
     }
+  }
+  
+  def bs3FormControl = {
+    classes("form-control")
   }
 
   def bs3PlaceHolder(text:String) = {

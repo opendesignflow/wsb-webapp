@@ -71,6 +71,10 @@ class WebApplication(
 
   var classloader = Thread.currentThread().getContextClassLoader
 
+  //-- Std database for config stuff
+  @Inject("main")
+  var mainDatabase : OOXOODatabase = null
+  
   // Injection Support for various components
   //----------------------
 
@@ -123,10 +127,31 @@ class WebApplication(
    */
   var databases = Map[String, Database]()
 
+  var _environment = "test"
+
   /**
    * Base folder path for all the databases
    */
-  var databaseBasePath = new File("db")
+  var _databaseBasePath = new File("db" + File.separator + _environment)
+
+  /**
+   * Change database base path, but keep environment thing running
+   */
+  def databaseBasePath_=(f: File) = {
+    this._databaseBasePath = new File(f, _environment)
+  }
+
+  def databaseBasePath = _databaseBasePath
+
+  /**
+   * Change environment, but adapt database base Path
+   */
+  def environment_=(v: String) = {
+    _environment = v
+    this.databaseBasePath = this.databaseBasePath.getParentFile
+  }
+
+  def environment = _environment
 
   /**
    * Add a database to the application
@@ -169,23 +194,22 @@ class WebApplication(
    */
   def lStart = {
 
+    // Database
+    //--------------
+
+    databaseBasePath.mkdirs
+
+    // Prepare
+    //--------------
+    Injector.inject(this)
+
     // Navigation
     //----------------------------
-    this.searchResource("WEB-INF/navigation.xml") match {
-      case Some(navigationURL) ⇒
-
-        println("Parsing navigation: " + navigationURL + " -> " + navigationConfig.fullPath)
-
-        // Parse
-        //---------
-        navigationConfig = new DefaultNavigation
-        var io = new StAXIOBuffer(navigationURL)
-        navigationConfig.appendBuffer(io)
-        io.streamIn
-
-        //navigationConfig
-        //var navigationConfig = Navigation(navigationURL)
-
+    var navigation = mainDatabase.container("config").document("navigation.xml", new DefaultNavigation) match {
+      case Some(navigationConfig) =>
+        
+        this.navigationConfig = navigationConfig
+        
         // Read In
         //--------------
 
@@ -209,13 +233,14 @@ class WebApplication(
             } catch {
               case e: Throwable =>
                 e.printStackTrace()
-                throw new RuntimeException(s"An Error occured while setting navigation rule ${r.fullPath} from $navigationURL: ${e.getLocalizedMessage()} ")
+                throw new RuntimeException(s"An Error occured while setting navigation rule ${r.fullPath} ")
             }
           case _ ⇒
         }
-
-      case None ⇒
+        
+      case None => 
     }
+   
   }
 
   /**
@@ -476,8 +501,8 @@ class WebApplication(
                 case None ⇒ throw new RuntimeException(s"[Action] ...no handler found for action '${action}'")
               }
             } catch {
-              
-              case e : ResponseException => 
+
+              case e: ResponseException =>
                 throw e
               // Erros during action processing
               case e: Throwable =>
@@ -579,10 +604,13 @@ class WebApplication(
       name = "WWView"
 
       // Don't acceppt upped messages
-      this.acceptDown { m => !m.upped && m.asInstanceOf[HTTPRequest].getURLParameter("noRender")==None}
-      
-      var baseView = new WWWView
-      baseView.application = WebApplication.this
+      this.acceptDown { m => !m.upped && m.asInstanceOf[HTTPRequest].getURLParameter("noRender") == None }
+
+      // var baseView = new WWWView
+      // baseView.application = WebApplication.this
+
+      // Compiler 
+      var compiler = new WWWViewCompiler2
 
       this.onDownMessage {
         m =>
@@ -606,8 +634,9 @@ class WebApplication(
 
               // Prepare view
               //-----------------
-              var view = WWWView.compile(url).getClass.newInstance()
-            
+              var view = compiler.compile(url).newInstance()
+              //var view = WWWView.compile(url).getClass.newInstance()
+
               // Support various outputs
               //---------------------
               m.parameters.find(_._1 == "Accept") match {
@@ -645,19 +674,19 @@ class WebApplication(
 
     name = "Simple File Resources"
 
-    
-    acceptDown { message => 
-      (message.errors.isEmpty && message.upped == false) }
-      
+    acceptDown { message =>
+      (message.errors.isEmpty && message.upped == false)
+    }
+
     //Refuse messages with a path containing WEB-INF
-    acceptDown { message => 
-      
+    acceptDown { message =>
+
       !message.asInstanceOf[HTTPRequest].path.contains("WEB-INF")
     }
-    
-    this.onDownMessage { 
-      
-      message => 
+
+    this.onDownMessage {
+
+      message =>
 
         WebApplication.this.searchResource(message.asInstanceOf[HTTPRequest]) match {
 
@@ -691,7 +720,7 @@ class WebApplication(
           //-- Nothing found -> Continue to handler
           case None ⇒
         }
-      
+
     }
     // EOF down closure for content handler intermediary
   }
