@@ -40,8 +40,10 @@ import com.idyria.osi.wsb.webapp.security.AuthenticationException
 import com.idyria.osi.wsb.webapp.security.AuthenticationProvider
 import com.idyria.osi.wsb.webapp.security.FederatedIdentity
 import com.idyria.osi.wsb.webapp.view.Inject
-
 import uni.hd.cag.utils.security.utils.RandomID
+import com.idyria.osi.wsb.webapp.db.OOXOODatabase
+import com.idyria.osi.wsb.webapp.security.IdentityController
+import com.idyria.osi.wsb.webapp.db.OOXOODatabase
 
 /**
  *
@@ -165,7 +167,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
             //----------------
             var salt = saltsDatas.salts.find(s ⇒ s.for_.toString == userName) match {
               case Some(salt) ⇒ salt
-              case None       ⇒ throw new AuthenticationException(s"Password will never match, contact administrator (database content error)")
+              case None ⇒ throw new AuthenticationException(s"Password will never match, contact administrator (database content error)")
             }
 
             // Prepare Compare passwords
@@ -182,8 +184,8 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
               case true ⇒
 
                 var result = new PasswordAuthToken()
-              result.federatedIdentity = new PasswordFederatedIdentity
-               result.federatedIdentity.token = s"""$userName"""
+                result.federatedIdentity = new PasswordFederatedIdentity
+                result.federatedIdentity.token = s"""$userName"""
                 result.token = s"""$userName"""
                 result
 
@@ -200,7 +202,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
       // Missing Stuff
       //-----------------
-      case (None, None)           ⇒ throw new AuthenticationException("both User Name and Password are missing for this provider")
+      case (None, None) ⇒ throw new AuthenticationException("both User Name and Password are missing for this provider")
       case (Some(userName), None) ⇒ throw new AuthenticationException("A Password must be provided for this provider")
       case (None, Some(password)) ⇒ throw new AuthenticationException("A User Name must be provided for this provider")
     }
@@ -244,39 +246,45 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
 }
 
-
 class PasswordRegisterController extends Controller with TLogSource {
-  
+
   @Inject("com.idyria.osi.wsb.webapp.security.providers.password.PasswordProvider")
-  var passwordProvider : PasswordProvider = _
-  
-  @Inject("com.idyria.osi.wsb.webapp.security.identity.authenticate")
-  var authenticateController : Controller = _
-  
+  var passwordProvider: PasswordProvider = _
+
+  @Inject("IDController")
+  var identityControler: IdentityController = _
+
   def execute(application: WebApplication, request: HTTPRequest): String = {
-    
+
     logFine("Registering User")
-    
+
     // Get Parameters through provider
     //-------------
     var data = passwordProvider.checkParameters(request)
-    
+
     // Register
     //--------------
     passwordProvider.register(data.datas.get("userName").get, data.datas.get("password").get)
+
+    // Create auth token
+    //---------------
+    var result = new PasswordAuthToken()
+    result.federatedIdentity = new PasswordFederatedIdentity
+    result.federatedIdentity.token = data.datas.get("userName").get
+    result.token = data.datas.get("userName").get
+    request.getSession("token" -> result)
     
-    // Authenticate
+    // Federate
     //------------------
-    authenticateController.execute(application, request)
-    
-    
-    
+    //identityControler.fedController.execute(application, request)
+    //authenticateController.execute(application, request)
     ""
+
   }
 }
 
 // Some Usefule exception
-class UserNotFoundException(msg:String) extends AuthenticationException(msg)
+class UserNotFoundException(msg: String) extends AuthenticationException(msg)
 //class UserNotFoundException(msg:String) extends AuthenticationException(msg)
 
 object PasswordProvider {
