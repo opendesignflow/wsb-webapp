@@ -258,6 +258,7 @@
 			<groupId>com.idyria.osi.aib</groupId>
 			<artifactId>aib-appserv</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.paypal.sdk</groupId>

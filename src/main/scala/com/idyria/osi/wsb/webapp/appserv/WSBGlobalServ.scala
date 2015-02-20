@@ -80,7 +80,9 @@ object WSBGlobalServ extends AIBAppServ with App {
     arg => println(s"Arg: $arg")
   }
   args.zipWithIndex.collect{case (arg,index) if(arg == "--application") => index}.foreach {
-    index => applicationConfig.applications += args(index+1)
+    index => 
+        
+        //applicationConfig.applications += args(index+1)
   }
   //applicationConfig.applications += "src/examples/appserv-simple/WEB-INF/src"
 
