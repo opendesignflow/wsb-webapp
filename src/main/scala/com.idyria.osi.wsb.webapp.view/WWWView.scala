@@ -50,6 +50,8 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   type Self = WWWView
 
+  var compiler = new WWWViewCompiler2
+  
   // Current Request
   //--------------------------
   var application: WebApplication = null
@@ -141,7 +143,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
     application.searchResource(path) match {
       case Some(url) ⇒
 
-        var parentView = WWWView.compile(url).getClass.newInstance()
+        var parentView = compiler.compile(url).newInstance().asInstanceOf[WWWView]
         parentView.application = this.application
         parentView.request = this.request
 

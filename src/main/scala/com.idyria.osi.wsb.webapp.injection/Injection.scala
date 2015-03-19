@@ -145,8 +145,10 @@ object Injector extends TLogSource {
       field ⇒
 
         // println("Testing field: " + field.getName() + " -> " + field.getAnnotation(classOf[Inject]))
-
-        var res = field.getAnnotation(classOf[Inject]) != null && supportedTypes.contains(field.getType())
+        
+      logFine[Injector]("Testing field: " +  field.getName() + s" (${field.getType.getCanonicalName}) -> " + field.getAnnotation(classOf[Inject]))
+      
+        var res = field.getAnnotation(classOf[Inject]) != null && supportedTypes.find{case (c,inj) => field.getType.isAssignableFrom(c) }!=None
         res
     }.foreach {
 
@@ -159,7 +161,8 @@ object Injector extends TLogSource {
         logFine[Injector]("Supported field: " + field.getName() + " with id " + id)
 
         // Find Values
-        var values = supportedTypes(field.getType()).map(_.inject(id, field.getType())).filterNot(_ == None)
+         var values = supportedTypes.collectFirst{case (c,inj) if( field.getType.isAssignableFrom(c) ) => inj}.get.map(_.inject(id, field.getType())).filterNot(_ == None)
+       // var values = supportedTypes(field.getType()).map(_.inject(id, field.getType())).filterNot(_ == None)
 
         // Error if multiple values
         values.size match {

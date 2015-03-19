@@ -29,7 +29,7 @@ import com.idyria.osi.ooxoo.core.buffers.structural.{ xelement, ElementBuffer, x
  * This object can be simply saved in authenticated session parameter to be seen as authenticated user informations
  */
 @xelement
-class User extends ElementBuffer {
+trait User extends ElementBuffer {
 
   /**
    * A Display Name for the user

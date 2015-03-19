@@ -24,44 +24,74 @@ package com.idyria.osi.wsb.webapp.security
 import com.idyria.osi.wsb.webapp.navigation._
 import com.idyria.osi.wsb.webapp.http.message._
 import com.idyria.osi.wsb.webapp._
+import com.idyria.osi.wsb.webapp.view.Inject
+import com.idyria.osi.wsb.webapp.injection.Injector
 
 /**
- * 
+ *
  * Thsi checks if a User object under the authenticated session variable is present
  */
 class AuthenticatedRule extends NavigationRule {
-  
-  def evaluate(application: WebApplication, request: HTTPRequest) : Boolean = {
-     
+
+  def evaluate(application: WebApplication, request: HTTPRequest): Boolean = {
+
     request.getSession("token") match {
-      case Some(authenticated) => 
-        
+      case Some(authenticated) =>
+
         println("[Authenticated] Yes")
         true
-      case None => 
-        
+      case None =>
+
         println("[Authenticated] No")
         false
     }
-    
+
   }
 }
 
+class AuthenticateRule extends IdentifiedRule {
+
+  @Inject("IDController")
+  var controller: IdentityController = _
+
+ 
+
+  override def evaluate(application: WebApplication, request: HTTPRequest): Boolean = {
+
+     Injector.inject(this)
+    
+    super.evaluate(application, request) match {
+      case true => true
+      case false => 
+         try {
+           controller.authController.execute(application, request)
+         } catch {
+           case e : Throwable => 
+         }
+         
+        super.evaluate(application, request)
+    }
+    
+   
+  }
+
+}
+
 class IdentifiedRule extends NavigationRule {
-  
-  def evaluate(application: WebApplication, request: HTTPRequest) : Boolean = {
-     
+
+  def evaluate(application: WebApplication, request: HTTPRequest): Boolean = {
+
     request.getSession("user") match {
-      case Some(authenticated) => 
-        
+      case Some(authenticated) =>
+
         println("[Authenticated] Yes")
         true
-      case None => 
-        
+      case None =>
+
         println("[Authenticated] No")
         false
     }
-    
+
   }
-  
+
 }

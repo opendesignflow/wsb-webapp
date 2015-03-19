@@ -108,6 +108,10 @@ trait AuthenticationProvider {
     
   }
   
+  def forget(identity:FederatedIdentity) = {
+    
+  }
+  
 }
 
 /**

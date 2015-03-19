@@ -20,6 +20,7 @@ import com.idyria.osi.wsb.webapp.db.OOXOODatabase
  *       - None Returned -> register
  *       - Error allowed from identity allowed
  */
+@ManagedBean(name = "IDController")
 abstract class IdentityController {
 
   /**
@@ -29,18 +30,17 @@ abstract class IdentityController {
   var application: WebApplication = null
 
   @Inject("main")
-  var database : OOXOODatabase = null
-  
+  var database: OOXOODatabase = null
+
   WWWView.addCompileTrait(classOf[IdentityInterfaceProvider])
   Injector.inject(this)
   Injector(this)
 
-  
   // Roles and stuff
   //------------------------
-  
+
   var securityConfig = database.container("security").document[SecurityConfig]("config.xml")
-  
+
   // Providers configuration
   //-----------------
 
@@ -63,8 +63,9 @@ abstract class IdentityController {
   }
 
   // init
-  application.addController(new AuthenticationController)
-  
+  var authController = new AuthenticationController
+  application.addController(authController)
+
   var fedController = new FederationController
   application.addController(fedController)
 
@@ -92,6 +93,10 @@ abstract class IdentityController {
   protected def doAuthenticated(request: HTTPRequest, token: AuthToken): String = {
 
     println(s"in Do authenticated")
+
+    /*if (token==null) {
+      throw new RuntimeException("IdentificationFailed")
+    }*/
 
     // If a user already exists 
     //  -> federate identities
@@ -130,7 +135,7 @@ abstract class IdentityController {
           // User loaded -> record to session
           case Some(user) =>
 
-             println(s"Found loaded user")
+            println(s"Found loaded user")
             request.getSession("user" -> user)
 
             ""
@@ -157,8 +162,8 @@ abstract class IdentityController {
         request.getSession[User]("user") match {
           case Some(user) =>
             federateIdentity(request, user, request.getSession[AuthToken]("token").get)
-            
-          case None => 
+
+          case None =>
             createIdentity(request, request.getSession[AuthToken]("token").get)
             doAuthenticated(request, request.getSession[AuthToken]("token").get)
         }
@@ -184,7 +189,7 @@ abstract class IdentityController {
       // Select Provider
       //------------
       var selectedProvider = request.getURLParameter("provider") match {
-        case Some(providerName) ⇒ availableProviders.find(_.getClass().getSimpleName() == providerName) match {
+        case Some(providerName) ⇒ availableProviders.find(_.getClass().getCanonicalName== providerName) match {
 
           //-- Provider Name provided and found
           case Some(provider) ⇒ provider
@@ -196,45 +201,70 @@ abstract class IdentityController {
         //-- Provider name not provided, use default
         case None ⇒ availableProviders.head
       }
+      
 
       // Extract Parameters from request
       //-----------------
       //Injector.inject(selectedProvider)
       var authDatas = new AuthenticationDatas
-      selectedProvider.requiredParameters.foreach {
-        case (name, description) ⇒ request.getURLParameter(name) match {
+     // try {
+        selectedProvider.requiredParameters.foreach {
+          case (name, description) ⇒ request.getURLParameter(name) match {
 
-          //-- Provided, gather
-          case Some(value) ⇒ authDatas(name -> value)
+            //-- Provided, gather
+            case Some(value) ⇒ 
+            authDatas(name -> value)
 
-          //-- Required parameter not found
-          case None ⇒ throw new AuthenticationException(s"Authentication provider ${selectedProvider} requires request parameter $name which has not bee supplied")
+            //-- Required parameter not found
+            case None ⇒ throw new AuthenticationException(s"Authentication provider ${selectedProvider} requires request parameter $name which has not bee supplied")
+          }
         }
-      }
 
-      // Authenticate
-      //-------------------
+        // Authenticate
+        //-------------------
 
-      // Inject
-      Injector.inject(selectedProvider)
+        // Inject
+        Injector.inject(selectedProvider)
 
-      // Auth
-      var authResult = selectedProvider.authenticate(authDatas, application, request)
+        // Auth
+         selectedProvider.authenticate(authDatas, application, request) match {
+          case null => ""
+          case res => doAuthenticated(request, res)
+        }
 
-      // Save Result to session
-      //--------------
-      /*var user = new User
+        // Save Result to session
+        //--------------
+        /*var user = new User
       user.authTokens = user.authTokens :+ authResult
       authResult.datas.get("username") match {
         case Some(username) ⇒ user.name = username
         case None ⇒
       }*/
-      doAuthenticated(request, authResult)
+        
 
+     // } catch {
+      //  case e: Throwable =>
+     //     ""
+     // }
       // request.getSession("authenticated" -> user)
 
     }
 
+  }
+  
+  def reset(user:User) = {
+    user.roles.clear 
+    
+    user.identities.foreach {
+      identity => 
+        this.availableProviders.foreach {
+          case authProvider if(authProvider.getClass.getCanonicalName == identity.providerId.toString()) => 
+            authProvider.forget(identity)
+          case _ => 
+        }
+    }
+    user.identities.clear
+    
   }
 
 }
@@ -243,14 +273,24 @@ trait IdentityInterfaceProvider extends WebappHTMLBuilder {
 
   def authToken = request.getSession("token").asInstanceOf[Option[AuthToken]]
 
+   @Inject("IDController")
+  var identityControler: IdentityController = _
+  
   def identityFederateAction = {
     action("com.idyria.osi.wsb.webapp.security.identity.federate")
   }
 
-  def isIdentified[T <: User] : Option[T] = {
+  def isIdentified[T <: User]: Option[T] = {
     request.getSession[T]("user")
   }
   
+  /**
+   * Clears the identities and roles of the user
+   */
+  def identityReset(user:User) = {
+    identityControler.reset(user)
+  }
+
 }
 
 object IdentityController {

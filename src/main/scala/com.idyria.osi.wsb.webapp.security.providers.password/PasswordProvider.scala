@@ -44,6 +44,7 @@ import uni.hd.cag.utils.security.utils.RandomID
 import com.idyria.osi.wsb.webapp.db.OOXOODatabase
 import com.idyria.osi.wsb.webapp.security.IdentityController
 import com.idyria.osi.wsb.webapp.db.OOXOODatabase
+import com.idyria.osi.wsb.webapp.injection.Injector
 
 /**
  *
@@ -83,6 +84,28 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
     // Open Salts
     database.container("security.auth.password").document("salts.xml", saltsDatas)
 
+  }
+  
+  override  def forget(identity:FederatedIdentity) = {
+    
+    //-- Search and remove
+    authDatas.users.find {
+      user => user.userName.toString == identity.token.toString()
+    } match {
+      case Some(user) => authDatas.users -= user
+      case None => 
+    }
+    
+    //-- Search and remove
+    saltsDatas.salts.find {
+      salt => salt.for_.toString == identity.token.toString()
+    } match {
+      case Some(salt) => saltsDatas.salts -= salt
+      case None => 
+    }
+    
+    database.container("security.auth.password").writeDocument("users.xml", authDatas)
+    database.container("security.auth.password").writeDocument("salts.xml", saltsDatas)
   }
 
   // Register
@@ -256,6 +279,8 @@ class PasswordRegisterController extends Controller with TLogSource {
 
   def execute(application: WebApplication, request: HTTPRequest): String = {
 
+    Injector.inject(this)
+    
     logFine("Registering User")
 
     // Get Parameters through provider

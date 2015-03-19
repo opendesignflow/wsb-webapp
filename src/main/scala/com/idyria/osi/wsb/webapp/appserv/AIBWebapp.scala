@@ -6,6 +6,7 @@ import com.idyria.osi.wsb.webapp.MavenProjectWebApplication
 import com.idyria.osi.wsb.webapp.SimpleFolderWebApplication
 import com.idyria.osi.aib.core.bus.aib
 import com.idyria.osi.wsb.webapp.view.WWWView
+import com.idyria.osi.wsb.webapp.injection.Injector
 
 abstract class AIBWebapp extends AIBApplication {
 
@@ -18,6 +19,9 @@ abstract class AIBWebapp extends AIBApplication {
    * Search for webapp base
    */
   def doInit = {
+    
+   // Injector.clear
+    
     WWWView.compiler = this.wrapper.runtimeCompiler.compiler
 
     // Search for WEB-INF as parent or 2 parents
@@ -47,6 +51,7 @@ abstract class AIBWebapp extends AIBApplication {
    */
   def doStart = {
 
+    println(s"Deploy Start")
     aib.<-!->(new DeployWebApp(this))
 
   }

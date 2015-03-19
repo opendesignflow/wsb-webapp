@@ -30,7 +30,7 @@ import com.idyria.osi.tea.logging.TLogSource
  *
  * Thsi checks if a User object under the authenticated session variable is present
  */
-class RoleCheck extends IdentifiedRule with TLogSource {
+class RoleCheck extends AuthenticateRule with TLogSource {
 
   override def evaluate(application: WebApplication, request: HTTPRequest): Boolean = {
 

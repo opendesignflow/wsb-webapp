@@ -530,6 +530,7 @@ $(function() {
 
   def embedReactMatch(f: PartialFunction[Option[String], Unit]): Unit = {
 
+    println(s"[Action] React match action '${request.getURLParameter("eaction")}'")
     request.getURLParameter("eaction") match {
       case Some(fullPath) =>
         try {

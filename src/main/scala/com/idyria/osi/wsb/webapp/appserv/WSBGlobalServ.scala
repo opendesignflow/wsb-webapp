@@ -18,6 +18,8 @@ import java.io.File
 import com.idyria.osi.wsb.core.network.connectors.tcp.SSLTCPConnector
 import com.idyria.osi.wsb.webapp.injection.Injector
 import com.idyria.osi.aib.appserv.FolderWatcher
+import javax.faces.application.Application
+import com.idyria.osi.aib.appserv.ConfigApplication
 
 object WSBGlobalServ extends AIBAppServ with App {
 
@@ -47,23 +49,7 @@ object WSBGlobalServ extends AIBAppServ with App {
   /*var discoveryConnector = new DiscoveryConnector("QualityServer")
   appServer.engine.network.addConnector(discoveryConnector)*/
 
-  // Application deploy/remove
-  //-----------------------
-  this.aib.registerClosure { event: DeployWebApp =>
-
-    println(s"Deploying webapp: ${event.app.location}")
-    this.appServer.addApplication(event.app.application)
-    event.app.application.lStart
-
-  }
-  this.aib.registerClosure { event: RemoveWebApp =>
-
-    println(s"Removing webapp: ${event.app.location}")
-    event.app.application.lStop
-    this.appServer.removeApplication(event.app.application)
-    
-
-  }
+  
 
   // Start 
   //-----------------
@@ -72,6 +58,25 @@ object WSBGlobalServ extends AIBAppServ with App {
     this.appServer.start()
 
     super.start
+    
+    // Application deploy/remove
+  //-----------------------
+  aib.registerClosure { event: DeployWebApp =>
+
+    println(s"Deploying webapp: ${event.app.location}")
+    this.appServer.addApplication(event.app.application)
+    event.app.application.lStart
+
+  }
+  aib.registerClosure { event: RemoveWebApp =>
+
+    println(s"Removing webapp: ${event.app.location}")
+    event.app.application.lStop
+    this.appServer.removeApplication(event.app.application)
+    
+
+  }
+    
   }
 
   // Add a dummy application
@@ -82,7 +87,9 @@ object WSBGlobalServ extends AIBAppServ with App {
   args.zipWithIndex.collect{case (arg,index) if(arg == "--application") => index}.foreach {
     index => 
         
-        //applicationConfig.applications += args(index+1)
+      applicationConfig.applications += ConfigApplication()
+      applicationConfig.applications.last.path = args(index+1)
+       
   }
   //applicationConfig.applications += "src/examples/appserv-simple/WEB-INF/src"
 
@@ -98,8 +105,8 @@ object WSBGlobalServ extends AIBAppServ with App {
   //TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
   //TLog.setLevel(classOf[FolderWatcher], TLog.Level.FULL)
   
- /* TLog.setLevel(classOf[WebApplication], TLog.Level.FULL)
-  TLog.setLevel(classOf[Injector], TLog.Level.FULL)*/
+  TLog.setLevel(classOf[WebApplication], TLog.Level.FULL)
+  //TLog.setLevel(classOf[Injector], TLog.Level.FULL)
   
   start
   //applicationWrappers(0).init
