@@ -720,7 +720,7 @@ v.contentClosure =  { view =>
     // Compile and return 
     //------------
     WWWView.compiler.compileFiles(Seq(new File("test.scala"))) match {
-      case Some(error) => throw throw new RuntimeException("Failed for $source : " + error.message.toString())
+      case Some(error) => throw throw new RuntimeException(s"Failed for $source : " + error.message.toString())
       case None =>
 
         Thread.currentThread.getContextClassLoader.loadClass(s"wwwviews.$targetName").asInstanceOf[Class[WWWView]]
