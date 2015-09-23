@@ -63,11 +63,14 @@ class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ct
       "Send datas to client -> close it"
     }*/
 
+    //println("Closing")
+    context.socketChannel.close()
+    
     //context.socket.shutdownOutput()
 
-    /*println("Send datas to client -> close it")
-    context.socket.close
-    context.socket.socket.close*/
+    //println("Send datas to client -> close it")
+    //context.socket.close
+    //context.socket.socket.close
 
   }
 
