@@ -426,8 +426,8 @@ class WebApplication(
 
       // Remove base path from path
       //----------------
-      message.qualifier = message.qualifier.replace(s"$basePath", "").replace("//", "")
-      message.asInstanceOf[HTTPRequest].changePath(message.asInstanceOf[HTTPRequest].path.replace(s"$basePath", "").replace("//", ""))
+      message.qualifier = message.qualifier.replaceFirst(s"$basePath", "").replace("//", "")
+      message.asInstanceOf[HTTPRequest].changePath(message.asInstanceOf[HTTPRequest].path.replaceFirst(s"$basePath", "").replace("//", ""))
   }
 
   upClosure = {
@@ -600,7 +600,7 @@ class WebApplication(
     //-------------------------
     this <= new HTTPIntermediary {
 
-      filter = """http:.*\.view:.*""".r
+      filter = """http:.*\.view(\.scala)?:.*""".r
       name = "WWView"
 
       // Don't acceppt upped messages
