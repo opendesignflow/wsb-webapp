@@ -58,13 +58,14 @@ class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ct
    */
   override def send(buffer: ByteBuffer, context: TCPNetworkContext) = {
     super.send(buffer, context)
-
+    //context.socketChannel.socket().flu
     /*logInfo {
       "Send datas to client -> close it"
     }*/
 
     //println("Closing")
-    context.socketChannel.close()
+    
+    //context.socketChannel.close()
     
     //context.socket.shutdownOutput()
 
@@ -515,8 +516,19 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
     //-------------------
 
     var post = "\r\n"
-
+    post = ""
+    
     var newBuffer = ByteBuffer.allocate(buffer.remaining() + post.getBytes().length)
+    
+    /*println(s"-------")
+    import scala.collection.JavaConversions._
+    buffer.array().foreach {
+      case b if (b == '\r'.toByte) => print(b.toHexString)
+      case b if (b == '\n'.toByte) => print(b.toHexString);println()
+      case b => print(b.toChar)
+    }
+    println(s"-------")*/
+    
     newBuffer.put(buffer)
     newBuffer.put(post.getBytes())
     newBuffer.flip()

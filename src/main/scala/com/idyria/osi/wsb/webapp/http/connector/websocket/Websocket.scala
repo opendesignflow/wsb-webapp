@@ -21,13 +21,17 @@
  */
 package com.idyria.osi.wsb.webapp.http.connector.websocket
 
-import com.idyria.osi.wsb.core.network.protocols.ProtocolHandler
+import java.net.ProtocolException
 import java.nio.ByteBuffer
-import com.idyria.osi.wsb.core.network.NetworkContext
-import scala.collection.JavaConversions._
-import com.idyria.osi.wsb.core.message.Message
 import java.nio.ByteOrder
+import java.nio.channels.ClosedChannelException
+
+import scala.collection.JavaConversions._
+
 import com.idyria.osi.tea.logging.TLogSource
+import com.idyria.osi.wsb.core.network.NetworkContext
+import com.idyria.osi.wsb.core.network.connectors.tcp.TCPNetworkContext
+import com.idyria.osi.wsb.core.network.protocols.ProtocolHandler
 
 class WebsocketProtocolhandler(var localContext: NetworkContext) extends ProtocolHandler[ByteBuffer](localContext) with TLogSource {
 
@@ -135,6 +139,7 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
 
         // Handle data type
         //--------------------------
+        logFine("OPCODE: " + header.field("OPCODE").value)
         header.field("OPCODE").value match {
 
           case WebsocketProtocolhandler.OpCode.TEXT_FRAME   =>
@@ -145,8 +150,13 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
           case WebsocketProtocolhandler.OpCode.PING         =>
           case WebsocketProtocolhandler.OpCode.PONG         =>
           case WebsocketProtocolhandler.OpCode.BINARY_FRAME =>
+          case WebsocketProtocolhandler.OpCode.CLOSE =>
+            //this.context.asInstanceOf[TCPNetworkContext].socket.close()
+            throw new ClosedChannelException
+          case code => throw new ProtocolException(s"OPCCODE $code is not handled")
 
         }
+        
 
       // Data Receive mode
       //---------------------------
@@ -277,12 +287,11 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
       case _ =>
     }
 
-    outBuffer.put(buffer)
+    outBuffer.put(buffer);
+    
+    // outBuffer.put(buffer);
 
-    //ByteBuffer.wrap(outBuffer.array().reverse)
-
-    // outBuffer.flip()
-    //outBuffer
+   
   }
 
 }

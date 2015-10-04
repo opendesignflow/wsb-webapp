@@ -109,7 +109,7 @@
 			<plugin>
 				<groupId>com.github.github</groupId>
 				<artifactId>site-maven-plugin</artifactId>
-				<version>0.8</version>
+				<version>0.12</version>
 				<configuration>
 					<message>Creating site for ${project.version}</message>
 					<repositoryName>wsb-webapp</repositoryName>
@@ -219,10 +219,6 @@
 			<name>Idyria Public Snapshot Repository</name>
 			<url>http://www.idyria.com/access/osi/artifactory/libs-snapshot-local</url>
 		</snapshotRepository>
-		<site>
-			<id>idyria.central</id>
-			<url>scp://wurst.idyria.com/access/osi/com.idyria.osi.wsb/wsb-webapp/maven-site/superpom-scala/wsb-webapp</url>
-		</site>
 	</distributionManagement>
 
 

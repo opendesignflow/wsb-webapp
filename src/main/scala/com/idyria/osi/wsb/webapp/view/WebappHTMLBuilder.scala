@@ -151,7 +151,8 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
   // Linking / Action
   //-------------------
-  override def a(name: String, dest: String) = super.a(name, cleanURL(dest))
+  
+  override def a(name: String, dest: String)(cl:  => Any)= super.a(name, cleanURL(dest))(cl)
 
   //-- Form
   //--------------

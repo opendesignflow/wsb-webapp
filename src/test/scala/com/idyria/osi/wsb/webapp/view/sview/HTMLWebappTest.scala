@@ -78,7 +78,9 @@ class HTMLWebappTest extends FunSuite
           navbar ⇒
 
             navbar.header {
-              a("Home", "/")
+              a("Home", "/")  {
+              
+            }
             }
 
             navbar.menusFromNavigation(app)

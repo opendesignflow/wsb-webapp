@@ -19,7 +19,7 @@ import com.idyria.osi.wsb.core.network.connectors.tcp.SSLTCPConnector
 import com.idyria.osi.wsb.webapp.injection.Injector
 import com.idyria.osi.aib.appserv.FolderWatcher
 import javax.faces.application.Application
-import com.idyria.osi.aib.appserv.ConfigApplication
+import com.idyria.osi.aib.appserv.model.ConfigApplication
 
 object WSBGlobalServ extends AIBAppServ with App {
 
@@ -87,7 +87,7 @@ object WSBGlobalServ extends AIBAppServ with App {
   args.zipWithIndex.collect{case (arg,index) if(arg == "--application") => index}.foreach {
     index => 
         
-      applicationConfig.applications += ConfigApplication()
+      applicationConfig.applications += new ConfigApplication()
       applicationConfig.applications.last.path = args(index+1)
        
   }

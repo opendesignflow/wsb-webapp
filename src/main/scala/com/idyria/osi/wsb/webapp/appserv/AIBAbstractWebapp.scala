@@ -7,14 +7,15 @@ import com.idyria.osi.wsb.webapp.SimpleFolderWebApplication
 import com.idyria.osi.aib.core.bus.aib
 import com.idyria.osi.wsb.webapp.view.WWWView
 import com.idyria.osi.wsb.webapp.injection.Injector
+import com.idyria.osi.wsb.webapp.WebApplication
 
-abstract class AIBWebapp extends AIBApplication {
+abstract class AIBAbstractWebapp extends AIBApplication {
 
   var webinfFile: File = null
   var applicationBaseFile: File = null
 
-  var application: SimpleFolderWebApplication = null
-
+  var application: WebApplication = null
+/*
   /**
    * Search for webapp base
    */
@@ -46,21 +47,21 @@ abstract class AIBWebapp extends AIBApplication {
 
   }
 
-  /*/**
+  /**
    * Launch application
    */
   def doStart = {
 
     println(s"Deploy Start")
-    aib.<-!->(new DeployWebApp(this))
+    //aib.<-!->(new DeployWebApp(this))
 
   }
 
   def doStop = {
-    aib.<-!->(new RemoveWebApp(this))
-  }*/
-
+    //aib.<-!->(new RemoveWebApp(this))
+  }
+*/
 }
-/*
-class DeployWebApp(val app: AIBWebapp)
-class RemoveWebApp(val app: AIBWebapp)*/
+
+class DeployWebApp(val app: AIBAbstractWebapp)
+class RemoveWebApp(val app: AIBAbstractWebapp)

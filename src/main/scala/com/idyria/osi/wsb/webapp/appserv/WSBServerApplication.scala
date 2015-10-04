@@ -1,29 +1,100 @@
 package com.idyria.osi.wsb.webapp.appserv
 
 import java.net.InetAddress
-
 import com.idyria.osi.aib.appserv.AIBApplication
 import com.idyria.osi.aib.core.bus.aib
 import com.idyria.osi.wsb.core.network.protocols.simple.SimpleMessageTCPConnector
 import com.idyria.osi.wsb.lib.soap.WSAClientEngine
 import com.idyria.osi.wsb.webapp.http.connector.HTTPConnector
 import com.idyria.osi.wsb.webapp.mains.AppServer
+import com.idyria.osi.aib.appserv.apps.GUIApplication
+import com.idyria.osi.vui.core.VBuilder
+import com.idyria.osi.vui.lib.gridbuilder.GridBuilder
+import com.idyria.osi.wsb.core.network.connectors.AbstractConnector
+import com.idyria.osi.wsb.core.network.connectors.tcp.TCPConnector
 
 class WSBServerApplication extends AIBApplication {
+
+  this.name = "WSB Web App Server"
+
+  // Make sure Init get done at the beginning
+  //-----------
+  this.initialState = Some("init")
 
   // Components
   //------------------
   var appServer: AppServer = new AppServer()
   // var httpConnector: HTTPConnector = appServer.addHTTPConnector("localhost", 8889)
 
-  def doInit {
+  // Applciation added 
+  //---------------
+  this.onMatch("child.added") {
+    case app: AIBAbstractWebapp =>
+
+      //println(s"Adding application to main WebServer: "+app.application)
+      appServer.addApplication(app.application)
+
+    case app: AIBApplication =>
+    //println(s"Added child")
+  }
+
+  // GUI App 
+  //-----------------
+  var uiApp = new GUIApplication with VBuilder with GridBuilder {
+
+    this.name = "WSB Server UI"
+
+    val connectorsTable = table[AbstractConnector[_]] {
+      t =>
+        t.column("Type") {
+          c =>
+            c.content { connector => connector.getClass.getSimpleName }
+        }
+        t.column("Message Type") {
+          c =>
+            c.content { connector => connector.messageType }
+        }
+        t.column("Info") {
+          c => 
+            c.content { 
+              case connector : HTTPConnector => s"http://${connector.address}:${connector.port}/"  
+              case connector : TCPConnector => s"Port: ${connector.port}"
+              case _ => ""
+            }
+        }
+    }
+
+    def createUI = {
+
+      grid {
+
+        "-" row {
+          label("Info")
+        }
+
+        "Connector" row {
+
+          connectorsTable(expandWidth)
+        }
+
+      }
+
+    }
+  }
+  this.addChildApplication(uiApp)
+
+  // Lifecycle
+  //-------------------
+  onInit {
 
     println(s"WSB Init")
 
     // Preparing WSBServer 
     //--------------------------
     var httpConnector: HTTPConnector = appServer.addHTTPConnector("localhost", 8889)
-
+    
+    uiApp.connectorsTable.add(httpConnector)
+    
     /*var httpsConnector: HTTPSConnector = appServer.addHTTPSConnector("localhost", 443)
   httpsConnector.addKeyCertificatePair((new File("localhost.key.pk8"),new File("localhost.crt")))*/
 
@@ -35,27 +106,14 @@ class WSBServerApplication extends AIBApplication {
     soapConnector.messageType = "soap"
     soapConnector.address = InetAddress.getByName(InetAddress.getLocalHost().getHostName()).getHostAddress()
 
-    aib.registerClosure { event: DeployWebApp =>
+    uiApp.connectorsTable.add(soapConnector)
+    
+  }
 
-      this.childApplications = this.childApplications :+ event.app
+  onStart {
+    println(s"WSB Start")
 
-      println(s"Deploying webapp: ${event.app.location}")
-      this.appServer.addApplication(event.app.application)
-      event.app.application.lStart
-
-      this.updated.set(true)
-
-    }
-
-    aib.registerClosure { event: RemoveWebApp =>
-
-      println(s"Removing webapp: ${event.app.location}")
-      event.app.application.lStop
-      this.appServer.removeApplication(event.app.application)
-
-      this.updated.set(true)
-
-    }
+    appServer.start()
 
   }
 

@@ -42,6 +42,8 @@ import com.idyria.osi.wsb.webapp.injection.Injector
 import com.idyria.osi.tea.logging.TLogSource
 import com.idyria.osi.tea.io.TeaIOUtils
 import java.io.File
+import com.idyria.osi.aib.appserv.AIBApplicationClassloader
+import com.idyria.osi.vui.impl.html.components.HTMLNode
 
 /**
  *
@@ -182,6 +184,12 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
   // Content/ Render
   //----------------
   var contentClosure: WWWView ⇒ HTMLNode = { v ⇒ null }
+  
+  def content( cl:  => HTMLNode) = {
+    this.contentClosure = {
+      v => cl
+    }
+  }
 
   /**
    * Record Content Closure
@@ -257,6 +265,22 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   }
 
+}
+
+class WWWFastView extends WWWView with DelayedInit {
+  
+  override def delayedInit(body: => Unit) {
+    this.content {
+      dummyNode {
+        body
+      }
+      /*var res = body
+      res match {
+        case t if(classOf[HTMLNode].isAssignableFrom(t.getClass())) => t.asInstanceOf[HTMLNode]
+        case _ => throw new RuntimeException("Constructor of Fast View must return an HTML Node")
+      }*/
+    }
+  }
 }
 
 object WWWView extends SourceCompiler[WWWView] {
@@ -597,6 +621,24 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
 
   var compileTraits = List[Class[_]]()
 
+  // Compiler Setup
+  //---------------------
+  
+  //-- Add its output to URL classloader 
+  Thread.currentThread().getContextClassLoader match {
+    case cl : AIBApplicationClassloader => 
+      
+      var eout = new File("eout")
+      eout.mkdirs()
+      compiler.settings2.outputDirs.setSingleOutput(eout.getAbsolutePath)
+      
+      println(s"Adding output to cl: "+this.compiler.settings2.outputDirs.getSingleOutput.get.file)
+     // cl.addURL(new File(this.compiler.settings2.outdir.value).getAbsoluteFile.toURI().toURL())
+      
+      cl.addURL(this.compiler.settings2.outputDirs.getSingleOutput.get.file.getAbsoluteFile.toURI().toURL())
+    case _ => 
+  }
+  
   /**
    * Add Trait as compile trait, and also as Import
    */
@@ -633,15 +675,85 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
         
       case _ => 
     }*/
-
+    
     // File Name
     //--------------
-    var targetName = source.getPath.split("/").last.replace(".", "_").map {
+    var targetName = source.getPath.replace(".scala","").split("/").last.replace(".", "_").map {
       case '.' => "_"
       case '/' => "_"
       case c => c
     }.mkString
     targetName = targetName + "_" + System.currentTimeMillis()
+    
+    // If the file ends with Scala, assume it is complete
+    //-----------------------------
+    var fpath = source.getPath
+    var fileToCompile = fpath match {
+      
+      //-- File is ready, just read content, and replace class name with target name
+      case path if (path.endsWith("scala")) => 
+        
+        // Init content
+        var content = scala.io.Source.fromInputStream(source.openStream).mkString
+        
+        // Get Class Name
+        var typeName = """class ([\w0-9_]+)""".r.findFirstMatchIn(content).get.group(1)
+        
+        // Replace 
+        var newContent = content.replaceAll(s"""^?$typeName(\\s|\\.)""", targetName+"$1")
+        //var newContent = content.replaceFirst("""class ([\w0-9_]+) """,s"class $targetName ")
+        // newContent = content.replaceFirst("""object ([\w0-9_]+) """,s"object $targetName ")
+        
+        // Write
+        TeaIOUtils.writeToFile(new File("test.scala"), newContent)
+        new File("test.scala")
+        
+      //-- File is incomplete, create a compilable version
+      case path => 
+        
+        var closureContent = scala.io.Source.fromInputStream(source.openStream).mkString
+        
+        
+        //-- Prepare traits
+        var traits = WWWView.compileTraits.size match {
+          case 0 => ""
+          case _ => WWWView.compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")
+        }
+    
+        var viewString = s"""
+        
+      package wwwviews
+    
+        import com.idyria.osi.wsb.webapp.view._  
+        import  com.idyria.osi.wsb.webapp.injection.Injector._
+        import com.idyria.osi.wsb.webapp.injection._
+        
+        ${WWWView.compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}
+        
+        ${WWWView.compileImportPackages.map { p ⇒ s"import ${p.getName()}._" }.mkString("\n")}
+        
+        class $targetName extends WWWView $traits {    
+        
+          
+       //   this.viewSource = \"$source\"
+      
+        this.contentClosure = {
+            view =>  
+              
+              $closureContent
+          
+          }
+        
+      }
+        
+        """
+        TeaIOUtils.writeToFile(new File("test.scala"), viewString)
+        new File("test.scala")
+        
+        
+    }
+
+    
     /*logFine[WWWView](s"VIEW IS AT: "+source.getPath)
     var targetName = source.getPath.split("/").last.replace(".", "_")*/
 
@@ -649,7 +761,7 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
 
     // Read Content of file
     //---------
-    var closureContent = scala.io.Source.fromInputStream(source.openStream).mkString
+  /*  var closureContent = scala.io.Source.fromInputStream(source.openStream).mkString
 
     // Compile as Object
     //------------------------------
@@ -716,10 +828,13 @@ v.contentClosure =  { view =>
         throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
     }*/
     //
-
+*/
+    var cl = new URLClassLoader(Array[URL]())
+    
+    
     // Compile and return 
     //------------
-    WWWView.compiler.compileFiles(Seq(new File("test.scala"))) match {
+    this.compiler.compileFiles(Seq(fileToCompile)) match {
       case Some(error) => throw throw new RuntimeException(s"Failed for $source : " + error.message.toString())
       case None =>
 

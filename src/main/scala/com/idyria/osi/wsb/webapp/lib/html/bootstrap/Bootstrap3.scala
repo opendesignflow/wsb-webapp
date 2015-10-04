@@ -100,7 +100,9 @@ class TopNavbar extends Div with HtmlTreeBuilder {
           //--------
           li {
             // Link
-            a(g.name, groupLink)
+            a(g.name, groupLink) {
+              
+            }
 
             // Content
             (g.views.size + g.groups.size) match {
@@ -128,7 +130,9 @@ class TopNavbar extends Div with HtmlTreeBuilder {
         //------------------- 
         case v: GroupTraitView ⇒ li {
 
-          a(v.name, v.fullPath)
+          a(v.name, v.fullPath) {
+              
+            }
         }
 
         // NO supported, just empty text then
@@ -323,7 +327,9 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
   def bs3Action(name: String, action: String = "#") = {
 
     li {
-      a(name, action)
+      a(name, action) {
+              
+      }
     }
   }
   

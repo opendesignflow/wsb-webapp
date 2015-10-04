@@ -54,6 +54,7 @@ class SimpleFolderWebApplication(var baseDir: File, basePathc: String) extends W
 
   //-- base folder path of pom is a search path
   this.addFilesSource("")
+  this.addFilesSource(baseDir.getAbsolutePath)
 
   // Resources Default location
   //----------------------
