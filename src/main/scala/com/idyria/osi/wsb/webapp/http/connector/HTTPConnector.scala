@@ -44,7 +44,7 @@ import com.idyria.osi.wsb.core.network.connectors.AbstractConnector
 import java.net.URL
 import com.idyria.osi.wsb.core.network.connectors.tcp.SSLTCPProtocolHandlerConnector
 
-class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ctx ⇒ new HTTPProtocolHandler(ctx)) with TLogSource {
+class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ctx => new HTTPProtocolHandler(ctx)) with TLogSource {
 
   this.address = "0.0.0.0"
   this.port = cport
@@ -77,7 +77,7 @@ class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ct
 
 }
 
-class HTTPSConnector(cport: Int)  extends SSLTCPProtocolHandlerConnector[MimePart](ctx ⇒ new HTTPProtocolHandler(ctx)) with TLogSource {
+class HTTPSConnector(cport: Int)  extends SSLTCPProtocolHandlerConnector[MimePart](ctx => new HTTPProtocolHandler(ctx)) with TLogSource {
   
   this.address = "0.0.0.0"
   this.port = cport
@@ -208,16 +208,16 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
     (this.availableDatas.contains(this.currentPart), this.availableDatas.size) match {
 
       // Part is already stacked, don't do anything
-      case (true, size) ⇒
+      case (true, size) =>
         logFine("Part is already stacked, don't do anything")
       // Add part
-      case (false, 0) ⇒
+      case (false, 0) =>
 
         logFine("Storing mime part")
         this.availableDatas += part
 
       // Merge part
-      case (false, size) ⇒
+      case (false, size) =>
 
         logFine("Merging with head")
         this.availableDatas.head.append(part)
@@ -254,7 +254,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
 
           // Take line
           //---------------
-          case "line" ⇒
+          case "line" =>
 
             //  Read line
             //---------------
@@ -278,15 +278,15 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
 
               //-- Content Length expected : Switch to bytes buffereing
               case line if (contentLengthRegexp.findFirstMatchIn(line) match {
-                case Some(matched) ⇒
+                case Some(matched) =>
 
                   contentLength = matched.group(1).toInt
                   logFine("Content Type specified to bytes")
                   nextReadMode = "bytes"
                   true
 
-                case None ⇒ false
-              }) ⇒
+                case None => false
+              }) =>
 
                 currentPart.addParameter(line)
 
@@ -294,16 +294,16 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
               case line if (contentTypeRegexp.findFirstMatchIn(line) match {
 
                 // Multipart form data -> just continue using lines
-                case Some(matched) if (matched.group(1).matches("multipart/form-data.*")) ⇒ true
-                case Some(matched) if (matched.group(1).matches("application/x-www-form-urlencoded.*")) ⇒ true
+                case Some(matched) if (matched.group(1).matches("multipart/form-data.*")) => true
+                case Some(matched) if (matched.group(1).matches("application/x-www-form-urlencoded.*")) => true
 
                 // Otherwise, don't change anything
-                case Some(matched) ⇒
+                case Some(matched) =>
 
                   true
 
-                case None ⇒ false
-              }) ⇒
+                case None => false
+              }) =>
 
                 currentPart.addParameter(line)
 
@@ -318,7 +318,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
                   true
 
                 // Unsupported
-                case Some(matched) ⇒
+                case Some(matched) =>
                   logFine("Unsupported Transfer-Encoding: " + matched.group(1))
                   true
 
@@ -327,7 +327,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
               }) => currentPart.addParameter(line)
 
               //-- Normal Line
-              case line if (line != "") ⇒
+              case line if (line != "") =>
 
                 currentPart.addParameter(line)
 
@@ -340,7 +340,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
                 }
 
               //-- Empty Line but content is upcomming
-              case line if (line == "" && contentLength != 0 && nextReadMode == "line") ⇒
+              case line if (line == "" && contentLength != 0 && nextReadMode == "line") =>
 
                 logFine(s"Empty Line but some content is expected")
 
@@ -349,13 +349,13 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
                 this.currentPart = new DefaultMimePart
 
               //-- Empty line, content is upcoming and next Read mode is not line
-              case line if (line == "" && nextReadMode != "line") ⇒
+              case line if (line == "" && nextReadMode != "line") =>
 
                 logFine(s"Empty Line but some content is expected in read mode: $nextReadMode, for a length of: $contentLength")
                 readMode = nextReadMode
 
               //-- Empty Line and no content
-              case line if (line == "" && contentLength == 0 && this.currentPart.contentLength > 0) ⇒
+              case line if (line == "" && contentLength == 0 && this.currentPart.contentLength > 0) =>
 
                 logFine(s"Empty Line and no content expected, end of section")
 
@@ -364,12 +364,12 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
                 this.currentPart = new DefaultMimePart
                 this.contentLength = 0
 
-              case _ ⇒
+              case _ =>
             }
 
           // Buffer Bytes
           //---------------
-          case "bytes" ⇒
+          case "bytes" =>
 
             // Read
             this.currentPart += bytes
@@ -384,16 +384,16 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
               (this.availableDatas.contains(this.currentPart), this.availableDatas.size) match {
 
                 // Part is already stacked, don't do anything
-                case (true, size) ⇒
+                case (true, size) =>
 
                 // Add part
-                case (false, 0) ⇒
+                case (false, 0) =>
 
                   logFine("Storing mime part")
                   this.availableDatas += this.currentPart
 
                 // Merge part
-                case (false, size) ⇒
+                case (false, size) =>
 
                   logFine("Merging with head")
                   this.availableDatas.head.append(this.currentPart)

@@ -88,30 +88,30 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
     // Select Provider
     //------------
     var selectedProvider =  request.getURLParameter("provider") match {
-      case Some(providerName) ⇒ availableProviders.find(_.getClass().getSimpleName() == providerName) match {
+      case Some(providerName) => availableProviders.find(_.getClass().getSimpleName() == providerName) match {
 
         //-- Provider Name provided and found
-        case Some(provider) ⇒ provider
+        case Some(provider) => provider
 
         //-- Provider Name provided and not found
-        case None ⇒ throw new AuthenticationException(s"Whished Authentication provider ${providerName} has not been setup")
+        case None => throw new AuthenticationException(s"Whished Authentication provider ${providerName} has not been setup")
       }
 
       //-- Provider name not provided, use default
-      case None ⇒ availableProviders.head
+      case None => availableProviders.head
     }
 
     // Extract Parameters from request
     //-----------------
     var authDatas = new AuthenticationDatas
     selectedProvider.requiredParameters.foreach {
-      case (name, description) ⇒ request.getURLParameter(name) match {
+      case (name, description) => request.getURLParameter(name) match {
 
         //-- Provided, gather
-        case Some(value) ⇒ authDatas(name -> value)
+        case Some(value) => authDatas(name -> value)
 
         //-- Required parameter not found
-        case None ⇒ throw new AuthenticationException(s"Authentication provider ${selectedProvider} requires request parameter $name which has not bee supplied")
+        case None => throw new AuthenticationException(s"Authentication provider ${selectedProvider} requires request parameter $name which has not bee supplied")
       }
     }
 
@@ -129,8 +129,8 @@ class AuthenticationController(defaultProvider: AuthenticationProvider) extends 
     var user = new User
     user.authTokens = user.authTokens :+ authResult
     authResult.datas.get("username") match {
-      case Some(username) ⇒ user.name = username
-      case None ⇒
+      case Some(username) => user.name = username
+      case None =>
     }
 
     request.getSession("authenticated" -> user)

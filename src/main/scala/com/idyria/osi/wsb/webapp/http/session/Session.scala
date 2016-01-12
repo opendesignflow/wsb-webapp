@@ -91,18 +91,18 @@ object Session extends TLogSource {
 
     // Return if already in map
     message.cookies.get("SSID") match {
-      case Some(ssid) ⇒
+      case Some(ssid) =>
 
         logFine(s"[Session] Looking for existing session id $ssid")
         sessions.get(ssid) match {
-          case Some(session) ⇒
+          case Some(session) =>
 
             logFine(s"[Session] ... Found")
 
             return session
-          case None ⇒
+          case None =>
         }
-      case None ⇒
+      case None =>
     }
 
     // Try to find Session from HTTP Parameters or create
@@ -111,11 +111,11 @@ object Session extends TLogSource {
     //---------------
     var host = "localhost"
     (message.parameters.find(_._1 == "X-Forwarded-Host"), message.parameters.find(_._1 == "Host")) match {
-      case (Some(forwaredHost), _) ⇒ host = forwaredHost._2
-      case (None, Some(normalHost)) ⇒
+      case (Some(forwaredHost), _) => host = forwaredHost._2
+      case (None, Some(normalHost)) =>
         //host = normalHost.replaceAll(":[0-9]+", "")
         host = normalHost._2
-      case _ ⇒
+      case _ =>
     }
 
     // Try to create an ID

@@ -62,7 +62,7 @@ trait MimePart extends TLogSource {
 
     // Parameters
     part.parameters.foreach {
-      case (key, value) ⇒ this.addParameter(key, value)
+      case (key, value) => this.addParameter(key, value)
     }
     //this.parameters = this.parameters ++ part.parameters
 
@@ -72,7 +72,7 @@ trait MimePart extends TLogSource {
 
     // Append Next parts
     part.nextParts.foreach {
-      p ⇒ this.append(p)
+      p => this.append(p)
     }
   }
 
@@ -95,14 +95,14 @@ trait MimePart extends TLogSource {
 
     parameterLineRegexp.findFirstMatchIn(line) match {
 
-      case Some(matched) ⇒
+      case Some(matched) =>
 
         var (name, value) = (matched.group(1), matched.group(2))
 
         logFine(s"Param: $name -> $value")
 
         this.addParameter(name, value)
-      case None ⇒
+      case None =>
 
         logFine(s"Protocol Line: $line")
 
@@ -136,15 +136,15 @@ trait MimePart extends TLogSource {
 
     this.parameters.find(_._1 == "Content-Disposition") match {
 
-      case Some(value) ⇒
+      case Some(value) =>
 
         println(s"-> Found Content Disposition: $value")
         """.+; filename="(.+)"\s*""".r.findFirstMatchIn(value._2) match {
-          case Some(matched) ⇒ Option(matched.group(1))
-          case None ⇒ None
+          case Some(matched) => Option(matched.group(1))
+          case None => None
         }
 
-      case None ⇒ None
+      case None => None
 
     }
 

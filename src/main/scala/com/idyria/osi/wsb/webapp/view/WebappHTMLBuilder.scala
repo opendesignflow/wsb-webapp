@@ -84,12 +84,12 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
     } catch {
 
       // Protocol is: '//' , keep url as is
-      case e: Throwable if (url.startsWith("//")) ⇒
+      case e: Throwable if (url.startsWith("//")) =>
 
         url
 
       // No Protocol ->  prepend the application path to it
-      case e: Throwable ⇒
+      case e: Throwable =>
         s"""${WebApplication.makePath(application.basePath, url)}"""
 
     }*/
@@ -102,7 +102,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   /**
    * This overriden Head function adds some scripts/stylesheets connections for the base framework
    */
-  override def head(cl: ⇒ Any) = {
+  override def head(cl: => Any) = {
 
     super.head {
 
@@ -163,7 +163,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   /**
    * An Action created in a form, which get executed as controller
    */
-  class FormAction(var form: Form, n: String, var actionClosure: (WebApplication, HTTPRequest) ⇒ Any) extends Controller {
+  class FormAction(var form: Form, n: String, var actionClosure: (WebApplication, HTTPRequest) => Any) extends Controller {
 
     this.name = n
 
@@ -175,7 +175,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
       // Validation
       //-------------------
       form.onSubNodesMatch {
-        case vs: ValidationSupport if (vs.asInstanceOf[HTMLNode].attributes.contains("name")) ⇒
+        case vs: ValidationSupport if (vs.asInstanceOf[HTMLNode].attributes.contains("name")) =>
 
           var name = vs.asInstanceOf[HTMLNode].attributes.get("name").get
 
@@ -184,24 +184,24 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
           } catch {
 
             //-- In Error case, transform to a ForException for better error reporting
-            case e: Throwable ⇒
+            case e: Throwable =>
 
               println(s"Validation failed for $name, with ${vs.validators.length} validators")
 
               throw new ForException(vs.asInstanceOf[HTMLNode].attributes.get("name").get, e)
           }
 
-        case vs: ValidationSupport if (!vs.asInstanceOf[HTMLNode].attributes.contains("name")) ⇒
+        case vs: ValidationSupport if (!vs.asInstanceOf[HTMLNode].attributes.contains("name")) =>
 
           throw new RuntimeException(s"Could not validate form element with validation support, because no name attributes is present")
-        case _ ⇒
+        case _ =>
       }
 
       // Action
       //---------------
       actionClosure(application, request) match {
-        case null ⇒ ""
-        case res ⇒ res.toString
+        case null => ""
+        case res => res.toString
       }
 
     }
@@ -214,7 +214,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   def action(beanName: String): Unit = {
 
     currentNode match {
-      case n: Form ⇒
+      case n: Form =>
 
         // Bean Name can be used to find an actual name, otherwise it is just the class instance
         application.controllers.find { case (name, instance) => name == beanName } match {
@@ -230,20 +230,20 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
         formParameter("action" -> beanName) {
 
         }
-      case _ ⇒
+      case _ =>
     }
 
   }
 
   def action(controller: Controller): Unit = {
     currentNode match {
-      case n: Form ⇒
+      case n: Form =>
 
         application.addController(controller)
         formParameter("action" -> controller.getClass.getCanonicalName) {
 
         }
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -253,10 +253,10 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
    * An action is then also registered in application
    *
    */
-  def react(name: String)(cl: (WebApplication, HTTPRequest) ⇒ Any): Unit = {
+  def react(name: String)(cl: (WebApplication, HTTPRequest) => Any): Unit = {
 
     currentNode match {
-      case n: Form ⇒
+      case n: Form =>
 
         // Add Form parameter
         //-----------------------
@@ -270,20 +270,20 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
         application.controllers.get(actionPath) match {
 
           //-- Already a controller with incompatible type
-          case Some(action) if (!action.isInstanceOf[FormAction]) ⇒ throw new RuntimeException(s"Action controller for form action: $actionPath could not be setup, because another controller with same path, but not carrying the FormAction type was found. This controller won't be replaced, you should solve the name conflict")
+          case Some(action) if (!action.isInstanceOf[FormAction]) => throw new RuntimeException(s"Action controller for form action: $actionPath could not be setup, because another controller with same path, but not carrying the FormAction type was found. This controller won't be replaced, you should solve the name conflict")
 
           //-- Replace action closure ofr existing form action
-          case Some(action) ⇒
+          case Some(action) =>
 
             action.asInstanceOf[FormAction].form = n
             action.asInstanceOf[FormAction].actionClosure = cl
 
           //-- Create
-          case None ⇒ application.addController(new FormAction(n, actionPath, cl))
+          case None => application.addController(new FormAction(n, actionPath, cl))
 
         }
 
-      case _ ⇒
+      case _ =>
     }
 
   }
@@ -295,8 +295,8 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   def action[AT <: Controller](bean: Class[AT]): Unit = {
 
     bean.getAnnotation(classOf[ManagedBean]) match {
-      case null ⇒ bean.getCanonicalName
-      case annotation ⇒
+      case null => bean.getCanonicalName
+      case annotation =>
 
         action(annotation.name())
 
@@ -308,7 +308,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
    * Override the default submit button to avoid reloading of page and stay in AJAX
    *
    */
-  override def submit(text: String)(cl: ⇒ Any): FormSubmit = {
+  override def submit(text: String)(cl: => Any): FormSubmit = {
 
     //-- Add submit
     var r = formSubmit(text) {
@@ -320,14 +320,14 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
     //-- Add action
     r {
-      b ⇒ b.onClick("submitForm(this)")
+      b => b.onClick("submitForm(this)")
     }
 
     r
 
   }
 
-  def buttonSubmit(text: String)(cl: ⇒ Any): Button = {
+  def buttonSubmit(text: String)(cl: => Any): Button = {
 
     var b = button(text) {
       attr("type" -> "submit")
@@ -336,7 +336,7 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
 
     //-- Add action
     /* b {
-      b ⇒ b.onClick("submitForm(this)")
+      b => b.onClick("submitForm(this)")
     }*/
 
     b
@@ -353,11 +353,11 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
    *  	}
    * }
    */
-  def label(str: String)(cl: ⇒ Any): Label = {
+  def label(str: String)(cl: => Any): Label = {
 
     //-- Check current Node is a FormInput
     currentNode match {
-      case input: FormInput if (input.attributes.contains("name")) ⇒
+      case input: FormInput if (input.attributes.contains("name")) =>
 
         // Create label
         var lbl = new Label
@@ -374,8 +374,8 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
         currentNode.parent.sgChildren = currentNode.parent.sgChildren.updated(currentNode.parent.sgChildren.size - 1, input).updated(currentNode.parent.sgChildren.size - 2, lbl)
 
         lbl
-      case input: FormInput ⇒ throw new RuntimeException("Using label(String) for a form input without name attribute defined")
-      case _ ⇒ throw new RuntimeException("Using label(String) method is only allowed direct under a form input subtree")
+      case input: FormInput => throw new RuntimeException("Using label(String) for a form input without name attribute defined")
+      case _ => throw new RuntimeException("Using label(String) method is only allowed direct under a form input subtree")
     }
 
   }
@@ -422,12 +422,12 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
       } catch {
 
         // Protocol is: '//' , keep url as is
-        case e: Throwable if (path.startsWith("//")) ⇒
+        case e: Throwable if (path.startsWith("//")) =>
 
           attribute("href" -> path)
 
         // No Protocol ->  prepend the application path to it
-        case e: Throwable ⇒
+        case e: Throwable =>
           attribute("href" -> s"""${WebApplication.makePath(application.basePath, path)}""")
 
       }
@@ -573,7 +573,7 @@ $(function() {
     //-------------------
     println(s"[Action] Should be running E action '${request.getURLParameter("eaction")}'")
     request.getURLParameter("eaction") match {
-      case Some(action) if (action == actionPath) ⇒
+      case Some(action) if (action == actionPath) =>
 
         //Execute controller
         try {
@@ -582,11 +582,11 @@ $(function() {
 
           //-- If no render, stop here
           request.getURLParameter("noRender") match {
-            case Some(_) ⇒
+            case Some(_) =>
 
               throw new ResponseException(HTTPResponse("application/json", "{}"))
 
-            case None ⇒
+            case None =>
           }
         } catch {
 
@@ -600,7 +600,7 @@ $(function() {
         }
 
       // Nothing to do
-      case _ ⇒ f(None)
+      case _ => f(None)
     }
 
   }
@@ -637,7 +637,7 @@ $(function() {
     //-------------------
     println(s"[Action] Should be running E action '${request.getURLParameter("eaction")}'")
     request.getURLParameter("eaction") match {
-      case Some(action) if (action == actionPath) ⇒
+      case Some(action) if (action == actionPath) =>
 
         //Execute controller
         try {
@@ -650,11 +650,11 @@ $(function() {
 
           //-- If no render, stop here
           request.getURLParameter("noRender") match {
-            case Some(_) ⇒
+            case Some(_) =>
 
               throw new ResponseException(HTTPResponse("application/json", "{}"))
 
-            case None ⇒
+            case None =>
           }
         } catch {
 
@@ -667,7 +667,7 @@ $(function() {
             request.errors = request.errors :+ e
         }
 
-      case _ ⇒
+      case _ =>
     }
 
     //}

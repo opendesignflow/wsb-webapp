@@ -104,11 +104,11 @@ class AppServer {
 
     name = "Global 404 Not Found"
 
-    acceptDown { message ⇒ (message.errors.isEmpty && message.upped == false) }
+    acceptDown { message => (message.errors.isEmpty && message.upped == false) }
 
     downClosure = {
 
-      message ⇒
+      message =>
 
         println(s"********** Global ERROR 404 Not Found Intermediary for (${message.qualifier}) **************")
 

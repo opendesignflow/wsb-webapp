@@ -94,13 +94,13 @@ trait AuthenticationProvider {
     
     var authDatas = new AuthenticationDatas
     requiredParameters.foreach {
-      case (name, description) ⇒ request.getURLParameter(name) match {
+      case (name, description) => request.getURLParameter(name) match {
 
         //-- Provided, gather
-        case Some(value) ⇒ authDatas(name -> value)
+        case Some(value) => authDatas(name -> value)
 
         //-- Required parameter not found
-        case None ⇒ throw new AuthenticationException(s"Authentication provider ${getClass.getCanonicalName} requires request parameter $name which has not bee supplied")
+        case None => throw new AuthenticationException(s"Authentication provider ${getClass.getCanonicalName} requires request parameter $name which has not bee supplied")
       }
     }
     

@@ -126,12 +126,12 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
     // Search to verify userName does not already exist
     //---------------
-    authDatas.users.find(user ⇒ user.userName.toString == userName) match {
-      case Some(user) ⇒ throw new RuntimeException(s"Cannot register userName $userName which already exists")
+    authDatas.users.find(user => user.userName.toString == userName) match {
+      case Some(user) => throw new RuntimeException(s"Cannot register userName $userName which already exists")
 
       // We Can register
       //-----------------
-      case None ⇒
+      case None =>
 
         // Create Salt
         //-----------------
@@ -176,21 +176,21 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
 
       // Everything is there
       //-----------------
-      case (Some(userName), Some(password)) ⇒
+      case (Some(userName), Some(password)) =>
 
         // Search for user entry
         //-------------------
-        authDatas.users.find(user ⇒ user.userName.toString == userName) match {
+        authDatas.users.find(user => user.userName.toString == userName) match {
 
           // Try to authenticate
           //----------------
-          case Some(user) ⇒
+          case Some(user) =>
 
             // Retrieve salt
             //----------------
-            var salt = saltsDatas.salts.find(s ⇒ s.for_.toString == userName) match {
-              case Some(salt) ⇒ salt
-              case None ⇒ throw new AuthenticationException(s"Password will never match, contact administrator (database content error)")
+            var salt = saltsDatas.salts.find(s => s.for_.toString == userName) match {
+              case Some(salt) => salt
+              case None => throw new AuthenticationException(s"Password will never match, contact administrator (database content error)")
             }
 
             // Prepare Compare passwords
@@ -204,7 +204,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
             (inputComparePasswords == user.password.data) match {
 
               // Return results
-              case true ⇒
+              case true =>
 
                 var result = new PasswordAuthToken()
                 result.federatedIdentity = new PasswordFederatedIdentity
@@ -213,21 +213,21 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
                 result
 
               // Password is wrong
-              case false ⇒
+              case false =>
 
                 throw new AuthenticationException(s"Password does not match")
 
             }
 
           // User Unknown
-          case None ⇒ throw new UserNotFoundException(s"User $userName is unknown")
+          case None => throw new UserNotFoundException(s"User $userName is unknown")
         }
 
       // Missing Stuff
       //-----------------
-      case (None, None) ⇒ throw new AuthenticationException("both User Name and Password are missing for this provider")
-      case (Some(userName), None) ⇒ throw new AuthenticationException("A Password must be provided for this provider")
-      case (None, Some(password)) ⇒ throw new AuthenticationException("A User Name must be provided for this provider")
+      case (None, None) => throw new AuthenticationException("both User Name and Password are missing for this provider")
+      case (Some(userName), None) => throw new AuthenticationException("A Password must be provided for this provider")
+      case (None, Some(password)) => throw new AuthenticationException("A User Name must be provided for this provider")
     }
 
   }
@@ -235,7 +235,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   // Remote Access
   //----------------------
   this.on[PasswordLoginRequest] {
-    (message, request) ⇒
+    (message, request) =>
 
       //-- Authenticate (failure on exception is handled by SOAP handler)
       var authToken = this.authenticate(AuthenticationDatas("userName" -> request.user.userName.toString, "password" -> request.user.password.toString), null, null)
@@ -251,7 +251,7 @@ class PasswordProvider extends AuthenticationProvider with SOAPMessagesHandler {
   }
 
   this.on[RegisterRequest] {
-    (message, request) ⇒
+    (message, request) =>
 
       //-- Register
       //---------------------

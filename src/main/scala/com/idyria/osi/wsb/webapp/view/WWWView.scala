@@ -68,7 +68,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
     //-- Create WWWView for part
     var p = new WWWView {
-      this.contentClosure = { v ⇒ cl(v.application, v.request) }
+      this.contentClosure = { v => cl(v.application, v.request) }
     }
 
     logFine[WWWView](s"[RW] Inside view: $hashCode , registering part $name with prt View ${p.hashCode}")
@@ -86,7 +86,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
    * This method creates the part, renders it with current request, and place it into the result tree
    * The ID of resulting HTML node is set to part-$name
    */
-  def placePart(name: String)(cl: (WebApplication, HTTPRequest) ⇒ HTMLNode): WWWView = {
+  def placePart(name: String)(cl: (WebApplication, HTTPRequest) => HTMLNode): WWWView = {
 
     //- Create
     var view = part(name)(cl)
@@ -143,7 +143,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
   def compose(path: String): WWWView = {
 
     application.searchResource(path) match {
-      case Some(url) ⇒
+      case Some(url) =>
 
         var parentView = compiler.compile(url).newInstance().asInstanceOf[WWWView]
         parentView.application = this.application
@@ -160,7 +160,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
       /* this.contentClosure = parentView.contentClosure
         this.render
         this*/
-      case None ⇒ throw new ViewRendererException(s"Could not render current view because searched view @$path could not be found ")
+      case None => throw new ViewRendererException(s"Could not render current view because searched view @$path could not be found ")
     }
 
   }
@@ -183,7 +183,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   // Content/ Render
   //----------------
-  var contentClosure: WWWView ⇒ HTMLNode = { v ⇒ null }
+  var contentClosure: WWWView => HTMLNode = { v => null }
   
   def content( cl:  => HTMLNode) = {
     this.contentClosure = {
@@ -229,7 +229,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
     request.getURLParameter("part") match {
 
       //-- Try to render part or element id
-      case Some(part) ⇒
+      case Some(part) =>
 
         logFine[WWWView]("Rendering with parts on view: " + hashCode())
 
@@ -237,10 +237,10 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
         var p = this.parts.get(part) match {
 
           //-- Remove part request and product
-          case Some(p) ⇒ p
+          case Some(p) => p
 
           //-- Maybe the complete view needs to be rerendered because the part definition is somwhere in the view
-          case None ⇒
+          case None =>
 
             //-- Try
             logFine[WWWView]("Rendering View to get Part")
@@ -260,7 +260,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
         request.parameters -= request.parameters.find(_._1 == "part").get
         p.produce(application, request)
 
-      case None ⇒ render.toString()
+      case None => render.toString()
     }
 
   }
@@ -294,15 +294,15 @@ object WWWView extends SourceCompiler[WWWView] {
 
   def addCompileImport(cl: Class[_]): Unit = {
     compileImports.contains(cl) match {
-      case false ⇒ compileImports = compileImports :+ cl
-      case _ ⇒
+      case false => compileImports = compileImports :+ cl
+      case _ =>
     }
   }
 
   def addCompileImport(p: Package): Unit = {
     compileImportPackages.contains(p) match {
-      case false ⇒ compileImportPackages = compileImportPackages :+ p
-      case _ ⇒
+      case false => compileImportPackages = compileImportPackages :+ p
+      case _ =>
     }
   }
 
@@ -316,8 +316,8 @@ object WWWView extends SourceCompiler[WWWView] {
     //-- Add To compile traits
     compileTraits = (compileTraits :+ cl).distinct
     /*compileTraits.contains(cl) match {
-      case false ⇒ compileTraits = compileTraits :+ cl
-      case _ ⇒
+      case false => compileTraits = compileTraits :+ cl
+      case _ =>
     }*/
 
     //-- Add to imports
@@ -359,13 +359,13 @@ object WWWView extends SourceCompiler[WWWView] {
     // Compile as Object
     //------------------------------
 
-    //logFine[WWWView](s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
-    // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")}")
+    //logFine[WWWView](s"Adding imports: ${compileImports.map { i => s"import ${i.getCanonicalName()}" }.mkString("\n")}")
+    // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl => cl.getCanonicalName()).mkString("with ", " with ", "")}")
 
     //-- Prepare traits
     var traits = compileTraits.size match {
       case 0 => ""
-      case _ => compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")
+      case _ => compileTraits.map(cl => cl.getCanonicalName()).mkString("with ", " with ", "")
     }
 
     var viewString = s"""
@@ -374,9 +374,9 @@ object WWWView extends SourceCompiler[WWWView] {
     import  com.idyria.osi.wsb.webapp.injection.Injector._
     import com.idyria.osi.wsb.webapp.injection._
     
-    ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}
+    ${compileImports.map { i => s"import ${i.getCanonicalName()}" }.mkString("\n")}
     
-    ${compileImportPackages.map { p ⇒ s"import ${p.getName()}._" }.mkString("\n")}
+    ${compileImportPackages.map { p => s"import ${p.getName()}._" }.mkString("\n")}
     
     
     
@@ -412,7 +412,7 @@ v.contentClosure =  { view =>
       compiler.interpret(closure)
 
     } catch {
-      case e: Throwable ⇒
+      case e: Throwable =>
 
         logFine[WWWView](s"Compilation error in SView source file: @$source")
         throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
@@ -456,15 +456,15 @@ class WWWViewCompiler extends SourceCompiler[WWWView] {
 
   def addCompileImport(cl: Class[_]): Unit = {
     compileImports.contains(cl) match {
-      case false ⇒ compileImports = compileImports :+ cl
-      case _ ⇒
+      case false => compileImports = compileImports :+ cl
+      case _ =>
     }
   }
 
   def addCompileImport(p: Package): Unit = {
     compileImportPackages.contains(p) match {
-      case false ⇒ compileImportPackages = compileImportPackages :+ p
-      case _ ⇒
+      case false => compileImportPackages = compileImportPackages :+ p
+      case _ =>
     }
   }
 
@@ -478,8 +478,8 @@ class WWWViewCompiler extends SourceCompiler[WWWView] {
     //-- Add To compile traits
     compileTraits = (compileTraits :+ cl).distinct
     /*compileTraits.contains(cl) match {
-      case false ⇒ compileTraits = compileTraits :+ cl
-      case _ ⇒
+      case false => compileTraits = compileTraits :+ cl
+      case _ =>
     }*/
 
     //-- Add to imports
@@ -510,13 +510,13 @@ class WWWViewCompiler extends SourceCompiler[WWWView] {
     // Compile as Object
     //------------------------------
 
-    //logFine[WWWView](s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
-    // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")}")
+    //logFine[WWWView](s"Adding imports: ${compileImports.map { i => s"import ${i.getCanonicalName()}" }.mkString("\n")}")
+    // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl => cl.getCanonicalName()).mkString("with ", " with ", "")}")
 
     //-- Prepare traits
     var traits = compileTraits.size match {
       case 0 => ""
-      case _ => compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")
+      case _ => compileTraits.map(cl => cl.getCanonicalName()).mkString("with ", " with ", "")
     }
 
     var viewString = s"""
@@ -525,9 +525,9 @@ class WWWViewCompiler extends SourceCompiler[WWWView] {
     import  com.idyria.osi.wsb.webapp.injection.Injector._
     import com.idyria.osi.wsb.webapp.injection._
     
-    ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}
+    ${compileImports.map { i => s"import ${i.getCanonicalName()}" }.mkString("\n")}
     
-    ${compileImportPackages.map { p ⇒ s"import ${p.getName()}._" }.mkString("\n")}
+    ${compileImportPackages.map { p => s"import ${p.getName()}._" }.mkString("\n")}
     
     
     
@@ -563,7 +563,7 @@ v.contentClosure =  { view =>
       compiler.interpret(closure)
 
     } catch {
-      case e: Throwable ⇒
+      case e: Throwable =>
 
         logFine[WWWView](s"Compilation error in SView source file: @$source")
         throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
@@ -607,15 +607,15 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
 
   def addCompileImport(cl: Class[_]): Unit = {
     compileImports.contains(cl) match {
-      case false ⇒ compileImports = compileImports :+ cl
-      case _ ⇒
+      case false => compileImports = compileImports :+ cl
+      case _ =>
     }
   }
 
   def addCompileImport(p: Package): Unit = {
     compileImportPackages.contains(p) match {
-      case false ⇒ compileImportPackages = compileImportPackages :+ p
-      case _ ⇒
+      case false => compileImportPackages = compileImportPackages :+ p
+      case _ =>
     }
   }
 
@@ -647,8 +647,8 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
     //-- Add To compile traits
     compileTraits = (compileTraits :+ cl).distinct
     /*compileTraits.contains(cl) match {
-      case false ⇒ compileTraits = compileTraits :+ cl
-      case _ ⇒
+      case false => compileTraits = compileTraits :+ cl
+      case _ =>
     }*/
 
     //-- Add to imports
@@ -717,7 +717,7 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
         //-- Prepare traits
         var traits = WWWView.compileTraits.size match {
           case 0 => ""
-          case _ => WWWView.compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")
+          case _ => WWWView.compileTraits.map(cl => cl.getCanonicalName()).mkString("with ", " with ", "")
         }
     
         var viewString = s"""
@@ -728,9 +728,9 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
         import  com.idyria.osi.wsb.webapp.injection.Injector._
         import com.idyria.osi.wsb.webapp.injection._
         
-        ${WWWView.compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}
+        ${WWWView.compileImports.map { i => s"import ${i.getCanonicalName()}" }.mkString("\n")}
         
-        ${WWWView.compileImportPackages.map { p ⇒ s"import ${p.getName()}._" }.mkString("\n")}
+        ${WWWView.compileImportPackages.map { p => s"import ${p.getName()}._" }.mkString("\n")}
         
         class $targetName extends WWWView $traits {    
         
@@ -766,13 +766,13 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
     // Compile as Object
     //------------------------------
 
-    //logFine[WWWView](s"Adding imports: ${compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}")
-    // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")}")
+    //logFine[WWWView](s"Adding imports: ${compileImports.map { i => s"import ${i.getCanonicalName()}" }.mkString("\n")}")
+    // logFine[WWWView](s"Adding traits: ${ compileTraits.map(cl => cl.getCanonicalName()).mkString("with ", " with ", "")}")
 
     //-- Prepare traits
     var traits = WWWView.compileTraits.size match {
       case 0 => ""
-      case _ => WWWView.compileTraits.map(cl ⇒ cl.getCanonicalName()).mkString("with ", " with ", "")
+      case _ => WWWView.compileTraits.map(cl => cl.getCanonicalName()).mkString("with ", " with ", "")
     }
 
     var viewString = s"""
@@ -783,9 +783,9 @@ class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
     import  com.idyria.osi.wsb.webapp.injection.Injector._
     import com.idyria.osi.wsb.webapp.injection._
     
-    ${WWWView.compileImports.map { i ⇒ s"import ${i.getCanonicalName()}" }.mkString("\n")}
+    ${WWWView.compileImports.map { i => s"import ${i.getCanonicalName()}" }.mkString("\n")}
     
-    ${WWWView.compileImportPackages.map { p ⇒ s"import ${p.getName()}._" }.mkString("\n")}
+    ${WWWView.compileImportPackages.map { p => s"import ${p.getName()}._" }.mkString("\n")}
     
     class $targetName extends WWWView $traits {    
     
@@ -822,7 +822,7 @@ v.contentClosure =  { view =>
       compiler.interpret(closure)
 
     } catch {
-      case e: Throwable ⇒
+      case e: Throwable =>
 
         logFine[WWWView](s"Compilation error in SView source file: @$source")
         throw new ViewRendererException(s"An error occured while preparing SView @$source: ${e.getMessage()}", e)
