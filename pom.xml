@@ -76,6 +76,38 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.9.1</version>
+				<executions>
+					<execution>
+						<id>add-source</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/scala</source>
+								<source>src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+					<execution>
+						<phase>pre-site</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/scala</source>
+								<source>src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>net.alchim31.maven</groupId>
 				<artifactId>scala-maven-plugin</artifactId>
 				<version>${scala.plugin.version}</version>
@@ -128,56 +160,25 @@
 			</plugin>
 			<!-- Shade for WSB webapp server -->
 			<plugin>
-		        <groupId>org.apache.maven.plugins</groupId>
-		        <artifactId>maven-shade-plugin</artifactId>
-		        <version>2.3</version>
-		        <configuration>
-		          <finalName>wsb-webapp-full</finalName>
-		          <minimizeJar>true</minimizeJar>
-		        </configuration>
-		        <executions>
-		          <execution>
-		            <phase>package</phase>
-		            <goals>
-		              <goal>shade</goal>
-		            </goals>
-		          </execution>
-		        </executions>
-		      </plugin>
-		</plugins>
-		
-		<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.9.1</version>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>2.3</version>
+				<configuration>
+					<finalName>wsb-webapp-full</finalName>
+					<minimizeJar>true</minimizeJar>
+				</configuration>
 				<executions>
 					<execution>
-						<id>add-source</id>
-						<phase>generate-sources</phase>
+						<phase>package</phase>
 						<goals>
-							<goal>add-source</goal>
+							<goal>shade</goal>
 						</goals>
-						<configuration>
-							<sources>
-								<source>${project.build.directory}/generated-sources/scala</source>
-								<source>src/main/java</source>
-							</sources>
-						</configuration>
-					</execution>
-					<execution>
-						<phase>pre-site</phase>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-						<configuration>
-							<sources>
-								<source>${project.build.directory}/generated-sources/scala</source>
-								<source>src/main/java</source>
-							</sources>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
+		</plugins>
+
+
 	</build>
 
 	<!-- Repositories to find OSI packages -->
