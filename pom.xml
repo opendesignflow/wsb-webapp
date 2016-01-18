@@ -145,6 +145,39 @@
 		        </executions>
 		      </plugin>
 		</plugins>
+		
+		<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.9.1</version>
+				<executions>
+					<execution>
+						<id>add-source</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/scala</source>
+								<source>src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+					<execution>
+						<phase>pre-site</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/scala</source>
+								<source>src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 	</build>
 
 	<!-- Repositories to find OSI packages -->

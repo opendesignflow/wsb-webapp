@@ -175,11 +175,9 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
       // Validation
       //-------------------
       form.onSubNodesMatch {
-<<<<<<< HEAD
+
         case vs: ValidationSupport if (vs.asInstanceOf[HTMLNode[_ <: org.w3c.dom.Node]].attributes.contains("name")) ⇒
-=======
-        case vs: ValidationSupport if (vs.asInstanceOf[HTMLNode].attributes.contains("name")) =>
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
+
 
           var name = vs.asInstanceOf[HTMLNode[_ <: org.w3c.dom.Node]].attributes.get("name").get
 
@@ -195,11 +193,9 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
               throw new ForException(vs.asInstanceOf[HTMLNode[_ <: org.w3c.dom.Node]].attributes.get("name").get.toString(), e)
           }
 
-<<<<<<< HEAD
+
         case vs: ValidationSupport if (!vs.asInstanceOf[HTMLNode[_ <: org.w3c.dom.Node]].attributes.contains("name")) ⇒
-=======
-        case vs: ValidationSupport if (!vs.asInstanceOf[HTMLNode].attributes.contains("name")) =>
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
+
 
           throw new RuntimeException(s"Could not validate form element with validation support, because no name attributes is present")
         case _ =>
@@ -364,16 +360,10 @@ trait WebappHTMLBuilder extends HtmlTreeBuilder with ValidationTreeBuilderLangua
   def label(str: String)(cl: => Any): Label = {
 
     //-- Check current Node is a FormInput
-<<<<<<< HEAD
     var r = currentNode match {
       
       case ii : FormInput if (ii.attributes.contains("name")) ⇒
- 
-=======
-    currentNode match {
-      case input: FormInput if (input.attributes.contains("name")) =>
 
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
         // Create label
         var lbl = new Label
         lbl("for" -> ii.getId)

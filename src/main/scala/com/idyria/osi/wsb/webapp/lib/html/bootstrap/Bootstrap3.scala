@@ -50,11 +50,9 @@ class TopNavbar extends Div  {
     this
   }
 
-<<<<<<< HEAD
+
   def header(cl: ⇒ HTMLNode[_ <: org.w3c.dom.Node]) {
-=======
-  def header(cl: => HTMLNode) {
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
+
 
     this.searchByName("header") match {
       case Some(h) => h.@->("content", cl)
@@ -119,19 +117,13 @@ class TopNavbar extends Div  {
               // Content -> do 
               case _ =>
 
-<<<<<<< HEAD
+
                 g.views.map(v ⇒ navElementToNode(v)).foreach {
                   elt ⇒ builder.add(elt)
                 }
                 g.groups.map(v ⇒ navElementToNode(v)).foreach {
                   elt ⇒ builder.add(elt)
-=======
-                g.views.map(v => navElementToNode(v)).foreach {
-                  elt => add(elt)
-                }
-                g.groups.map(v => navElementToNode(v)).foreach {
-                  elt => add(elt)
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
+
                 }
 
               // List(g.views.map(v => navElementToString(v)).mkString,g.groups.map(navElementToString(_)).mkString).mkString
@@ -142,11 +134,9 @@ class TopNavbar extends Div  {
 
         //-- View
         //------------------- 
-<<<<<<< HEAD
+
         case v: GroupTraitView ⇒ builder.li {
-=======
-        case v: GroupTraitView => li {
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
+
 
           builder.a(v.name, v.fullPath) {
               
@@ -154,11 +144,8 @@ class TopNavbar extends Div  {
         }
 
         // NO supported, just empty text then
-<<<<<<< HEAD
         case _ ⇒ builder.span("Unsupported Node")
-=======
-        case _ => span("Unsupported Node")
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
+
 
       }
 

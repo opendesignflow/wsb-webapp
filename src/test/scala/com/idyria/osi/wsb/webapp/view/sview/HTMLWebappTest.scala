@@ -74,7 +74,7 @@ class HTMLWebappTest extends FunSuite
 
         h1("Test Title 2")
 
-<<<<<<< HEAD
+//<<<<<<< HEAD
         /*currentNode ::: (Bootstrap3.topNavBar and {
           navbar ⇒
 =======

@@ -187,11 +187,8 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   // Content/ Render
   //----------------
-<<<<<<< HEAD
   var contentClosure: WWWView ⇒ HTMLNode[_ <: org.w3c.dom.Node] = { v ⇒ null }
-=======
-  var contentClosure: WWWView => HTMLNode = { v => null }
->>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
+
   
   def content( cl:  => HTMLNode[_ <: org.w3c.dom.Node]) = {
     this.contentClosure = {
