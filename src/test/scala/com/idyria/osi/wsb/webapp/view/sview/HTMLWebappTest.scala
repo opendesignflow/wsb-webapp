@@ -74,7 +74,7 @@ class HTMLWebappTest extends FunSuite
 
         h1("Test Title 2")
 
-        currentNode ::: (Bootstrap3.topNavBar and {
+        /*currentNode ::: (Bootstrap3.topNavBar and {
           navbar ⇒
 
             navbar.header {
@@ -85,7 +85,7 @@ class HTMLWebappTest extends FunSuite
 
             navbar.menusFromNavigation(app)
 
-        })
+        })*/
 
         // Form Test
         //------------------

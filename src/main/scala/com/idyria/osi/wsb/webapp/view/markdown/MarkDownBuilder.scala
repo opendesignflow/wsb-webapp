@@ -9,7 +9,7 @@ trait MarkdownBuilder extends WebappHTMLBuilder {
   
   var mdProcessor = new Markdown4jProcessor()
   
-  def markdown(str:String) : HTMLNode = {
+  def markdown(str:String) : HTMLNode[_] = {
     
     text(mdProcessor.process(str))
     
