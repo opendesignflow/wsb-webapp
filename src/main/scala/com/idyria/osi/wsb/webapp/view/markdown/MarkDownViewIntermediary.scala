@@ -106,7 +106,7 @@ class MarkdownViewIntermediary extends HTTPIntermediary with InWebApplication {
 
                   // JSON
                   //---------------
-                  case Some(Tuple2(_, v)) if (v.startsWith("application/json")) ⇒
+                  case Some(Tuple2(_, v)) if (v.startsWith("application/json")) =>
 
                     var rendered = composedView.produce(application, request).toString()
                     var jsonRes = s"""{"content":"${URLEncoder.encode(rendered)}"}"""

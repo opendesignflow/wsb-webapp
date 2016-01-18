@@ -101,7 +101,7 @@ class LDAPAuthProvider extends ElementBuffer with ViewRenderer with Authenticati
 
         // Everything there
         //-----------------
-        case (Some(username), Some(password)) ⇒
+        case (Some(username), Some(password)) =>
 
           env.put(Context.SECURITY_PRINCIPAL, s"""uid=${username},$baseDN""");
           env.put(Context.SECURITY_CREDENTIALS, password);
@@ -121,16 +121,16 @@ class LDAPAuthProvider extends ElementBuffer with ViewRenderer with Authenticati
           //--------------
           ctx.lookup(s"""uid=${username}""") match {
 
-            case ldapEntry: LdapContext ⇒
+            case ldapEntry: LdapContext =>
 
               var attributes = ldapEntry.getAttributes("")
               attributes.get("mail") match {
-                case null          ⇒
-                case mailAttribute ⇒ result.datas("email") = mailAttribute.get().toString()
+                case null          =>
+                case mailAttribute => result.datas("email") = mailAttribute.get().toString()
               }
             //println("Found User LDAP Entry: " + ldapEntry.getA)
 
-            case _ ⇒
+            case _ =>
           }
           // println("User Current Entry: " + res)
 
@@ -141,14 +141,14 @@ class LDAPAuthProvider extends ElementBuffer with ViewRenderer with Authenticati
 
         // Missing Stuff
         //-----------------
-        case (None, None)           ⇒ throw new AuthenticationException("both User Name and Password are missing for this provider")
-        case (Some(username), None) ⇒ throw new AuthenticationException("A Password must be provided for this provider")
-        case (None, Some(password)) ⇒ throw new AuthenticationException("A User Name must be provided for this provider")
+        case (None, None)           => throw new AuthenticationException("both User Name and Password are missing for this provider")
+        case (Some(username), None) => throw new AuthenticationException("A Password must be provided for this provider")
+        case (None, Some(password)) => throw new AuthenticationException("A User Name must be provided for this provider")
       }
 
     } catch {
-      case e: javax.naming.AuthenticationException ⇒ throw new AuthenticationException("Could not authenticate against LDAP, are credentials correct?")
-      case e: Throwable                            ⇒ throw e
+      case e: javax.naming.AuthenticationException => throw new AuthenticationException("Could not authenticate against LDAP, are credentials correct?")
+      case e: Throwable                            => throw e
     }
 
   }

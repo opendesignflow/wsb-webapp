@@ -45,16 +45,20 @@ class TopNavbar extends Div  {
   
   //override type Self = TopNavbar
 
-  def and(cl: TopNavbar ⇒ Unit): TopNavbar = {
+  def and(cl: TopNavbar => Unit): TopNavbar = {
     cl(this)
     this
   }
 
+<<<<<<< HEAD
   def header(cl: ⇒ HTMLNode[_ <: org.w3c.dom.Node]) {
+=======
+  def header(cl: => HTMLNode) {
+>>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
 
     this.searchByName("header") match {
-      case Some(h) ⇒ h.@->("content", cl)
-      case None ⇒
+      case Some(h) => h.@->("content", cl)
+      case None =>
     }
  
   }
@@ -74,7 +78,7 @@ class TopNavbar extends Div  {
 
         //-- Group
         //----------------
-        case g: GroupTrait ⇒
+        case g: GroupTrait =>
 
           // Create Group as List item
           //------------
@@ -83,16 +87,16 @@ class TopNavbar extends Div  {
           // Group View id is specified in attribute
           //--------
           var groupLink = g.view match {
-            case null ⇒ "#"
-            case v ⇒ g.fullPath + "/" + v
+            case null => "#"
+            case v => g.fullPath + "/" + v
           }
 
           // Do Sub Content
           //---------
           var groupContent = (g.views.size + g.groups.size) match {
 
-            case 0 ⇒ ""
-            case _ ⇒
+            case 0 => ""
+            case _ =>
 
               ""
             // List(g.views.map(v => navElementToString(v)).mkString,g.groups.map(navElementToString(_)).mkString).mkString
@@ -110,16 +114,24 @@ class TopNavbar extends Div  {
             (g.views.size + g.groups.size) match {
 
               // No content
-              case 0 ⇒
+              case 0 =>
 
               // Content -> do 
-              case _ ⇒
+              case _ =>
 
+<<<<<<< HEAD
                 g.views.map(v ⇒ navElementToNode(v)).foreach {
                   elt ⇒ builder.add(elt)
                 }
                 g.groups.map(v ⇒ navElementToNode(v)).foreach {
                   elt ⇒ builder.add(elt)
+=======
+                g.views.map(v => navElementToNode(v)).foreach {
+                  elt => add(elt)
+                }
+                g.groups.map(v => navElementToNode(v)).foreach {
+                  elt => add(elt)
+>>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
                 }
 
               // List(g.views.map(v => navElementToString(v)).mkString,g.groups.map(navElementToString(_)).mkString).mkString
@@ -130,7 +142,11 @@ class TopNavbar extends Div  {
 
         //-- View
         //------------------- 
+<<<<<<< HEAD
         case v: GroupTraitView ⇒ builder.li {
+=======
+        case v: GroupTraitView => li {
+>>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
 
           builder.a(v.name, v.fullPath) {
               
@@ -138,7 +154,11 @@ class TopNavbar extends Div  {
         }
 
         // NO supported, just empty text then
+<<<<<<< HEAD
         case _ ⇒ builder.span("Unsupported Node")
+=======
+        case _ => span("Unsupported Node")
+>>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
 
       }
 
@@ -146,14 +166,14 @@ class TopNavbar extends Div  {
 
     // Build Menu and add it to content
     this.searchByName("menu") match {
-      case Some(m) ⇒
+      case Some(m) =>
 
-        var res = app.navigationConfig.views.map(v ⇒ navElementToNode(v)).toList ::: app.navigationConfig.groups.map(navElementToNode(_)).toList
+        var res = app.navigationConfig.views.map(v => navElementToNode(v)).toList ::: app.navigationConfig.groups.map(navElementToNode(_)).toList
         m.@->("content", res)
 
       //println("Adding menu content: " + res)
 
-      case None ⇒
+      case None =>
     }
 
   }
@@ -196,7 +216,7 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
 
   // Form
   //----------------
-  def bs3Form(cl: ⇒ Any) = {
+  def bs3Form(cl: => Any) = {
 
     form {
       attribute("role" -> "form")
@@ -211,7 +231,7 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
     }
   }
 
-  def bs3FormGroup(cl: ⇒ Any) = {
+  def bs3FormGroup(cl: => Any) = {
 
     div {
       classes("form-group")
@@ -230,7 +250,7 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
   // Grid
   //----------------
 
-  def bs3Row(cl: ⇒ Any) = {
+  def bs3Row(cl: => Any) = {
 
     div {
       classes("row")
@@ -239,7 +259,7 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
 
   }
 
-  def bs3Col1(cl: ⇒ Any) = {
+  def bs3Col1(cl: => Any) = {
 
     div {
       classes("col-md-1")
@@ -247,7 +267,7 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
     }
 
   }
-  def bs3Col4(cl: ⇒ Any) = {
+  def bs3Col4(cl: => Any) = {
 
     div {
       classes("col-md-4")
@@ -255,28 +275,28 @@ trait BootstrapBuilder extends HtmlTreeBuilder {
     }
 
   }
-  def bs3Col6(cl: ⇒ Any) = {
+  def bs3Col6(cl: => Any) = {
     div {
       classes("col-md-6")
       cl
     }
   }
 
-  def bs3Col8(cl: ⇒ Any) = {
+  def bs3Col8(cl: => Any) = {
     div {
       classes("col-md-8")
       cl
     }
   }
 
-  def bs3Col9(cl: ⇒ Any) = {
+  def bs3Col9(cl: => Any) = {
     div {
       classes("col-md-9")
       cl
     }
   }
 
-  def bs3Col12(cl: ⇒ Any) = {
+  def bs3Col12(cl: => Any) = {
     div {
       classes("col-md-12")
       cl

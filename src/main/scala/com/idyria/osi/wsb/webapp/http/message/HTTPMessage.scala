@@ -91,18 +91,18 @@ class HTTPRequest(
   path.split("""\?""").lastOption match {
 
     //-- Query part
-    case Some(queryPart) ⇒ queryPart.split("&").foreach("""([\w_-]+)=(.+)""".r.findFirstMatchIn(_) match {
+    case Some(queryPart) => queryPart.split("&").foreach("""([\w_-]+)=(.+)""".r.findFirstMatchIn(_) match {
 
-      case Some(parameterMatch) ⇒
+      case Some(parameterMatch) =>
 
         logFine(s"[HTTP] URL Parameter: ${parameterMatch.group(1)} ${parameterMatch.group(2)}")
 
         this.addParameter(parameterMatch.group(1), parameterMatch.group(2))
-      case None ⇒
+      case None =>
 
     })
 
-    case None ⇒
+    case None =>
   }
 
   //-- Ensure path has no URL parameters
@@ -140,7 +140,7 @@ class HTTPRequest(
     if (name == "Cookie") {
 
       value.trim.split(";").foreach("""([\w]+)=(.+)""".r.findFirstMatchIn(_) match {
-        case Some(matched) ⇒
+        case Some(matched) =>
 
           var (cookieName, cookieValue) = (matched.group(1) -> matched.group(2))
 
@@ -148,7 +148,7 @@ class HTTPRequest(
 
           cookies = cookies + (cookieName -> cookieValue)
 
-        case None ⇒
+        case None =>
 
           logFine(s"Cookie but value regexp did not match")
       })
@@ -183,8 +183,8 @@ class HTTPRequest(
 
         var content = new String(this.bytes)
         ("""\b"""+name+"""\b"""+"""=([\w%+_\.-]+)(?:&|$$)""").r.findFirstMatchIn(content) match {
-          case Some(matched) ⇒ Option(java.net.URLDecoder.decode(matched.group(1), "UTF-8"))
-          case None ⇒ 
+          case Some(matched) => Option(java.net.URLDecoder.decode(matched.group(1), "UTF-8"))
+          case None => 
           
           // Look in normal URL parameters
           this.parameters.collectFirst { case param if (param._1 == name) => java.net.URLDecoder.decode( param._2, "UTF-8") }
@@ -207,8 +207,8 @@ class HTTPRequest(
             java.net.URLDecoder.decode(new String(p.bytes), "UTF-8")
       
           /* """.+; name="(.+)"\s*""".r.findFirstMatchIn(p.getParameter("Content-Disposition").get) match {
-              case Some(matched) ⇒matched.group(1)
-              case None ⇒ ""
+              case Some(matched) =>matched.group(1)
+              case None => ""
             }*/
 
         }
@@ -221,29 +221,29 @@ class HTTPRequest(
     // Try in all parts, including current
     //-------------------
     /*this.parameters.find(_._1 == name) match {
-      case Some(Tuple2(_, value)) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
-      case None ⇒
+      case Some(Tuple2(_, value)) => Option(java.net.URLDecoder.decode(value, "UTF-8"))
+      case None =>
       
       
         // handle Standard URL Encoded
         this.parameters.find(_._1 == "Content-Type") match {
   
         // Some URL parameters can be in content -> in bytes
-        case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded")) ⇒
+        case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded")) =>
   
           var content = new String(this.bytes)
   
           //println(s"******** Loogin for URL parameter in form content $content")
   
           ("""([\w%+_\.-]+)=([\w%+_\.-]+)(?:&|$)""").r.findAllMatchIn(content).foreach {
-            m ⇒
+            m =>
               this.addParameter(java.net.URLDecoder.decode(m.group(1), "UTF-8"),m.group(2) )
               
               m.group(2)
           }
   
         
-        case _ ⇒
+        case _ =>
       }
       
       
@@ -255,8 +255,8 @@ class HTTPRequest(
           case p if (p.getParameter("Content-Disposition").get.contains(s"name=\"$name\""))=>
 
             """.+; name="(.+)"\s*""".r.findFirstMatchIn(p.getParameter("Content-Disposition").get) match {
-              case Some(matched) ⇒matched.group(1)
-              case None ⇒ ""
+              case Some(matched) =>matched.group(1)
+              case None => ""
             }
 
         }
@@ -273,44 +273,44 @@ class HTTPRequest(
     //logFine(s"""[Content Type]${this.parameters.find(_._1 == "Content-Type")}""")
 
     /*this.parameters.foreach {
-      case (pname, value) ⇒ println(s"[URLParameter] Available: ${pname}")
+      case (pname, value) => println(s"[URLParameter] Available: ${pname}")
     }*/
 
     // Try in Normal Part Parameters
     //---------------
 
     /* this.parameters.get(name) match {
-      case Some(value) ⇒ Option(java.net.URLDecoder.decode(value, "UTF-8"))
+      case Some(value) => Option(java.net.URLDecoder.decode(value, "UTF-8"))
 
       // Ttry Alternatives
       //-------------------------
-      case None ⇒
+      case None =>
         // Request has a content of form url encoded
         this.parameters.get("Content-Type") match {
-          case Some(contentType) if (contentType.startsWith("application/x-www-form-urlencoded")) ⇒
+          case Some(contentType) if (contentType.startsWith("application/x-www-form-urlencoded")) =>
 
             logFine(s"[URLParameter] Looking into next part: ${this.nextParts.size}")
 
             // The Next part should be the content and parameter could be in protocol line
             this.nextParts.headOption match {
-              case Some(part) ⇒
+              case Some(part) =>
 
                 logFine(s"[URLParameter] Protocol Line: : ${part.protocolLines}")
 
                 (name + """=([\w%+_\.-]+)(?:&|$)""").r.findFirstMatchIn(part.protocolLines(0)) match {
 
                   // Found value for URL parameter, decode it:
-                  case Some(matched) ⇒
+                  case Some(matched) =>
 
                     logFine(s"Value for $name : /${java.net.URLDecoder.decode(matched.group(1), "UTF-8")}/")
                     Option(java.net.URLDecoder.decode(matched.group(1), "UTF-8"))
 
-                  case _ ⇒ None
+                  case _ => None
                 }
-              case None ⇒ None
+              case None => None
             }
 
-          case _ ⇒ None
+          case _ => None
         }
 
     }*/
@@ -323,8 +323,8 @@ class HTTPRequest(
 
     this.parameters.find(_._1 == "Content-Type") match {
 
-      case Some(Tuple2(_, contentType)) if (contentType.trim.matches("multipart/form-data.*")) ⇒ true
-      case _ ⇒ false
+      case Some(Tuple2(_, contentType)) if (contentType.trim.matches("multipart/form-data.*")) => true
+      case _ => false
     }
 
   }
@@ -333,14 +333,14 @@ class HTTPRequest(
 
     this.parameters.find(_._1 == "Content-Type") match {
 
-      case Some(Tuple2(_, contentType)) if (contentType.matches("multipart/form-data.*")) ⇒
+      case Some(Tuple2(_, contentType)) if (contentType.matches("multipart/form-data.*")) =>
 
         """.+; boundary=(.+)\s*""".r.findFirstMatchIn(contentType) match {
-          case Some(matched) ⇒ Option(matched.group(1))
-          case None ⇒ None
+          case Some(matched) => Option(matched.group(1))
+          case None => None
         }
 
-      case _ ⇒ None
+      case _ => None
     }
 
   }
@@ -445,7 +445,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
     firstLineRegexp.findFirstMatchIn(part.protocolLines(0)) match {
 
       //-- Got First Message
-      case Some(matched) ⇒
+      case Some(matched) =>
 
         logFine(s"[HTTP] -> First Message from part ${part.hashCode} with protocol line: " + part.protocolLines(0))
         lastFirstMessage = new HTTPRequest(matched.group(1), matched.group(2), matched.group(3))
@@ -453,10 +453,10 @@ object HTTPRequest extends MessageFactory with TLogSource {
         logFine("Got HTTP Message for path: " + lastFirstMessage.path + " and operation " + lastFirstMessage.operation)
 
         lastFirstMessage.operation match {
-          case "POST" ⇒
+          case "POST" =>
             //println(s"Post message content: ${new String(part.bytes)}");
 
-          case _ ⇒
+          case _ =>
         }
 
         // Add part ot message
@@ -499,7 +499,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
         }
 
       //-- Maybe a Continued Content in case of a multipart message
-      case None if (lastFirstMessage != null && lastFirstMessage.isMultipart) ⇒
+      case None if (lastFirstMessage != null && lastFirstMessage.isMultipart) =>
 
         logFine(s"[HTTP] -> Multipart element, create a request with the same path as previous message")
         var message = new HTTPRequest(lastFirstMessage.operation, lastFirstMessage.path, lastFirstMessage.version)
@@ -513,7 +513,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
         return message
 
       //-- No Idea
-      case _ ⇒
+      case _ =>
         logWarn(s"[HTTP] -> Not a first message and not a multipart part")
 
     }
@@ -539,7 +539,7 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
     if (name == "Set-Cookie") {
 
       value.trim.split(";").foreach("""([\w]+)=(.+)""".r.findFirstMatchIn(_) match {
-        case Some(matched) ⇒
+        case Some(matched) =>
 
           var (cookieName, cookieValue) = (matched.group(1) -> matched.group(2))
 
@@ -547,7 +547,7 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
 
           cookies = cookies + (cookieName -> cookieValue)
 
-        case None ⇒
+        case None =>
 
           logFine(s"Cookie but value regexp did not match")
       })
@@ -654,7 +654,7 @@ object HTTPResponse extends MessageFactory with TLogSource {
     firstLineRegexp.findFirstMatchIn(part.protocolLines(0)) match {
 
       //-- Got First Message
-      case Some(matched) ⇒
+      case Some(matched) =>
 
         logFine[HTTPResponse](s"[HTTP] -> First Message from part ${part.hashCode} with protocol line: " + part.protocolLines(0))
         lastFirstMessage = new HTTPResponse
@@ -713,7 +713,7 @@ object HTTPResponse extends MessageFactory with TLogSource {
       //lastFirstMessage.bytes
 
       //-- No Idea
-      case _ ⇒
+      case _ =>
         logWarn(s"[HTTP] -> Not a first message and not a multipart part")
 
     }

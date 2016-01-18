@@ -90,31 +90,31 @@ class WebApplication(
 
       //-- Application Inject
       //----------------
-      case t if (t == classOf[WebApplication]) ⇒ Option(this.asInstanceOf[T])
+      case t if (t == classOf[WebApplication]) => Option(this.asInstanceOf[T])
 
       //-- Database inject  
       //------------
-      case t if (t == classOf[Database]) ⇒
+      case t if (t == classOf[Database]) =>
 
         // Get or create
         this.getDatabase(id) match {
-          case Some(db) ⇒ Some(db.asInstanceOf[T])
-          case None ⇒ Some(this.createDatabase(id).asInstanceOf[T])
+          case Some(db) => Some(db.asInstanceOf[T])
+          case None => Some(this.createDatabase(id).asInstanceOf[T])
         }
 
-      case t if (t == classOf[OOXOODatabase]) ⇒
+      case t if (t == classOf[OOXOODatabase]) =>
 
         // Get or create
         this.getDatabase(id) match {
-          case Some(db) ⇒
+          case Some(db) =>
             println(s"---- Returning DB : " + id + " -> " + db)
             Some(db.asInstanceOf[T])
-          case None ⇒
+          case None =>
             println(s"---- Creating DB : " + id)
             Some(this.createDatabase(id).asInstanceOf[T])
         }
 
-      case _ ⇒ None
+      case _ => None
 
     }
   }
@@ -159,9 +159,9 @@ class WebApplication(
   def addDatabase(db: Database) = {
 
     db.id match {
-      case null ⇒ throw new RuntimeException(s"Cannot add Database if no id is specified")
-      case id if (this.databases.find(t ⇒ t._1 == id) == Some) ⇒ throw new RuntimeException(s"Cannot add Database $id which already exists")
-      case id ⇒ this.databases = this.databases + (db.id.toString -> db)
+      case null => throw new RuntimeException(s"Cannot add Database if no id is specified")
+      case id if (this.databases.find(t => t._1 == id) == Some) => throw new RuntimeException(s"Cannot add Database $id which already exists")
+      case id => this.databases = this.databases + (db.id.toString -> db)
     }
 
   }
@@ -219,12 +219,12 @@ class WebApplication(
         // Call Transform to find out all the Rules
         //------
         navigationConfig.onAll {
-          case r: GroupTraitRule ⇒
+          case r: GroupTraitRule =>
 
             try {
               /*var view = r.toView match {
-                case null ⇒ ""
-                case toView ⇒ toView.toString
+                case null => ""
+                case toView => toView.toString
               }
               */
               var ruleImpl = Thread.currentThread().getContextClassLoader().loadClass(r.id.toString).newInstance().asInstanceOf[NavigationRule]
@@ -235,7 +235,7 @@ class WebApplication(
                 e.printStackTrace()
                 throw new RuntimeException(s"An Error occured while setting navigation rule ${r.fullPath} ")
             }
-          case _ ⇒
+          case _ =>
         }
         
       case None => 
@@ -295,7 +295,7 @@ class WebApplication(
 
     var res: Option[URL] = None
     this.fileSources.find {
-      source ⇒
+      source =>
 
         // var possiblePath = new File(s"${source}${extractedPath}").toURI.toURL.toString
 
@@ -304,21 +304,21 @@ class WebApplication(
         // Try class Loader and stanadard file
         getClass.getClassLoader.getResource(extractedPath) match {
 
-          case null ⇒
+          case null =>
 
             var searchFile = new File(source, extractedPath.replace('/', File.separatorChar))
             logFine[WebApplication](s"**** Searching as File: ${searchFile}")
             searchFile match {
 
-              case f if (f.exists) ⇒
+              case f if (f.exists) =>
 
                 logFine(s"**** Found!")
                 res = Option(f.toURI.toURL)
                 true
 
-              case f ⇒ false
+              case f => false
             }
-          case url ⇒
+          case url =>
             logFine[WebApplication](s"**** Found!")
             res = Option(url);
             true
@@ -355,7 +355,7 @@ class WebApplication(
    * Add a controler from name and closure
    * Creates a default controller implementation that relies on provided closure
    */
-  def addController(controlerName: String)(closure: (WebApplication, HTTPRequest) ⇒ String): Unit = {
+  def addController(controlerName: String)(closure: (WebApplication, HTTPRequest) => String): Unit = {
 
     var newController = new Controller {
 
@@ -413,7 +413,7 @@ class WebApplication(
   //----------------------
   downClosure = {
 
-    message ⇒
+    message =>
 
       //---- Session
       //--------------------
@@ -432,7 +432,7 @@ class WebApplication(
 
   upClosure = {
 
-    message ⇒
+    message =>
 
       //---- Session
       //---------------------
@@ -454,20 +454,20 @@ class WebApplication(
     name = "Controllers"
 
     downClosure = {
-      message ⇒
+      message =>
 
         val httpMessage: HTTPRequest = message.asInstanceOf[HTTPRequest]
 
         // Controllers
         //------------------
         httpMessage.getURLParameter("action") match {
-          case Some(action) ⇒
+          case Some(action) =>
 
             println(s"[Action] Should be running action '${action}'")
 
             try {
               WebApplication.this.controllers.get(action) match {
-                case Some(controller) ⇒
+                case Some(controller) =>
 
                   //-- Execute controller
                   Injector.inject(controller)
@@ -483,22 +483,22 @@ class WebApplication(
                       response(redirectResponse)
 
                     //-- Change View Id to Result view ID if not ""
-                    case resultView if (resultView != "") ⇒
+                    case resultView if (resultView != "") =>
                       println(s"Changing path to $resultView")
                       httpMessage.changePath(resultView)
-                    case _ ⇒
+                    case _ =>
                   }
 
                   //-- If no render, stop here
                   httpMessage.getURLParameter("noRender") match {
-                    case Some(_) ⇒
+                    case Some(_) =>
 
                       response(HTTPResponse("application/json", "{}"), message)
 
-                    case None ⇒
+                    case None =>
                   }
 
-                case None ⇒ throw new RuntimeException(s"[Action] ...no handler found for action '${action}'")
+                case None => throw new RuntimeException(s"[Action] ...no handler found for action '${action}'")
               }
             } catch {
 
@@ -510,7 +510,7 @@ class WebApplication(
                 e.printStackTrace()
                 httpMessage.errors = httpMessage.errors :+ e
             }
-          case None ⇒
+          case None =>
         }
 
     }
@@ -527,10 +527,10 @@ class WebApplication(
 
     name = "Views"
 
-    acceptDown { message ⇒ (message.upped == false) }
+    acceptDown { message => (message.upped == false) }
 
     downClosure = {
-      message ⇒
+      message =>
 
         val httpMessage: HTTPRequest = message.asInstanceOf[HTTPRequest]
 
@@ -566,7 +566,7 @@ class WebApplication(
     }
 
     upClosure = {
-      message ⇒
+      message =>
 
     }
 
@@ -630,7 +630,7 @@ class WebApplication(
           }
 
           resURL match {
-            case Some(url) ⇒
+            case Some(url) =>
 
               // Prepare view
               //-----------------
@@ -643,7 +643,7 @@ class WebApplication(
 
                 // JSON
                 //---------------
-                case Some(Tuple2(_, v)) if (v.startsWith("application/json")) ⇒
+                case Some(Tuple2(_, v)) if (v.startsWith("application/json")) =>
 
                   var rendered = view.produce(WebApplication.this, m).toString()
                   var jsonRes = s"""{"content":"${URLEncoder.encode(rendered)}"}"""
@@ -655,7 +655,7 @@ class WebApplication(
                   response(HTTPResponse("text/html", view.produce(WebApplication.this, m).toString()))
               }
 
-            case None ⇒
+            case None =>
 
               throw new RuntimeException("Cannot Serve Resource because no view file could be found")
           }
@@ -691,7 +691,7 @@ class WebApplication(
         WebApplication.this.searchResource(message.asInstanceOf[HTTPRequest]) match {
 
           //-- Found Read and return
-          case Some(resourceURL) ⇒
+          case Some(resourceURL) =>
 
             var data = ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
 
@@ -699,13 +699,13 @@ class WebApplication(
 
               // Standard file contents
               //-----------------------
-              case path if (path.endsWith(".html")) ⇒ response(HTTPResponse("text/html", data))
-              case path if (path.endsWith(".css")) ⇒ response(HTTPResponse("text/css", data))
-              case path if (path.endsWith(".js")) ⇒ response(HTTPResponse("application/javascript", data))
-              case path if (path.endsWith(".png")) ⇒ response(HTTPResponse("image/png", data))
-              case path if (path.endsWith(".jpg")) ⇒ response(HTTPResponse("image/jpeg", data))
-              case path if (path.endsWith(".jpeg")) ⇒ response(HTTPResponse("image/jpeg", data))
-              case path if (path.endsWith(".gif")) ⇒ response(HTTPResponse("image/gif", data))
+              case path if (path.endsWith(".html")) => response(HTTPResponse("text/html", data))
+              case path if (path.endsWith(".css")) => response(HTTPResponse("text/css", data))
+              case path if (path.endsWith(".js")) => response(HTTPResponse("application/javascript", data))
+              case path if (path.endsWith(".png")) => response(HTTPResponse("image/png", data))
+              case path if (path.endsWith(".jpg")) => response(HTTPResponse("image/jpeg", data))
+              case path if (path.endsWith(".jpeg")) => response(HTTPResponse("image/jpeg", data))
+              case path if (path.endsWith(".gif")) => response(HTTPResponse("image/gif", data))
 
               // Special Views
               //------------------------
@@ -713,12 +713,12 @@ class WebApplication(
               //-- SView with not already created intermediary for this view
               //--  * Create the intermediary
               //case path if (path.endsWith(".sview")) =>
-              case _ ⇒ response(HTTPResponse("text/plain", data), message)
+              case _ => response(HTTPResponse("text/plain", data), message)
 
             }
 
           //-- Nothing found -> Continue to handler
-          case None ⇒
+          case None =>
         }
 
     }
@@ -732,24 +732,24 @@ class WebApplication(
 
     name = "404 Not Found"
 
-    acceptDown { message ⇒ (message.errors.isEmpty && message.upped == false) }
+    acceptDown { message => (message.errors.isEmpty && message.upped == false) }
 
     downClosure = {
 
-      message ⇒
+      message =>
 
         println(s"********** ERROR 404 Not Found Intermediary for (${message.qualifier}) **************")
 
         // Try to use custom view
         //-----------------
         searchResource("WEB-INF/404.sview") match {
-          case Some(customView) ⇒
+          case Some(customView) =>
 
             var responseMessage = HTTPResponse("text/html", SView(customView).render(WebApplication.this, message.asInstanceOf[HTTPRequest]))
             responseMessage.code = 404
             response(responseMessage, message)
 
-          case None ⇒
+          case None =>
 
             var errorText = s"""
 			Could not Find Content for view: ${message.asInstanceOf[HTTPRequest].path} 
@@ -770,10 +770,10 @@ class WebApplication(
 
     name = "500 Errors"
 
-    acceptDown { m ⇒ !m.errors.isEmpty && m.upped == false }
+    acceptDown { m => !m.errors.isEmpty && m.upped == false }
 
     downClosure = {
-      message ⇒
+      message =>
 
         println(s"********** ERROR 500 Error while answering Intermediary for (${message.qualifier}) **************")
 
@@ -785,16 +785,16 @@ class WebApplication(
 
           // JSON
           //---------------
-          case Some(Tuple2(_, v)) if (v.startsWith("application/json")) ⇒
+          case Some(Tuple2(_, v)) if (v.startsWith("application/json")) =>
 
             var errors = message.errors.collect {
-              case e: ForException ⇒
+              case e: ForException =>
 
                 e.printStackTrace()
 
                 s"""{"error": "${e.getLocalizedMessage()}", "source" : "${e.target}" }"""
 
-              case e: Throwable ⇒
+              case e: Throwable =>
 
                 e.printStackTrace()
 
@@ -821,7 +821,7 @@ class WebApplication(
 	        	${
               // message.errors.map(e => List(e.getMessage.replace("""\n""", "<br/>"), e.getStackTrace().mkString("<br/>")).mkString("<br/>")).mkString("<br/>")
 
-              message.errors.map(e ⇒ s"""<div><h3>Error: ${e.getClass().getCanonicalName()} : ${e.getLocalizedMessage()}</h3></div><div><pre>${List(e.getMessage, e.getStackTrace().mkString("\n")).mkString}</pre></div>""").mkString("\n\n")
+              message.errors.map(e => s"""<div><h3>Error: ${e.getClass().getCanonicalName()} : ${e.getLocalizedMessage()}</h3></div><div><pre>${List(e.getMessage, e.getStackTrace().mkString("\n")).mkString}</pre></div>""").mkString("\n\n")
 
             }
 	
@@ -851,7 +851,7 @@ class WebApplication(
       this.filter = (s"""http:${WebApplication.makePath(basePath, path)}:GET""").r
 
       downClosure = {
-        message ⇒
+        message =>
 
           println(s"Rendering view: ${this.filter}")
 

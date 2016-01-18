@@ -50,8 +50,8 @@ object Injector extends TLogSource {
       sys.error(s"TODO - IMPLEMENT for type: " + args + " ")
 
       Injector.inject(sc.parts(0).toString) match {
-        case Some(value) ⇒ value
-        case None        ⇒ throw new RuntimeException(s"Used inject string interpolation with id ${sc.parts(0)} yield None result ")
+        case Some(value) => value
+        case None        => throw new RuntimeException(s"Used inject string interpolation with id ${sc.parts(0)} yield None result ")
       }
 
       //var res: T = _
@@ -72,7 +72,7 @@ object Injector extends TLogSource {
 
     injector.supportedTypes.foreach {
 
-      t ⇒ supportedTypes = supportedTypes + (t -> (supportedTypes.getOrElse(t, List[Injector]()) :+ injector))
+      t => supportedTypes = supportedTypes + (t -> (supportedTypes.getOrElse(t, List[Injector]()) :+ injector))
     }
 
   }
@@ -94,8 +94,8 @@ object Injector extends TLogSource {
   def inject[T](id: String)(implicit tag: ClassTag[T]): T = {
 
     Injector.injectOption[T](id)(tag) match {
-      case None ⇒ throw new RuntimeException(s"Injecting value for id $id did not yield any result")
-      case Some(value) ⇒ value.asInstanceOf[T]
+      case None => throw new RuntimeException(s"Injecting value for id $id did not yield any result")
+      case Some(value) => value.asInstanceOf[T]
     }
 
   }
@@ -107,18 +107,18 @@ object Injector extends TLogSource {
 
     // Look in all supported types for and injector having our id
 
-    var resObjects = supportedTypes.filter(t ⇒ t._1 == cl).map { case (cl, injectors) ⇒ injectors.map(_.inject(id, cl)).filterNot(_ == None) }.flatten
+    var resObjects = supportedTypes.filter(t => t._1 == cl).map { case (cl, injectors) => injectors.map(_.inject(id, cl)).filterNot(_ == None) }.flatten
 
     /*var resObjects = supportedTypes.map {
-      case (cl, injectors) ⇒ injectors.map { _.inject(id, cl) }.filterNot(_ == None)
+      case (cl, injectors) => injectors.map { _.inject(id, cl) }.filterNot(_ == None)
     }.flatten*/
 
     // Analyse results
     //---------
     resObjects.size match {
-      case 0 ⇒ None
-      case 1 ⇒ resObjects.head.asInstanceOf[Option[T]]
-      case s ⇒ throw new RuntimeException(s"Used id only ($id) Injection without type definition yield multiple possible values of classes: ${resObjects.map { _.get.getClass() }}, change injection method or make the ids unique")
+      case 0 => None
+      case 1 => resObjects.head.asInstanceOf[Option[T]]
+      case s => throw new RuntimeException(s"Used id only ($id) Injection without type definition yield multiple possible values of classes: ${resObjects.map { _.get.getClass() }}, change injection method or make the ids unique")
     }
 
   }
@@ -142,7 +142,7 @@ object Injector extends TLogSource {
     classes.map(cl => cl.getDeclaredFields().toList ::: cl.getFields().toList ).flatten.filter {
 
       // Filter unsupported types and ones without inject annotation
-      field ⇒
+      field =>
 
         // println("Testing field: " + field.getName() + " -> " + field.getAnnotation(classOf[Inject]))
         
@@ -153,7 +153,7 @@ object Injector extends TLogSource {
     }.foreach {
 
       // For each supported
-      field ⇒
+      field =>
 
         // Find Id through inject annotation
         var id = field.getAnnotation(classOf[Inject]).value()
@@ -168,16 +168,16 @@ object Injector extends TLogSource {
         values.size match {
 
           // Null if no value
-          case 0 ⇒
+          case 0 =>
             field.setAccessible(true);
 
             field.set(targetObject, null)
-          case 1 ⇒
+          case 1 =>
 
             //println("Setting value  " + values.head)
           logFine[Injector]("Setting value  " + values.head)
             field.setAccessible(true); field.set(targetObject, values.head.get)
-          case _ ⇒ 
+          case _ => 
           
           throw new RuntimeException(s"Injection on field ${field.getName()} (id: $id) of class ${targetObject.getClass} failed because multiple values are available")
 

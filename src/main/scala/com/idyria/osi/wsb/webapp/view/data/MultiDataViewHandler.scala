@@ -92,7 +92,7 @@ abstract class MultiDataViewHandler(var basePath: String) extends HTTPIntermedia
 
   //-- Find All Methods
   getClass.getDeclaredMethods().foreach {
-    m ⇒
+    m =>
 
       var viewHandlerAnnotation = m.getAnnotation(classOf[ViewHandler])
 
@@ -100,14 +100,14 @@ abstract class MultiDataViewHandler(var basePath: String) extends HTTPIntermedia
 
         //-- WebApplication + request
         //--------------------
-        case array if (array.size == 2 && array(0) == classOf[WebApplication] && array(1) == classOf[HTTPRequest]) ⇒
+        case array if (array.size == 2 && array(0) == classOf[WebApplication] && array(1) == classOf[HTTPRequest]) =>
 
           methods = methods + (m.getName() -> m)
 
           this <= new MethodHandlerIntermediary(m) {
 
             onDownMessage {
-              request ⇒
+              request =>
 
                 m.invoke(MultiDataViewHandler.this, Array(MultiDataViewHandler.this.application, request))
 
@@ -116,14 +116,14 @@ abstract class MultiDataViewHandler(var basePath: String) extends HTTPIntermedia
           }
 
         //-- Request
-        case array if (array.size == 1 && array(0) == classOf[HTTPRequest]) ⇒
+        case array if (array.size == 1 && array(0) == classOf[HTTPRequest]) =>
 
           methods = methods + (m.getName() -> m)
 
           this <= new MethodHandlerIntermediary(m) {
 
             onDownMessage {
-              request ⇒
+              request =>
 
                 m.invoke(MultiDataViewHandler.this, Array(request))
 
@@ -131,14 +131,14 @@ abstract class MultiDataViewHandler(var basePath: String) extends HTTPIntermedia
           }
 
         //-- Void + ViewHandler
-        case array if (array.size == 0 && viewHandlerAnnotation != null) ⇒
+        case array if (array.size == 0 && viewHandlerAnnotation != null) =>
 
           methods = methods + (m.getName() -> m)
 
           this <= new MethodHandlerIntermediary(m) {
 
             onDownMessage {
-              request ⇒
+              request =>
 
                 m.invoke(MultiDataViewHandler.this, Array[Any]())
 
@@ -146,7 +146,7 @@ abstract class MultiDataViewHandler(var basePath: String) extends HTTPIntermedia
           }
 
         //-- Unsupported
-        case _ ⇒
+        case _ =>
 
       }
 
@@ -155,12 +155,12 @@ abstract class MultiDataViewHandler(var basePath: String) extends HTTPIntermedia
   //-- For Each add a sub intermediary
   //---------------
   /*methods.foreach {
-    case (name, method) ⇒
+    case (name, method) =>
 
       this <= new HTTPIntermediary {
 
         onDownMessage {
-          request ⇒
+          request =>
 
             method.getParameterTypes()
 
