@@ -17,9 +17,9 @@
 	<!-- SCM -->
 	<!-- ### -->
 	<scm>
-		<connection>scm:git:git://bitbucket.org/osi/${project.artifactId}.git</connection>
-		<developerConnection>scm:git:git@bitbucket.org:osi/${project.artifactId}.git</developerConnection>
-		<url>http://bitbucket.org/osi/${project.artifactId}.git</url>
+		<connection>scm:git:git@github.com:richnou/wsb-webapp.git</connection>
+		<developerConnection>scm:git:git@github.com:richnou/wsb-webapp.git</developerConnection>
+		<url>https://github.com/richnou/wsb-webapp</url>
 	</scm>
 
 	<!-- Site -->
@@ -38,16 +38,7 @@
 		<!-- ################## -->
 		<resources>
 			<resource>
-				<directory>${basedir}/src/main/java</directory>
-			</resource>
-			<resource>
-				<directory>${basedir}/src/examples/scala</directory>
-			</resource>
-			<resource>
 				<directory>${basedir}/src/main/javascript</directory>
-			</resource>
-			<resource>
-				<directory>${basedir}/src/test/scala</directory>
 			</resource>
 			<resource>
 				<directory>${basedir}/src/main/resources</directory>
