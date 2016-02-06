@@ -39,22 +39,26 @@ import  com.idyria.osi.vui.impl.html.components._
 /**
  * Inject points
  */
-class TopNavbar extends Div with HtmlTreeBuilder {
+class TopNavbar extends Div  {
 
-  type Self = TopNavbar
+  var builder = new HtmlTreeBuilder {}
+  
+  //override type Self = TopNavbar
 
   def and(cl: TopNavbar => Unit): TopNavbar = {
     cl(this)
     this
   }
 
-  def header(cl: => HTMLNode) {
+
+  def header(cl: ⇒ HTMLNode[_ <: org.w3c.dom.Node]) {
+
 
     this.searchByName("header") match {
       case Some(h) => h.@->("content", cl)
       case None =>
     }
-
+ 
   }
 
   /**
@@ -66,7 +70,7 @@ class TopNavbar extends Div with HtmlTreeBuilder {
     //-------------------
 
     //-- Base recursive function
-    def navElementToNode(elt: Any): HTMLNode = {
+    def navElementToNode(elt: Any): HTMLNode[_ <: org.w3c.dom.Node] = {
 
       elt match {
 
@@ -98,9 +102,9 @@ class TopNavbar extends Div with HtmlTreeBuilder {
           }
           // Gather in this group content
           //--------
-          li {
+          builder.li {
             // Link
-            a(g.name, groupLink) {
+            builder.a(g.name, groupLink) {
               
             }
 
@@ -113,11 +117,13 @@ class TopNavbar extends Div with HtmlTreeBuilder {
               // Content -> do 
               case _ =>
 
-                g.views.map(v => navElementToNode(v)).foreach {
-                  elt => add(elt)
+
+                g.views.map(v ⇒ navElementToNode(v)).foreach {
+                  elt ⇒ builder.add(elt)
                 }
-                g.groups.map(v => navElementToNode(v)).foreach {
-                  elt => add(elt)
+                g.groups.map(v ⇒ navElementToNode(v)).foreach {
+                  elt ⇒ builder.add(elt)
+
                 }
 
               // List(g.views.map(v => navElementToString(v)).mkString,g.groups.map(navElementToString(_)).mkString).mkString
@@ -128,15 +134,18 @@ class TopNavbar extends Div with HtmlTreeBuilder {
 
         //-- View
         //------------------- 
-        case v: GroupTraitView => li {
 
-          a(v.name, v.fullPath) {
+        case v: GroupTraitView ⇒ builder.li {
+
+
+          builder.a(v.name, v.fullPath) {
               
             }
         }
 
         // NO supported, just empty text then
-        case _ => span("Unsupported Node")
+        case _ ⇒ builder.span("Unsupported Node")
+
 
       }
 

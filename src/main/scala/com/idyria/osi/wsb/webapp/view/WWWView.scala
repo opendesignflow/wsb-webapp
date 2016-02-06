@@ -43,12 +43,12 @@ import com.idyria.osi.tea.logging.TLogSource
 import com.idyria.osi.tea.io.TeaIOUtils
 import java.io.File
 import com.idyria.osi.aib.appserv.AIBApplicationClassloader
-import com.idyria.osi.vui.impl.html.components.HTMLNode
+
 
 /**
  *
  */
-class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLNode] with ApplyTrait with TLogSource {
+class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLNode[_ <: org.w3c.dom.Node]] with ApplyTrait with TLogSource {
 
   type Self = WWWView
 
@@ -64,7 +64,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   var parts = Map[String, WWWView]()
 
-  def part(name: String)(cl: (WebApplication, HTTPRequest) => HTMLNode): WWWView = {
+  def part(name: String)(cl: (WebApplication, HTTPRequest) => HTMLNode[_ <: org.w3c.dom.Node]): WWWView = {
 
     //-- Create WWWView for part
     var p = new WWWView {
@@ -86,7 +86,11 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
    * This method creates the part, renders it with current request, and place it into the result tree
    * The ID of resulting HTML node is set to part-$name
    */
+<<<<<<< HEAD
+  def placePart(name: String)(cl: (WebApplication, HTTPRequest) ⇒ HTMLNode[_ <: org.w3c.dom.Node]): WWWView = {
+=======
   def placePart(name: String)(cl: (WebApplication, HTTPRequest) => HTMLNode): WWWView = {
+>>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
 
     //- Create
     var view = part(name)(cl)
@@ -102,7 +106,7 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
    * This method creates the part, renders it with current request, and place it into the result tree
    * The ID of resulting HTML node is set to part-$name
    */
-  def placePart(name: String): HTMLNode = {
+  def placePart(name: String): HTMLNode[_ <: org.w3c.dom.Node] = {
 
     logFine[WWWView](s"[RW] Inside view: $hashCode looking up part $name")
 
@@ -183,9 +187,10 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
 
   // Content/ Render
   //----------------
-  var contentClosure: WWWView => HTMLNode = { v => null }
+  var contentClosure: WWWView ⇒ HTMLNode[_ <: org.w3c.dom.Node] = { v ⇒ null }
+
   
-  def content( cl:  => HTMLNode) = {
+  def content( cl:  => HTMLNode[_ <: org.w3c.dom.Node]) = {
     this.contentClosure = {
       v => cl
     }
@@ -198,12 +203,12 @@ class WWWView extends ViewRenderer with WebappHTMLBuilder with PlaceHolder[HTMLN
     this.contentClosure = cl
   }*/
 
-  def render: HTMLNode = {
+  def render: HTMLNode[_ <: org.w3c.dom.Node] = {
     logFine[WWWView](s"[RW] Rendering view: " + this.hashCode)
     Injector.inject(this)
     contentClosure(this)
   }
-  def render(application: WebApplication, request: HTTPRequest): HTMLNode = {
+  def render(application: WebApplication, request: HTTPRequest): HTMLNode[_ <: org.w3c.dom.Node] = {
     this.application = (application)
     this.request = (request)
     Injector.inject(this)
@@ -276,7 +281,7 @@ class WWWFastView extends WWWView with DelayedInit {
       }
       /*var res = body
       res match {
-        case t if(classOf[HTMLNode].isAssignableFrom(t.getClass())) => t.asInstanceOf[HTMLNode]
+        case t if(classOf[HTMLNode[_ <: org.w3c.dom.Node]].isAssignableFrom(t.getClass())) => t.asInstanceOf[HTMLNode[_ <: org.w3c.dom.Node]]
         case _ => throw new RuntimeException("Constructor of Fast View must return an HTML Node")
       }*/
     }
@@ -285,7 +290,7 @@ class WWWFastView extends WWWView with DelayedInit {
 
 object WWWView extends SourceCompiler[WWWView] {
 
-  implicit def viewToSGNode(v: WWWView): HTMLNode = v.render
+  implicit def viewToSGNode(v: WWWView): HTMLNode[_ <: org.w3c.dom.Node] = v.render
 
   // Configured Imports
   //---------------
@@ -447,7 +452,7 @@ v.contentClosure =  { view =>
 
 class WWWViewCompiler extends SourceCompiler[WWWView] {
 
-  implicit def viewToSGNode(v: WWWView): HTMLNode = v.render
+  implicit def viewToSGNode(v: WWWView): HTMLNode[_ <: org.w3c.dom.Node] = v.render
 
   // Configured Imports
   //---------------
@@ -598,7 +603,7 @@ v.contentClosure =  { view =>
 
 class WWWViewCompiler2 extends SourceCompiler[Class[WWWView]] {
 
-  implicit def viewToSGNode(v: WWWView): HTMLNode = v.render
+  implicit def viewToSGNode(v: WWWView): HTMLNode[_ <: org.w3c.dom.Node] = v.render
 
   // Configured Imports
   //---------------

@@ -74,8 +74,13 @@ class HTMLWebappTest extends FunSuite
 
         h1("Test Title 2")
 
+//<<<<<<< HEAD
+        /*currentNode ::: (Bootstrap3.topNavBar and {
+          navbar ⇒
+=======
         currentNode ::: (Bootstrap3.topNavBar and {
           navbar =>
+>>>>>>> bfda90ddef5c6b3f0485e258a1ccffb3ec09282c
 
             navbar.header {
               a("Home", "/")  {
@@ -85,7 +90,7 @@ class HTMLWebappTest extends FunSuite
 
             navbar.menusFromNavigation(app)
 
-        })
+        })*/
 
         // Form Test
         //------------------
