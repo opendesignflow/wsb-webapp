@@ -35,9 +35,7 @@ import com.idyria.osi.wsb.webapp.navigation._
 import com.idyria.osi.wsb.webapp.navigation.NavigationRule
 import com.idyria.osi.wsb.webapp.navigation.controller.Controller
 import com.idyria.osi.wsb.webapp.navigation.controller.Controller
-import com.idyria.osi.wsb.webapp.view._
-import com.idyria.osi.wsb.webapp.view.ViewRenderer
-import com.idyria.osi.wsb.webapp.view.sview._
+
 import com.idyria.osi.ooxoo.db.store.fs.FSStore
 import com.idyria.osi.wsb.webapp.injection.Injector
 import com.idyria.osi.wsb.webapp.db.OOXOODatabase
@@ -51,13 +49,13 @@ import java.net.URLEncoder
  *
  *
  */
-class WebApplication(
+abstract class WebApplication(
 
   /**
    * The base URL path of the application
    */
   var basePath: String) extends Intermediary with Injector {
-
+/*
   // Constructor
   //-----------
 
@@ -862,7 +860,7 @@ class WebApplication(
       }
     }
   }
-
+*/
 }
 
 object WebApplication {

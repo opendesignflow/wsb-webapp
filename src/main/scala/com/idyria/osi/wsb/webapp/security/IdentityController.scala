@@ -6,8 +6,7 @@ import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import com.idyria.osi.wsb.webapp.view.Inject
 import com.idyria.osi.wsb.webapp.injection.Injector
-import com.idyria.osi.wsb.webapp.view.WebappHTMLBuilder
-import com.idyria.osi.wsb.webapp.view.WWWView
+
 import com.idyria.osi.wsb.webapp.db.OOXOODatabase
 
 /*
@@ -32,7 +31,7 @@ abstract class IdentityController {
   @Inject("main")
   var database: OOXOODatabase = null
 
-  WWWView.addCompileTrait(classOf[IdentityInterfaceProvider])
+ // WWWView.addCompileTrait(classOf[IdentityInterfaceProvider])
   Injector.inject(this)
   Injector(this)
 
@@ -64,10 +63,10 @@ abstract class IdentityController {
 
   // init
   var authController = new AuthenticationController
-  application.addController(authController)
+  //application.addController(authController)
 
   var fedController = new FederationController
-  application.addController(fedController)
+ // application.addController(fedController)
 
   // Interface
   //-----------------
@@ -268,7 +267,7 @@ abstract class IdentityController {
   }
 
 }
-
+/*
 trait IdentityInterfaceProvider extends WebappHTMLBuilder {
 
   def authToken = request.getSession("token").asInstanceOf[Option[AuthToken]]
@@ -291,7 +290,7 @@ trait IdentityInterfaceProvider extends WebappHTMLBuilder {
     identityControler.reset(user)
   }
 
-}
+}*/
 
 object IdentityController {
 

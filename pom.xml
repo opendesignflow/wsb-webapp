@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.idyria.osi.wsb</groupId>
 	<artifactId>wsb-webapp</artifactId>
-	<version>1.1.0-SNAPSHOT</version>
+	<version>2.0.0-SNAPSHOT</version>
 	<inceptionYear>2013</inceptionYear>
 	<name>WSB Webapp</name>
 
@@ -98,31 +98,14 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>net.alchim31.maven</groupId>
-				<artifactId>scala-maven-plugin</artifactId>
-				<version>${scala.plugin.version}</version>
-				<executions>
-					<execution>
-						<id>add-source</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-						<configuration>
-							<sourceDir>${basedir}/src/examples/scala</sourceDir>
-							<sourceDir>${basedir}/src/main/java</sourceDir>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+			
 			<!-- Licenses -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>license-maven-plugin</artifactId>
 				<version>1.6</version>
 				<configuration>
-					<licenseName>gpl_v3</licenseName>
+					<licenseName>agpl_v3</licenseName>
 					<extraExtensions>
 						<scala>java</scala>
 					</extraExtensions>
@@ -268,22 +251,22 @@
 			<artifactId>security-utils</artifactId>
 			<version>1.2</version>
 		</dependency>
-		<dependency>
-			<groupId>com.idyria.osi.vui</groupId>
-			<artifactId>vui-core</artifactId>
-			<version>1.1.1-SNAPSHOT</version>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>com.idyria.osi.vui</groupId> -->
+<!-- 			<artifactId>vui-core</artifactId> -->
+<!-- 			<version>1.1.1-SNAPSHOT</version> -->
+<!-- 		</dependency> -->
 		<dependency>
 			<groupId>com.sun.faces</groupId>
 			<artifactId>jsf-api</artifactId>
 			<version>2.2.3</version>
 		</dependency>
-		<dependency>
-			<groupId>com.idyria.osi.aib</groupId>
-			<artifactId>aib-appserv</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
-			<scope>provided</scope>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>com.idyria.osi.aib</groupId> -->
+<!-- 			<artifactId>aib-appserv</artifactId> -->
+<!-- 			<version>0.0.1-SNAPSHOT</version> -->
+<!-- 			<scope>provided</scope> -->
+<!-- 		</dependency> -->
 		<dependency>
 			<groupId>com.paypal.sdk</groupId>
 			<artifactId>rest-api-sdk</artifactId>
@@ -296,6 +279,11 @@
 		</dependency>
 
 
+		<dependency>
+			<groupId>com.idyria.osi.vui2</groupId>
+			<artifactId>vui2-html</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 </project>
