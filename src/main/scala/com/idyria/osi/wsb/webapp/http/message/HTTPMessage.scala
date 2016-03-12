@@ -33,6 +33,7 @@ import java.net.URL
 import java.io.ByteArrayInputStream
 import java.util.zip.GZIPInputStream
 import java.io.ByteArrayOutputStream
+import com.idyria.osi.vui.html.HTMLNode
 
 trait HTTPMessage extends Message {
 
@@ -637,6 +638,16 @@ $sessionId
     res
 
   }
+  
+  // Content
+  //--------------
+  def htmlContent_=(h:HTMLNode[_,HTMLNode[_,_]]) : Unit = {
+    this.contentType = "text/html"
+    this.content = ByteBuffer.wrap(h.toString().getBytes)
+  }
+  
+  // Dummy
+  def htmlContent : HTMLNode[_,HTMLNode[_,_]] = null
 
 }
 object HTTPResponse extends MessageFactory with TLogSource {

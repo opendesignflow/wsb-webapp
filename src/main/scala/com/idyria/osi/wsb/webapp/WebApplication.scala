@@ -54,7 +54,7 @@ abstract class WebApplication(
   /**
    * The base URL path of the application
    */
-  var basePath: String) extends Intermediary with Injector {
+  var basePath: String) extends Intermediary[HTTPMessage] with Injector {
 /*
   // Constructor
   //-----------
