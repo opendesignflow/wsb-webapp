@@ -15,7 +15,7 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
   acceptDown { message =>
 
     var r = (message.errors.isEmpty && message.upped == false)
-    println(s"Resource acccepts: " + message.path + " -> " + basePath + " -> " + message.errors.isEmpty)
+    logFine[ResourcesIntermediary](s"Resource acccepts: " + message.path + " -> " + basePath + " -> " + message.errors.isEmpty)
     r
   }
 
@@ -125,7 +125,7 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
 
     message =>
       //message.path = message.path.stripPrefix(basePath)
-      println(s"Resource process: " + message.path + " -> " + basePath)
+      logFine[ResourcesIntermediary](s"Resource process: " + message.path + " -> " + basePath)
       searchResource(message) match {
 
         //-- Found Read and return
@@ -137,13 +137,13 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
 
             // Standard file contents
             //-----------------------
-            case path if (path.endsWith(".html")) => response(HTTPResponse("text/html", data))
-            case path if (path.endsWith(".css")) => response(HTTPResponse("text/css", data))
-            case path if (path.endsWith(".js")) => response(HTTPResponse("application/javascript", data))
-            case path if (path.endsWith(".png")) => response(HTTPResponse("image/png", data))
-            case path if (path.endsWith(".jpg")) => response(HTTPResponse("image/jpeg", data))
-            case path if (path.endsWith(".jpeg")) => response(HTTPResponse("image/jpeg", data))
-            case path if (path.endsWith(".gif")) => response(HTTPResponse("image/gif", data))
+            case path if (path.endsWith(".html")) => response(HTTPResponse("text/html", data),message)
+            case path if (path.endsWith(".css")) => response(HTTPResponse("text/css", data),message)
+            case path if (path.endsWith(".js")) => response(HTTPResponse("application/javascript", data),message)
+            case path if (path.endsWith(".png")) => response(HTTPResponse("image/png", data),message)
+            case path if (path.endsWith(".jpg")) => response(HTTPResponse("image/jpeg", data),message)
+            case path if (path.endsWith(".jpeg")) => response(HTTPResponse("image/jpeg", data),message)
+            case path if (path.endsWith(".gif")) => response(HTTPResponse("image/gif", data),message)
 
             // Special Views
             //------------------------
