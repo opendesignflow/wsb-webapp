@@ -207,7 +207,7 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
 
         //-- Stack results
         //println(s"Countent: " + new String(payLoad.map { v => v.toChar }))
-        this.availableDatas.push(ByteBuffer.wrap(payLoad.map { v => v.toByte }))
+        this.availableDatas += (ByteBuffer.wrap(payLoad.map { v => v.toByte }))
 
         logFine(s"Stacked: " + new String(this.availableDatas.head.array()))
 
