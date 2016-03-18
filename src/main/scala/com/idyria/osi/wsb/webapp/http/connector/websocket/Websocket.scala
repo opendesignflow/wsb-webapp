@@ -51,7 +51,7 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
 
   def receive(buffer: ByteBuffer): Boolean = {
 
-    logFine(s"Received some Websocket datas, with ordering: ${buffer.order().toString()} (native: ${java.nio.ByteOrder.nativeOrder()}), capacity: " + buffer.remaining())
+    logFine[WebsocketProtocolhandler](s"Received some Websocket datas, with ordering: ${buffer.order().toString()} (native: ${java.nio.ByteOrder.nativeOrder()}), capacity: " + buffer.remaining())
 
     //buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
 
@@ -224,7 +224,7 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
 
   def send(buffer: ByteBuffer, nc: NetworkContext): ByteBuffer = {
 
-    logFine(s"Sending Websocket for length of: " + buffer.remaining)
+    logFine[WebsocketProtocolhandler](s"Sending Websocket for length of: " + buffer.remaining)
 
     //-- Prepare Header
     //-------------------------

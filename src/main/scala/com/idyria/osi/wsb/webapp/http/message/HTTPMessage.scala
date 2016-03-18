@@ -114,9 +114,17 @@ class HTTPRequest(
 
   def getCurrentURL = "http://" + this.getParameter("Host").get + "/" + this.path
 
+  /**
+   * Update the path
+   * Ensures the path always has a starting "/"
+   */
   def changePath(newPath: String) = {
-    this.path = newPath
-    this.qualifier = s"http:$newPath:$operation"
+    newPath.startsWith("/") match {
+      case true => this.path = newPath
+      case false => this.path = "/"+newPath
+    }
+    
+    this.qualifier = s"http:${this.path}:$operation"
   }
 
   def toBytes = {

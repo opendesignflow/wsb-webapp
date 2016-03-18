@@ -9,14 +9,23 @@ import com.idyria.osi.vui.core.view.AViewCompiler
 import com.idyria.osi.vui.html.HTMLNode
 
  // with StandaloneHTMLUIBuilder
-class LocalWebHTMLVIew extends AView[HTMLElement,HTMLNode[HTMLElement,HTMLNode[HTMLElement,_]]]  {
+class LocalWebHTMLVIew extends AView[HTMLElement,HTMLNode[HTMLElement,HTMLNode[HTMLElement,_]]] with DefaultLocalWebHTMLBuilder {
 
+  override def clone = {
+    getClass.newInstance()
+  }
+  
 }
 
 object LocalWebHTMLVIewCompiler extends AViewCompiler[HTMLElement,LocalWebHTMLVIew] {
-
-  var eout = new File("target/classes")
+  
+  /*val eout = new File("target/web-classes")
   eout.mkdirs()
-  compiler.settings2.outputDirs.setSingleOutput(eout.getAbsolutePath)
+  compiler.settings2.outputDirs.setSingleOutput(eout.getAbsolutePath)*/
+  this.tempSourceFolder = new File("target/localweb-sources")
+  this.outputClassesFolder = new File("target/localweb-classes")
 
+  this.initCompiler
+  
+  
 }

@@ -9,7 +9,13 @@ class HTTPPathIntermediary(var basePath: String) extends HTTPIntermediary {
   this.onDownMessage {
 
     message =>
-      message.path = message.path.stripPrefix(basePath)
+      
+      // Remove base path, but not the trailing / if any, to make sure
+      /*basePath.endsWith("/") match {
+        "/" 
+      }*/
+      message.changePath( message.path.stripPrefix(basePath))
+    
 
   }
   
