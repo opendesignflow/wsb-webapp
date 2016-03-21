@@ -49,7 +49,7 @@ var localWeb = {
 				// $("body").html(body.UpdateHtml.HTML);
 				// $("body").html(localWeb.decodeHTML(body.UpdateHtml[0].HTML));
 
-				$("html").html(localWeb.decodeHTML(body.UpdateHtml[0].HTML));
+				$("body").html($($.parseHTML(localWeb.decodeHTML(body.UpdateHtml[0].HTML))).select("body"));
 			}
 
 		};

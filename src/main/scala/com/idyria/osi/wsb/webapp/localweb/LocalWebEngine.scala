@@ -45,6 +45,8 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   // Init -> Compile View once, and be ready for replacements 
   var mainViewInstance = LocalWebHTMLVIewCompiler.createView(viewClass, true)
+
+  //-- View Replacement
   mainViewInstance.onWith("view.replace") {
     newClass: Class[_ <: LocalWebHTMLVIew] =>
 
@@ -56,7 +58,11 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         session =>
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
-          this.viewPool.update(session,instance)
+          instance.on("refresh") {
+            // Refresh must be propagated to the main view instance
+            mainViewInstance.@->("refresh")
+          }
+          this.viewPool.update(session, instance)
       }
 
       //-- Send Update to active pools
@@ -68,6 +74,20 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           message.HTML = this.viewPool.get(session).get.rerender.toString
           interface.writeSOAPPayload(message)
       }
+  }
+
+  //-- View Refresh can be requested
+  mainViewInstance.on("refresh") {
+    
+    //-- Send Update to active pools
+    websocketPool.foreach {
+      case (session, interface) =>
+
+        println(s"Sending WS Update")
+        var message = new UpdateHtml
+        message.HTML = this.viewPool.get(session).get.rerender.toString
+        interface.writeSOAPPayload(message)
+    }
   }
 
   //-- Resources 
@@ -82,8 +102,8 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
     this.onDownMessage {
       req =>
 
-       // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
-        
+        // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
+
         if (req.upped) {
           println(s"Websocket opened")
           var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
@@ -103,67 +123,86 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   // Actions 
   //------------------
-  this <= new HTTPIntermediary {
+  this <= new HTTPPathIntermediary("/action") {
 
-    this.acceptDown { req => req.path.startsWith("/action/") }
+    //this.acceptDown { req => req.path.startsWith("/action/") }
 
-    this.onDownMessage { req =>
+    this.onDownMessage {
+      req =>
 
-      //-- Get View to call action on 
-      //--------------------
-      viewPool.get(req.getSession) match {
-        case Some(view) =>
+        //-- Get View to call action on 
+        //--------------------
+        viewPool.get(req.getSession) match {
+          case Some(view) =>
 
-          // Extract id
-          //--------------------
-          var actionId = req.path.stripPrefix("/action/")
+            // Extract path
+            //--------------------
+            //var actionId = req.path.stripPrefix("/action/")
+            var actionPath = req.path.split("/").filter(_.length > 0).toList
+            var actionId = actionPath.last
+            var viewPath = actionPath.dropRight(1)
+            println(s"Action Path:" + actionPath)
 
-          //-- Get Action to call
-          //---------------------
-          view.actions.get(actionId) match {
-            case Some((node, action)) =>
-
-              println(s"Found Action to call")
-              action(node)
-
-              //-- Prepare Response
-              var r = new HTTPResponse();
-
-              //-- ReRender, but get only body
-              if (node.attribute("reRender") != "") {
-                r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[_, _]]).get.asInstanceOf[HTMLNode[_, HTMLNode[_, _]]]
-              }
-              response(r, req)
-
-            case None =>
-
-              var r = new HTTPResponse();
-              r.code = 503
-              r.htmlContent = html {
-                head {
-
+            //-- Search vies along path 
+            var currentView = view
+            viewPath.foreach {
+              nextViewName =>
+                println(s"Searching for view name $nextViewName in current")
+                currentView.viewPlaces.get(nextViewName) match {
+                  case Some((container, nextView)) => currentView = nextView
+                  case None =>
+                    throw new RuntimeException(s"Cannot find view named $nextViewName in current view, maybe the action path is wrong ")
                 }
-                body {
-                  textContent(s"Cannot Call Action with id $actionId on view ${view.hashCode()}, not registered")
+            }
+
+            //-- Now call on current view
+
+            //-- Get Action to call
+            //---------------------
+            currentView.actions.get(actionId) match {
+              case Some((node, action)) =>
+
+                println(s"Found Action to call")
+                action(node)
+
+                //-- Prepare Response
+                var r = new HTTPResponse();
+
+                //-- ReRender, but get only body
+                if (node.attribute("reRender") != "") {
+                  r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[_, _]]).get.asInstanceOf[HTMLNode[_, HTMLNode[_, _]]]
                 }
+                response(r, req)
+
+              case None =>
+
+                var r = new HTTPResponse();
+                r.code = 503
+                r.htmlContent = html {
+                  head {
+
+                  }
+                  body {
+                    textContent(s"Cannot Call Action with id $actionId on view ${view.hashCode()}, not registered")
+                  }
+                }
+                response(r, req)
+            }
+
+          case None =>
+
+            var r = new HTTPResponse();
+            r.code = 503
+            r.htmlContent = html {
+              head {
+
               }
-              response(r, req)
-          }
-
-        case None =>
-
-          var r = new HTTPResponse();
-          r.code = 503
-          r.htmlContent = html {
-            head {
-
+              body {
+                textContent("Cannot Call Action if view has not been rendred for session")
+              }
             }
-            body {
-              textContent("Cannot Call Action if view has not been rendred for session")
-            }
-          }
-          response(r, req)
-      }
+            response(r, req)
+        }
     }
 
   }
@@ -181,13 +220,17 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         //-- Get View to call action on 
         //--------------------
-        var view = viewPool.getOrElseUpdate(req.getSession,{ 
+        var view = viewPool.getOrElseUpdate(req.getSession, {
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
+          instance.on("refresh") {
+            // Refresh must be propagated to the main view instance
+            mainViewInstance.@->("refresh")
+          }
           instance
         })
         view.request = Some(req)
-        
+
         var r = new HTTPResponse();
         var rendered = view.rerender
         println(s"Done Rendering")
@@ -258,7 +301,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   // Views
   //-----------------
-  def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]) : SingleViewIntermediary = {
+  def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]): SingleViewIntermediary = {
     topViewsIntermediary.prepend(new SingleViewIntermediary(path, cl)).asInstanceOf[SingleViewIntermediary]
   }
 

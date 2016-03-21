@@ -10,7 +10,7 @@ import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
  // with StandaloneHTMLUIBuilder
 class LocalWebHTMLVIew extends AView[HTMLElement,HTMLNode[HTMLElement,HTMLNode[HTMLElement,_]]] with DefaultLocalWebHTMLBuilder {
 
- 
+ this.currentView = this
   
   override def clone = {
     getClass.newInstance()
