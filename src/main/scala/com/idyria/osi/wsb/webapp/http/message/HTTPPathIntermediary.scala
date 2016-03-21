@@ -2,7 +2,7 @@ package com.idyria.osi.wsb.webapp.http.message
 
 class HTTPPathIntermediary(var basePath: String) extends HTTPIntermediary {
   acceptDown { message =>
-
+  //println(s"Testing message with path: "+message.path+" against "+basePath)
     message.path.startsWith(basePath)
   }
 

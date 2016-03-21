@@ -14,33 +14,35 @@ import com.idyria.osi.wsb.core.message.soap.EnvelopeBody
 /**
  * @author zm4632
  */
-class WebsocketInterface(val nc : TCPNetworkContext) {
-  
-  def writeMessage(el : ElementBuffer) = {
-    
-    // Produce XML Bytes
-    //-------------
-    //var res = StAXIOBuffer(el, true)
-    //println(s"Converting to JSON WS message");
-    var res = JsonIO(el,true)
-    
-    // Send
-    //---------------
-    //println(s"Sending WS message");
-    nc.relatedConnector.send(ByteBuffer.wrap(res.getBytes), nc)
-    
+class WebsocketInterface(val nc: TCPNetworkContext) {
+
+  def writeMessage(el: ElementBuffer) = {
+
+    nc.synchronized {
+
+      // Produce XML Bytes
+      //-------------
+      //var res = StAXIOBuffer(el, true)
+      //println(s"Converting to JSON WS message");
+      var res = JsonIO(el, true)
+
+      // Send
+      //---------------
+      //println(s"Sending WS message");
+      nc.relatedConnector.send(ByteBuffer.wrap(res.getBytes), nc)
+    }
   }
-  
-  def writeSOAPPayload(el:ElementBuffer) = {
-    
+
+  def writeSOAPPayload(el: ElementBuffer) = {
+
     //println(s"1 Converting to JSON WS message");
     var soap = new JSONSOAPMessage
     soap.body = EnvelopeBody()
     soap.body.content += el
-    
-   // println(s"2 Converting to JSON WS message");
+
+    // println(s"2 Converting to JSON WS message");
     writeMessage(soap)
-    
+
   }
-  
+
 }

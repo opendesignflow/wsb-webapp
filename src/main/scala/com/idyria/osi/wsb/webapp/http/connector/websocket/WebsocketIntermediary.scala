@@ -27,7 +27,7 @@ class WebsocketIntermediary extends HTTPIntermediary {
           r.code = 101
           r.addParameter("Connection", "Upgrade")
           r.addParameter("Upgrade", "websocket")
-          
+          r.addParameter("Sec-WebSocket-Protocol","soap")
           
            //-- Answer with upgrade
         

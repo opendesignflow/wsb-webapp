@@ -6,9 +6,13 @@ import com.idyria.osi.vui.html.Head
 import org.w3c.dom.html.HTMLElement
 import java.net.URI
 import com.idyria.osi.vui.html.HTMLNode
+import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
+   var request : Option[HTTPRequest] = None
+  var viewPath = ""
+  
   override def head(cl: => Any) = {
 
     // Create if necessary 
@@ -19,8 +23,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       case None => createHead
     }
 
-    // Run Closure 
-    switchToNode(node, cl)
+    
 
     //-- Add Standalone Script
     //-- 1. Add First, or After JQuery
@@ -32,7 +35,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         switchToNode(node, {
           //println(s"FOUND JQUERY")
 
-          var resScript = script(new URI(s"//localhost:${LocalWebEngine.httpConnector.port}/resources/localweb/localweb.js")) {
+          var resScript = script(new URI(s"${viewPath}/resources/localweb/localweb.js")) {
 
           }
 
@@ -43,15 +46,18 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       case None =>
         switchToNode(node, {
 
-          var jqueryScript = script(new URI(s"//localhost:${LocalWebEngine.httpConnector.port}/resources/localweb/jquery.min.js")) {
+          var jqueryScript = script(new URI(s"${viewPath}/resources/localweb/jquery.min.js")) {
 
           }
-          script(new URI(s"//localhost:${LocalWebEngine.httpConnector.port}/resources/localweb/localweb.js")) {
+          script(new URI(s"${viewPath}/resources/localweb/localweb.js")) {
 
           }
         })
     }
 
+    // Run Closure 
+    switchToNode(node, cl)
+    
     //-- Return
     node.asInstanceOf[Head[HTMLElement, Head[HTMLElement, _]]]
 

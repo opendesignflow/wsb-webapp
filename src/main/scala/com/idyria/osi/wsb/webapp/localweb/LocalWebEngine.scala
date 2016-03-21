@@ -24,6 +24,15 @@ import com.idyria.osi.ooxoo.core.buffers.structural.xelement
 import com.idyria.osi.wsb.core.message.soap.SOAPMessage
 import com.idyria.osi.wsb.webapp.http.connector.websocket.WebsocketProtocolhandler
 import com.idyria.osi.ooxoo.core.buffers.datatypes.DateTimeBuffer
+import com.idyria.osi.vui.implementation.javafx.JavaFXRun
+import com.idyria.osi.vui.implementation.javafx.JavaFXNodeDelegate
+import javafx.scene.control.Hyperlink
+import javafx.scene.Scene
+import javafx.stage.Stage
+import com.sun.deploy.uitoolkit.impl.fx.HostServicesFactory
+import javafx.scene.paint.Color
+import javafx.event.EventHandler
+import javafx.stage.WindowEvent
 
 @xelement
 class Ack extends ElementBuffer {
@@ -45,13 +54,15 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
       //-- Replace all views in pool
       this.viewPool.keys.foreach {
         session =>
-          this.viewPool.update(session, viewClass.newInstance())
+          var instance = viewClass.newInstance()
+          instance.viewPath = basePath
+          this.viewPool.update(session,instance)
       }
-      
+
       //-- Send Update to active pools
       websocketPool.foreach {
-        case (session,interface) => 
-          
+        case (session, interface) =>
+
           println(s"Sending WS Update")
           var message = new UpdateHtml
           message.HTML = this.viewPool.get(session).get.rerender.toString
@@ -70,8 +81,9 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
     this.onDownMessage {
       req =>
+
+       // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
         
-        TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
         if (req.upped) {
           println(s"Websocket opened")
           var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
@@ -169,8 +181,13 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         //-- Get View to call action on 
         //--------------------
-        var view = viewPool.getOrElseUpdate(req.getSession, viewClass.newInstance())
-
+        var view = viewPool.getOrElseUpdate(req.getSession,{ 
+          var instance = viewClass.newInstance()
+          instance.viewPath = basePath
+          instance
+        })
+        view.request = Some(req)
+        
         var r = new HTTPResponse();
         var rendered = view.rerender
         println(s"Done Rendering")
@@ -210,12 +227,12 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   //-- HTTP Connector
-  var httpConnector = new HTTPConnector(6666)
+  var httpConnector = new HTTPConnector(8585)
   this.network.addConnector(httpConnector)
 
   //-- Start
-  this.lInit
-  this.lStart
+  //this.lInit
+  //this.lStart
 
   // Default Broker
   //----------------------
@@ -241,8 +258,8 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   // Views
   //-----------------
-  def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]) = {
-    topViewsIntermediary.prepend(new SingleViewIntermediary(path, cl))
+  def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]) : SingleViewIntermediary = {
+    topViewsIntermediary.prepend(new SingleViewIntermediary(path, cl)).asInstanceOf[SingleViewIntermediary]
   }
 
   // Management
@@ -274,5 +291,47 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
       //viewPool.clear()
     }
   }*/
+
+  // GUI 
+  //--------
+  override def lStart = {
+    super.lStart
+    //-- Create GUI TO help
+    //JavaFXRun.on
+    JavaFXRun.onJavaFX {
+
+      var hostServices = HostServicesFactory.getInstance(JavaFXRun.application)
+
+      //-- Create Stage 
+      var stage = new Stage
+      stage.setWidth(1024)
+      stage.setHeight(768)
+      var group = new javafx.scene.Group();
+      var scene = new Scene(group, Color.WHITE);
+      stage.setScene(scene)
+
+      //-- Add Text With Link
+      var link = new Hyperlink();
+      link.setText(s"http://localhost:${LocalWebEngine.httpConnector.port}/")
+      new JavaFXNodeDelegate[Hyperlink, JavaFXNodeDelegate[Hyperlink, _]](link).onClicked {
+        x =>
+          println(s"Clicked")
+          hostServices.showDocument(link.getText)
+      }
+      group.getChildren.add(link)
+
+      stage.show()
+      stage.setOnCloseRequest(new EventHandler[WindowEvent] {
+        def handle(e: WindowEvent) = {
+          //stage.
+          LocalWebEngine.lStop
+
+        }
+      })
+
+      println(s"Done UI")
+
+    }
+  }
 
 }
