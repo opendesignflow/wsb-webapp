@@ -11,27 +11,26 @@ import com.idyria.osi.vui.html.Html
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
-   var request : Option[HTTPRequest] = None
+  var request: Option[HTTPRequest] = None
   var viewPath = ""
-  
+  var currentView: LocalWebHTMLVIew = null
+
   override def html(cl: => Any) = {
-     
+
     // “<!DOCTYPE html>”.
-     var htmlNode = new Html[HTMLElement,Html[HTMLElement,_]] {
-       
-       override def toString =  {
-         s"<!DOCTYPE html>\n${super.toString()}"
-       }
-       
-         
-     }
-     
-     switchToNode(htmlNode, cl)
-     
-     
-     htmlNode
-   }
-  
+    var htmlNode = new Html[HTMLElement, Html[HTMLElement, _]] {
+
+      override def toString = {
+        s"<!DOCTYPE html>\n${super.toString()}"
+      }
+
+    }
+
+    switchToNode(htmlNode, cl)
+
+    htmlNode
+  }
+
   override def head(cl: => Any) = {
 
     // Create if necessary 
@@ -41,8 +40,6 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       case Some(header) => header
       case None => createHead
     }
-
-    
 
     //-- Add Standalone Script
     //-- 1. Add First, or After JQuery
@@ -54,7 +51,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         switchToNode(node, {
           //println(s"FOUND JQUERY")
 
-          var resScript = script(new URI(s"${viewPath}/resources/localweb/localweb.js")) {
+          var resScript = script(new URI(s"${viewPath}/resources/localweb/localweb.js".replace("//", "/"))) {
 
           }
 
@@ -65,10 +62,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       case None =>
         switchToNode(node, {
 
-          var jqueryScript = script(new URI(s"${viewPath}/resources/localweb/jquery.min.js")) {
+          var jqueryScript = script(new URI(s"${viewPath}/resources/localweb/jquery.min.js".replace("//", "/"))) {
 
           }
-          script(new URI(s"${viewPath}/resources/localweb/localweb.js")) {
+          script(new URI(s"${viewPath}/resources/localweb/localweb.js".replace("//", "/"))) {
 
           }
         })
@@ -76,7 +73,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
     // Run Closure 
     switchToNode(node, cl)
-    
+
     //-- Return
     node.asInstanceOf[Head[HTMLElement, Head[HTMLElement, _]]]
 
@@ -98,7 +95,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       cl
     }))
 
-    +@("onclick" -> s"localWeb.buttonClick('$code')")
+    //-- Create Action String
+    var currentViewName = "/"
+
+    +@("onclick" -> s"localWeb.buttonClick('${this.viewPath}/$code')")
 
   }
 
@@ -109,18 +109,32 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
   def reRender = {
     +@("reRender" -> "true")
   }
-  
-  def placeView(vc:Class[_ <: LocalWebHTMLVIew],targetId:String) = {
-    
+
+  def placeView(vc: Class[_ <: LocalWebHTMLVIew], targetId: String): LocalWebHTMLVIew = {
+
     //-- Compile
-    LocalWebHTMLVIewCompiler.createView(vc)
+    var createdView = LocalWebHTMLVIewCompiler.createView(vc)
+
+    //-- Listen for reloading
+    createdView.onWith("view.replace") {
+      newClass: Class[_ <: LocalWebHTMLVIew] =>
+
+        println(s"Repalcing placed view")
+        //-- Replace view in container map
+        var placedView = placeView(newClass.newInstance(), targetId)
+
+        //-- trigger reload
+        placedView.getTopParentView.@->("refresh")
+    }
+    placeView(createdView, targetId)
+
   }
-  
-  def placeView(v: LocalWebHTMLVIew, targetId: String) = {
-    
+
+  def placeView(v: LocalWebHTMLVIew, targetId: String): LocalWebHTMLVIew = {
+
     //-- Recompile View Using 
     //------------------------------
-    
+
     //currentNode.apply("reRender" -> "true")
     viewPlaces.get(targetId) match {
 
@@ -131,17 +145,29 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
           id(targetId)
         }
 
-        viewPlaces = viewPlaces + (targetId -> (viewPLDIV, null))
+        var viewInstance = v.getClass.newInstance()
+        viewInstance.parentView = Some(this.currentView)
+        viewInstance.viewPath = this.viewPath + "/" + targetId
 
+        viewPlaces = viewPlaces + (targetId -> (viewPLDIV, viewInstance))
+
+        viewInstance
       //-- If A Record exists for the placeHolder, just update
-      case Some((container, currentView)) =>
-        viewPlaces = viewPlaces + (targetId -> (container, v.getClass.newInstance()))
+      case Some((container, view)) =>
 
+        var viewInstance = v.getClass.newInstance()
+        viewInstance.parentView = Some(this.currentView)
+        viewInstance.viewPath = this.viewPath + "/" + targetId
+
+        viewPlaces = viewPlaces + (targetId -> (container, viewInstance))
+
+        viewInstance
+      //case Some((container, view)) => view 
     }
 
   }
 
-  def viewPlaceHolder(targetId: String,cla:String)(default: => Unit) : HTMLNode[HTMLElement,_]  ={
+  def viewPlaceHolder(targetId: String, cla: String)(default: => Unit): HTMLNode[HTMLElement, _] = {
 
     viewPlaces.get(targetId) match {
       //-- If no record for the placeHolder, create a default
@@ -154,32 +180,31 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         }
 
         viewPlaces = viewPlaces + (targetId -> (viewPLDIV, null))
-        
+
         viewPLDIV
-        
-        //-- If A Record exists for the placeHolder, and view is null, use default
+
+      //-- If A Record exists for the placeHolder, and view is null, use default
       case Some((container, null)) =>
         container.clearChildren
         container.detach
         switchToNode(container, default)
-        
+
         add(container)
-        
+
       //-- If A Record exists for the placeHolder, and view is not null, use it
       case Some((container, currentView)) =>
-        container.clearChildren 
+        container.clearChildren
         container.detach
         switchToNode(container, {
           add(currentView.rerender)
         })
-        
+
         add(container)
     }
 
-
   }
-  
-  def detachView(targetId:String) = {
+
+  def detachView(targetId: String) = {
     viewPlaces = viewPlaces - targetId
   }
 

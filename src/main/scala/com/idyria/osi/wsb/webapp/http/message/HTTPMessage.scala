@@ -83,7 +83,7 @@ class HTTPRequest(
 
   // Path and URL parameters separation
   //---------------------
-  path = path.replace("//", "/")
+  path = path.replaceAll("//+", "/")
 
   var originalPath = this.path.split("""\?""").head
   def originalURL = "http://" + (this.getParameter("Host").get + "/" + originalPath).replace("//", "/")
