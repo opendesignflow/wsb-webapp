@@ -131,20 +131,39 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
         //-- Found Read and return
         case Some(resourceURL) =>
 
-          var data = ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
+          // Handle Bytes Range
+          // https://tools.ietf.org/html/rfc7233#page-8
+          //---------------
+          /*var (start,stop) = message.getParameter("Range") match {
+            case Some(rangeSpec) => 
+            case None => 
+              (0,-1)
+          }
+          
+          var data =(start,stop) match {
+            // Full Content
+            case (0,-1) => ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
+          }*/
 
+          
+           var data = ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
+          
           resourceURL.toString match {
 
             // Standard file contents
             //-----------------------
-            case path if (path.endsWith(".html")) => response(HTTPResponse("text/html", data),message)
-            case path if (path.endsWith(".css")) => response(HTTPResponse("text/css", data),message)
-            case path if (path.endsWith(".js")) => response(HTTPResponse("application/javascript", data),message)
-            case path if (path.endsWith(".png")) => response(HTTPResponse("image/png", data),message)
-            case path if (path.endsWith(".jpg")) => response(HTTPResponse("image/jpeg", data),message)
-            case path if (path.endsWith(".jpeg")) => response(HTTPResponse("image/jpeg", data),message)
-            case path if (path.endsWith(".gif")) => response(HTTPResponse("image/gif", data),message)
-
+            case path if (path.endsWith(".html")) => response(HTTPResponse("text/html", data), message)
+            case path if (path.endsWith(".css")) => response(HTTPResponse("text/css", data), message)
+            case path if (path.endsWith(".js")) => response(HTTPResponse("application/javascript", data), message)
+            case path if (path.endsWith(".png")) => response(HTTPResponse("image/png", data), message)
+            case path if (path.endsWith(".jpg")) => response(HTTPResponse("image/jpeg", data), message)
+            case path if (path.endsWith(".jpeg")) => response(HTTPResponse("image/jpeg", data), message)
+            case path if (path.endsWith(".gif")) => response(HTTPResponse("image/gif", data), message)
+            case path if (path.endsWith(".avi")) => response(HTTPResponse("video/x-msvideo", data), message)
+            case path if (path.endsWith(".eps")) => response(HTTPResponse("application/postscript", data), message)
+            case path if (path.endsWith(".webm")) => response(HTTPResponse("video/webm", data), message)
+            case path if (path.endsWith(".mp4")) => response(HTTPResponse("video/mp4", data), message)
+           
             // Special Views
             //------------------------
 

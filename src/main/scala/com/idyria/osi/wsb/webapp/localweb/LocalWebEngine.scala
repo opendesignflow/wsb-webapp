@@ -56,7 +56,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         session =>
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
-          this.viewPool.update(session,instance)
+          this.viewPool.update(session, instance)
       }
 
       //-- Send Update to active pools
@@ -64,9 +64,15 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         case (session, interface) =>
 
           println(s"Sending WS Update")
-          var message = new UpdateHtml
-          message.HTML = this.viewPool.get(session).get.rerender.toString
-          interface.writeSOAPPayload(message)
+
+          this.viewPool.get(session) match {
+            case Some(view) =>
+              var message = new UpdateHtml
+              message.HTML = view.rerender.toString
+              interface.writeSOAPPayload(message)
+            case None =>
+          }
+
       }
   }
 
@@ -82,8 +88,8 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
     this.onDownMessage {
       req =>
 
-       // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
-        
+        // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
+
         if (req.upped) {
           println(s"Websocket opened")
           var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
@@ -181,13 +187,13 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         //-- Get View to call action on 
         //--------------------
-        var view = viewPool.getOrElseUpdate(req.getSession,{ 
+        var view = viewPool.getOrElseUpdate(req.getSession, {
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
           instance
         })
         view.request = Some(req)
-        
+
         var r = new HTTPResponse();
         var rendered = view.rerender
         println(s"Done Rendering")
@@ -258,7 +264,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   // Views
   //-----------------
-  def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]) : SingleViewIntermediary = {
+  def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]): SingleViewIntermediary = {
     topViewsIntermediary.prepend(new SingleViewIntermediary(path, cl)).asInstanceOf[SingleViewIntermediary]
   }
 
@@ -294,6 +300,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   // GUI 
   //--------
+  var helperGUIMainVBox = new javafx.scene.layout.VBox();
   override def lStart = {
     super.lStart
     //-- Create GUI TO help
@@ -306,8 +313,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
       var stage = new Stage
       stage.setWidth(1024)
       stage.setHeight(768)
-      var group = new javafx.scene.Group();
-      var scene = new Scene(group, Color.WHITE);
+      var scene = new Scene(helperGUIMainVBox, Color.WHITE);
       stage.setScene(scene)
 
       //-- Add Text With Link
@@ -318,7 +324,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
           println(s"Clicked")
           hostServices.showDocument(link.getText)
       }
-      group.getChildren.add(link)
+      helperGUIMainVBox.getChildren.add(link)
 
       stage.show()
       stage.setOnCloseRequest(new EventHandler[WindowEvent] {

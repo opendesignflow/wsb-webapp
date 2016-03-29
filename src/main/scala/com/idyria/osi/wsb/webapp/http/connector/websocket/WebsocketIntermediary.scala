@@ -10,7 +10,7 @@ class WebsocketIntermediary extends HTTPIntermediary {
   this.acceptDown { req =>
     (req.getParameter("Connection"),req.getParameter("Upgrade"), req.getParameter("Sec-WebSocket-Version")) match {
 
-      case (Some(conn),Some("websocket"), Some("13")) if(conn.contains("Upgrade")) => true
+      case (Some(conn),Some(protocol), Some("13")) if(conn.toLowerCase().contains("upgrade") && protocol.toLowerCase()=="websocket") => true
       case _ => false
     }
   }

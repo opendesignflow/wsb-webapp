@@ -7,11 +7,30 @@ import org.w3c.dom.html.HTMLElement
 import java.net.URI
 import com.idyria.osi.vui.html.HTMLNode
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import com.idyria.osi.vui.html.Html
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
    var request : Option[HTTPRequest] = None
   var viewPath = ""
+  
+  override def html(cl: => Any) = {
+     
+    // “<!DOCTYPE html>”.
+     var htmlNode = new Html[HTMLElement,Html[HTMLElement,_]] {
+       
+       override def toString =  {
+         s"<!DOCTYPE html>\n${super.toString()}"
+       }
+       
+         
+     }
+     
+     switchToNode(htmlNode, cl)
+     
+     
+     htmlNode
+   }
   
   override def head(cl: => Any) = {
 
