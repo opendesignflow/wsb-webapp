@@ -250,6 +250,12 @@
 			<groupId>com.idyria.osi.java-utils</groupId>
 			<artifactId>security-utils</artifactId>
 			<version>1.2</version>
+			<exclusions>
+				<exclusion>
+				<groupId>com.idyria.osi</groupId>
+				<artifactId>tea</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 <!-- 		<dependency> -->
 <!-- 			<groupId>com.idyria.osi.vui</groupId> -->

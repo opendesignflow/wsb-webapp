@@ -18,11 +18,13 @@ class LocalWebHTMLVIew extends AView[HTMLElement,HTMLNode[HTMLElement,HTMLNode[H
   
 }
 
-object LocalWebHTMLVIewCompiler extends AViewCompiler[HTMLElement,LocalWebHTMLVIew] {
-  
+object LocalWebHTMLVIewCompiler extends AViewCompiler[HTMLElement,LocalWebHTMLVIew]  {
+ 
+    
   /*val eout = new File("target/web-classes")
   eout.mkdirs()
   compiler.settings2.outputDirs.setSingleOutput(eout.getAbsolutePath)*/
+  
   this.tempSourceFolder = new File("target/localweb-sources")
   this.outputClassesFolder = new File("target/localweb-classes")
 
