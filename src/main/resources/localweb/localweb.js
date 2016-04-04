@@ -10,13 +10,13 @@ var localWeb = {
 
 		console.info("Button Clicked, sending remote request for " + id);
 
-		var deffered = $.get("/action/" + id);
+		var deffered = $.get(id);
 		deffered.done(function(data) {
 			console.log("Done...");
-			if (data) {
+			/*if (data) {
 				console.log("Reloading Page")
 				$("body").html(data);
-			}
+			}*/
 		});
 
 	};
@@ -31,7 +31,7 @@ var localWeb = {
 
 		// Log messages from the server
 		localWeb.wsConnection.onmessage = function(e) {
-			console.log('Server: ' + e.data);
+			//console.log('Server: ' + e.data);
 
 			// Get JSON
 			var soap = $.parseJSON("{" + e.data + "}");

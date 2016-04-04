@@ -71,7 +71,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
       websocketPool.foreach {
         case (session, interface) =>
 
-          println(s"Sending WS Update")
+         // println(s"Sending WS Update")
 
           this.viewPool.get(session) match {
             case Some(view) =>
@@ -86,7 +86,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   //-- View Refresh can be requested
   mainViewInstance.on("refresh") {
-    
+
     //-- Send Update to active pools
     websocketPool.foreach {
       case (session, interface) =>
@@ -117,6 +117,11 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
           websocketPool.update(req.getSession, interface)
 
+          req.networkContext.on("close") {
+           
+            websocketPool -= req.getSession
+             println("Closing Websocket, remaning: "+websocketPool.size)
+          }
           //-- Send ack 
           //println(s"Say Hello");
           var hb = new HeartBeat
@@ -226,9 +231,13 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
       req =>
 
+       // println(s"Got page request")
+
         //-- Get View to call action on 
         //--------------------
         var view = viewPool.getOrElseUpdate(req.getSession, {
+
+        //  println(s"New view instance")
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
           instance.on("refresh") {
@@ -239,11 +248,18 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         })
         view.request = Some(req)
 
+        //println(s"rendering")
         var r = new HTTPResponse();
-        var rendered = view.rerender
-        println(s"Done Rendering")
-        r.htmlContent = rendered
-        response(r, req)
+        try {
+          var rendered = view.rerender
+         // println(s"Done Rendering")
+          r.htmlContent = rendered
+          response(r, req)
+        } catch {
+          case e: Throwable =>
+            e.printStackTrace()
+            req(e)
+        }
 
       //-- Front View Error if none defined
       /*case req if (req.path == "/" && frontViewStack.size == 0) =>
@@ -301,7 +317,11 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
     //----------------
     this <= new HTTPIntermediary {
       this.acceptDown { req => !req.upped }
-      this.onDownMessage { req => println(s"Default Handler for ${req.path}") }
+      this.onDownMessage {
+        req =>
+          //println(s"Default Handler for ${req.path}")
+         // println(s"Errors: ${req.errors.size}")
+      }
     }
 
   }

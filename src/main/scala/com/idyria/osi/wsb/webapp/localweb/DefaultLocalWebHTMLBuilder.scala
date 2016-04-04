@@ -98,7 +98,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     //-- Create Action String
     var currentViewName = "/"
 
-    +@("onclick" -> s"localWeb.buttonClick('${this.viewPath}/$code')")
+    +@("onclick" -> s"localWeb.buttonClick('${this.viewPath}/action/$code')")
 
   }
 

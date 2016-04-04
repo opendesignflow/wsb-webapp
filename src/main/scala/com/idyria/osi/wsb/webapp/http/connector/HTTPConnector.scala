@@ -64,9 +64,9 @@ class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ct
     }*/
 
     //println("Closing")
-    
+
     //context.socketChannel.close()
-    
+
     //context.socket.shutdownOutput()
 
     //println("Send datas to client -> close it")
@@ -77,8 +77,8 @@ class HTTPConnector(cport: Int) extends TCPProtocolHandlerConnector[MimePart](ct
 
 }
 
-class HTTPSConnector(cport: Int)  extends SSLTCPProtocolHandlerConnector[MimePart](ctx => new HTTPProtocolHandler(ctx)) with TLogSource {
-  
+class HTTPSConnector(cport: Int) extends SSLTCPProtocolHandlerConnector[MimePart](ctx => new HTTPProtocolHandler(ctx)) with TLogSource {
+
   this.address = "0.0.0.0"
   this.port = cport
   this.messageType = "http"
@@ -92,14 +92,12 @@ class HTTPSConnector(cport: Int)  extends SSLTCPProtocolHandlerConnector[MimePar
   override def send(buffer: ByteBuffer, context: TCPNetworkContext) = {
     super.send(buffer, context)
 
-
   }
-  
- 
+
 }
 
 object HTTPSConnector extends ConnectorFactory {
-  
+
   /**
    * Registers classes in various factories
    */
@@ -108,9 +106,9 @@ object HTTPSConnector extends ConnectorFactory {
     ConnectorFactory("tcp+https", this)
 
   }
-  
+
   def apply(port: Int): HTTPSConnector = new HTTPSConnector(port)
-  
+
   /**
    * Factory for Client mode connectors
    */
@@ -517,22 +515,19 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
 
     var post = "\r\n"
     post = ""
-    
-    var newBuffer = ByteBuffer.allocate(buffer.remaining() + post.getBytes().length)
-    
-    /*println(s"-------")
-    import scala.collection.JavaConversions._
-    buffer.array().foreach {
-      case b if (b == '\r'.toByte) => print(b.toHexString)
-      case b if (b == '\n'.toByte) => print(b.toHexString);println()
-      case b => print(b.toChar)
+
+    post.getBytes.length match {
+      case 0 =>
+        buffer
+      case l =>
+        var newBuffer = ByteBuffer.allocate(buffer.remaining() + post.getBytes().length)
+
+        newBuffer.put(buffer)
+        buffer.clear()
+        newBuffer.put(post.getBytes())
+        newBuffer.flip()
+        newBuffer
     }
-    println(s"-------")*/
-    
-    newBuffer.put(buffer)
-    newBuffer.put(post.getBytes())
-    newBuffer.flip()
-    newBuffer
 
     // buffer
     /*var newBuffer = ByteBuffer.allocate(buffer.remaining())

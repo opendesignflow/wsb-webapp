@@ -273,11 +273,11 @@
 <!-- 			<version>0.0.1-SNAPSHOT</version> -->
 <!-- 			<scope>provided</scope> -->
 <!-- 		</dependency> -->
-		<dependency>
-			<groupId>com.paypal.sdk</groupId>
-			<artifactId>rest-api-sdk</artifactId>
-			<version>0.12.2</version>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>com.paypal.sdk</groupId> -->
+<!-- 			<artifactId>rest-api-sdk</artifactId> -->
+<!-- 			<version>0.12.2</version> -->
+<!-- 		</dependency> -->
 		<dependency>
 			<groupId>org.commonjava.googlecode.markdown4j</groupId>
 			<artifactId>markdown4j</artifactId>

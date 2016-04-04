@@ -8,6 +8,16 @@ import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import java.io.File
 import com.idyria.osi.wsb.webapp.http.message.HTTPPathIntermediary
+import java.nio.channels.Channels
+import java.io.BufferedInputStream
+import java.io.IOException
+import java.io.InputStream
+import java.lang.ref.WeakReference
+import java.nio.channels.FileChannel
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+import com.idyria.utils.java.io.TeaIOUtils
+import com.idyria.osi.aib.core.utils.files.FileWatcher
 
 class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(basePath) {
   name = "Simple File Resources"
@@ -124,60 +134,427 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
   this.onDownMessage {
 
     message =>
-      //message.path = message.path.stripPrefix(basePath)
-      logFine[ResourcesIntermediary](s"Resource process: " + message.path + " -> " + basePath)
-      searchResource(message) match {
 
-        //-- Found Read and return
-        case Some(resourceURL) =>
+      try {
+        //message.path = message.path.stripPrefix(basePath)
+        logFine[ResourcesIntermediary](s"Resource process: " + message.path + " -> " + basePath)
+        searchResource(message) match {
 
-          // Handle Bytes Range
-          // https://tools.ietf.org/html/rfc7233#page-8
-          //---------------
-          /*var (start,stop) = message.getParameter("Range") match {
-            case Some(rangeSpec) => 
-            case None => 
-              (0,-1)
-          }
-          
-          var data =(start,stop) match {
-            // Full Content
-            case (0,-1) => ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
-          }*/
+          //-- Found Read and return
+          case Some(resourceURL) =>
 
-          
-           var data = ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
-          
-          resourceURL.toString match {
+            // Handle Bytes Range
+            // https://tools.ietf.org/html/rfc7233#page-8
+            //---------------
+            var (start, stop) = message.getParameter("Range") match {
+              case Some(rangeSpec) =>
+                println(s"Range: spec $rangeSpec")
+                val rangeSpecRegexp = s"""bytes=([0-9]+)(?:-([0-9]+))?""".r
+                rangeSpecRegexp.findFirstMatchIn(rangeSpec) match {
+                  case Some(res) =>
+                    // Check results
+                    println(s"Match: ${res.group(1)},${res.group(2)}")
+                    (res.group(1), res.group(2)) match {
+                      case ("", "") => (-1, -1)
+                      case (start, null) => (start.toInt, -1)
+                      case (start, stop) => (start.toInt, stop.toInt)
+                    }
+                  case None =>
+                    println(s"No match")
+                    (-1, -1)
+                }
+              case None =>
+                (-1, -1)
+            }
 
-            // Standard file contents
-            //-----------------------
-            case path if (path.endsWith(".html")) => response(HTTPResponse("text/html", data), message)
-            case path if (path.endsWith(".css")) => response(HTTPResponse("text/css", data), message)
-            case path if (path.endsWith(".js")) => response(HTTPResponse("application/javascript", data), message)
-            case path if (path.endsWith(".png")) => response(HTTPResponse("image/png", data), message)
-            case path if (path.endsWith(".jpg")) => response(HTTPResponse("image/jpeg", data), message)
-            case path if (path.endsWith(".jpeg")) => response(HTTPResponse("image/jpeg", data), message)
-            case path if (path.endsWith(".gif")) => response(HTTPResponse("image/gif", data), message)
-            case path if (path.endsWith(".avi")) => response(HTTPResponse("video/x-msvideo", data), message)
-            case path if (path.endsWith(".eps")) => response(HTTPResponse("application/postscript", data), message)
-            case path if (path.endsWith(".webm")) => response(HTTPResponse("video/webm", data), message)
-            case path if (path.endsWith(".mp4")) => response(HTTPResponse("video/mp4", data), message)
-           
-            // Special Views
-            //------------------------
+            //println(s"Range from context ${message.networkContext.toString()}: ($start,$stop)")
 
-            //-- SView with not already created intermediary for this view
-            //--  * Create the intermediary
-            //case path if (path.endsWith(".sview")) =>
-            case _ => response(HTTPResponse("text/plain", data), message)
+            //-- Open Stream
+            var resourceStream = resourceURL.openStream
+            //var resourceBuffered = new BufferedInputStream(resourceStream)
 
-          }
+            //-- Prepare Response
+            var response = new HTTPResponse
 
-        //-- Nothing found -> Continue to handler
-        case None =>
+            //-- Get Data      
+            val maxReturnBuffer = 1024 * 1024
+            var data = (start, stop) match {
+              
+              // Full Content
+              case (-1, -1) =>
+
+              
+                // Old
+                //response.content = swallow(resourceStream, 0, resourceStream.available())
+                
+                // New
+                response.content = swallow(resourceURL, 0, resourceStream.available())
+                
+              // Remaining
+              case (start, -1) =>
+
+                var totalLength = resourceStream.available
+
+                //println(s"Returning Remaninig content: ${resourceStream.available}")
+
+                /*
+              resourceStream.available match {
+                case size if(size > maxReturnBuffer) => 
+                  response.code = 206
+                  response.addParameter("Content-Range", s"bytes 0-$maxReturnBuffer/${totalLength}")
+                  println(s"-- Starting partial swallow $start -> $maxReturnBuffer")
+                  var r = ByteBuffer.wrap(swallow(resourceStream,start,maxReturnBuffer))
+                  println(s"-- Finished partial swallow")
+                  r
+                case size => 
+                  ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceStream))
+              }*/
+
+                response.code = 206
+                response.addParameter("Content-Range", s"bytes $start-${totalLength - 1}/${totalLength}")
+
+                //ByteBuffer.wrap(swallow(resourceStream, start, resourceStream.available()))
+                
+                // Old
+                //response.content = swallow(resourceStream, start, totalLength)
+                
+                // New
+                response.content = swallow(resourceURL, start, totalLength)
+                
+              // Range
+              case (start, stop) =>
+
+                println(s"Returning Range: ($start,$stop)")
+                var totalLength = resourceStream.available
+
+                // Return Partial Content
+                response.code = 206
+
+                // Give Range in response
+                response.addParameter("Content-Range", s"bytes $start-$stop/${totalLength}")
+
+                // resourceStream.skip(start)
+                
+                // Old
+                //response.content = swallow(resourceStream, start, stop)
+                
+                // New
+                response.content = swallow(resourceURL, start, stop)
+            }
+
+            //resourceBuffered.close
+            resourceStream.close
+
+            //response.content = ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
+            //response.content = data
+            // var data = ByteBuffer.wrap(com.idyria.osi.tea.io.TeaIOUtils.swallow(resourceURL.openStream))
+
+            resourceURL.toString match {
+
+              // Standard file contents
+              //-----------------------
+              case path if (path.endsWith(".html")) =>
+
+                response.contentType = "text/html"
+              //response(HTTPResponse("text/html", data), message)
+              case path if (path.endsWith(".css")) =>
+                response.contentType = "text/css"
+              //response(HTTPResponse("text/css", data), message)
+              case path if (path.endsWith(".js")) =>
+                response.contentType = "application/javascript"
+              //response(HTTPResponse("application/javascript", data), message)
+              case path if (path.endsWith(".png")) =>
+                response.contentType = "image/png"
+              // response(HTTPResponse("image/png", data), message)
+              case path if (path.endsWith(".jpg")) =>
+                response.contentType = "image/jpeg"
+              //response(HTTPResponse("image/jpeg", data), message)
+              case path if (path.endsWith(".jpeg")) =>
+                response.contentType = "image/jpeg"
+              // response(HTTPResponse("image/jpeg", data), message)
+              case path if (path.endsWith(".gif")) =>
+                response.contentType = "image/gif"
+              //response(HTTPResponse("image/gif", data), message)
+              case path if (path.endsWith(".avi")) =>
+                response.contentType = "video/x-msvideo"
+              //response(HTTPResponse("video/x-msvideo", data), message)
+              case path if (path.endsWith(".eps")) =>
+                response.contentType = "application/postscript"
+              //response(HTTPResponse("application/postscript", data), message)
+              case path if (path.endsWith(".webm")) =>
+                response.contentType = "video/webm"
+              //response(HTTPResponse("video/webm", data), message)
+              case path if (path.endsWith(".mp4")) =>
+                response.contentType = "video/mp4"
+              //response(HTTPResponse("video/mp4", data), message)
+
+              // Special Views
+              //------------------------
+
+              //-- SView with not already created intermediary for this view
+              //--  * Create the intermediary
+              //case path if (path.endsWith(".sview")) =>
+              case _ =>
+                response.contentType = "text/plain"
+              // response(HTTPResponse("text/plain", data), message)
+
+            }
+
+            // Return response
+            //println(s"Finished resource $resourceURL")
+
+            response.addParameter("Accept-Ranges", "bytes")
+            this.response(response, message)
+
+          //-- Nothing found -> Continue to handler
+          case None =>
+
+        }
+      } catch {
+        // TODO Auto-generated catch block
+        case e: Throwable =>
+          e.printStackTrace();
+          throw e
+      }
+  }
+
+  /**
+   * Returns a byte array containing the totality of the InputStream.
+   * @param is The available size should return the complete size of the stream
+   * @return null if stream is not readable
+   */
+  def swallow(is: InputStream, start: Int, stop: Int): ByteBuffer = {
+
+    try {
+
+      // Skip start
+
+      // Create Output Byte Buffer
+      is.skip(start)
+      var expected = stop - start
+      var resBuffer = ByteBuffer.allocate(expected)
+
+      //var res = new Array[Byte](stop - start);
+      val buffsize = 4096;
+      var readBuffer = new Array[Byte](buffsize);
+      var sizeRead = 0;
+      var position = 0;
+
+      // Swallow
+      var continue = true
+      while (sizeRead < expected) {
+
+        is.read(readBuffer) match {
+          case 0 =>
+            continue = false
+            sizeRead = expected
+          case -1 =>
+            continue = false
+            sizeRead = expected
+          case read =>
+            // Copy
+            //System.arraycopy(buff, 0, res, position, sizeRead);
+
+            // Write Either whole read size or the remaning content
+            if (resBuffer.remaining > read) {
+              resBuffer.put(readBuffer, 0, read)
+              sizeRead += read;
+            } else {
+              resBuffer.put(readBuffer, 0, resBuffer.remaining)
+              sizeRead = expected
+            }
+
+        }
 
       }
 
+      // Flip to be readable later
+      resBuffer.flip()
+      //println(s"Returned Buffer with: " + resBuffer.remaining())
+      resBuffer
+
+    } catch {
+      // TODO Auto-generated catch block
+      case e: Throwable =>
+        e.printStackTrace();
+        throw e
+    }
+
   }
+  
+  /**
+   * Returns a byte array containing the totality of the InputStream.
+   * @param is The available size should return the complete size of the stream
+   * @return null if stream is not readable
+   */
+  def swallow(is: URL, start: Int, stop: Int): ByteBuffer = {
+
+    // Get Cached bytes 
+    var bytes = ResourcesIntermediary.mapAndCache(is)
+    
+    // Return requested portion
+    
+    bytes.position(start)
+    bytes.limit(stop)
+    
+   // bytes.flip()
+    //println(s"Got buffer for ${is} $start -> $stop, available: "+bytes.remaining())
+    
+    bytes
+    /*
+    try {
+
+      // Skip start
+
+      // Create Output Byte Buffer
+      is.skip(start)
+      var expected = stop - start
+      var resBuffer = ByteBuffer.allocate(expected)
+
+      //var res = new Array[Byte](stop - start);
+      val buffsize = 4096;
+      var readBuffer = new Array[Byte](buffsize);
+      var sizeRead = 0;
+      var position = 0;
+
+      // Swallow
+      var continue = true
+      while (sizeRead < expected) {
+
+        is.read(readBuffer) match {
+          case 0 =>
+            continue = false
+            sizeRead = expected
+          case -1 =>
+            continue = false
+            sizeRead = expected
+          case read =>
+            // Copy
+            //System.arraycopy(buff, 0, res, position, sizeRead);
+
+            // Write Either whole read size or the remaning content
+            if (resBuffer.remaining > read) {
+              resBuffer.put(readBuffer, 0, read)
+              sizeRead += read;
+            } else {
+              resBuffer.put(readBuffer, 0, resBuffer.remaining)
+              sizeRead = expected
+            }
+
+        }
+
+      }
+
+      // Flip to be readable later
+      resBuffer.flip()
+      //println(s"Returned Buffer with: " + resBuffer.remaining())
+      resBuffer
+
+    } catch {
+      // TODO Auto-generated catch block
+      case e: Throwable =>
+        e.printStackTrace();
+        throw e
+    }*/
+
+  }
+}
+
+object ResourcesIntermediary {
+
+  /*var filesMap = Map(
+      ".js" -> "",
+      ".png" -> "",
+      ".jpeg" -> "",
+      ".jpg" -> "",
+      ".gif" -> "",
+      ".avi" -> "",
+      ".css" -> "",
+      )*/
+
+  var cacheMap = Map[String, WeakReference[_ <: ByteBuffer]]()
+
+  var cacheWatcher = new FileWatcher
+  cacheWatcher.start
+  
+  def discardResource(url:URL) = {
+    this.synchronized {
+      cacheMap.get(url.toExternalForm()) match {
+        case Some(ref) => cacheMap = cacheMap - url.toExternalForm()
+        case None => 
+      }
+    }
+  }
+  def mapAndCache(url: URL,force : Boolean=false): ByteBuffer = {
+    
+    var doForce = false
+    // Populate Cache
+    this.synchronized {
+
+      cacheMap.get(url.toExternalForm()) match {
+
+        case v if(doForce ||v.isEmpty || v.get.get==null) =>
+          
+          // Map file
+          //------------
+          url.getProtocol match {
+            case "file" =>
+              //println("Mapping File")
+              var file = new File(url.getFile)
+              
+              /*cacheWatcher.onFileChange(file) {
+                file.exists() match {
+                  case true => 
+                    println(s"Discarging cached file: $url")
+                    discardResource(url)
+                  case false => 
+                    println(s"Remapping file: $url")
+                mapAndCache(url,force=true)
+                }
+                
+              }*/
+                
+
+              /*var file = new File(url.getFile)
+              var fileChannel = FileChannel.open(Paths.get(file.toURI()), StandardOpenOption.READ)
+
+              var bytes = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, file.getTotalSpace)
+              bytes.load()
+              var wr = new WeakReference(bytes)*/
+              
+              var is = url.openStream()
+              var bytes = TeaIOUtils.swallow(is)
+              /*var bb = ByteBuffer.allocateDirect(bytes.length)
+              bb.put(bytes)
+              bb.flip();
+              bytes= null*/
+              var wr = new WeakReference(ByteBuffer.wrap(bytes))
+              
+              
+              
+              cacheMap = cacheMap + (url.toExternalForm() -> wr)
+              wr.get.duplicate()
+            case other =>
+
+              var is = url.openStream()
+              var bytes = TeaIOUtils.swallow(is)
+              /*var bb = ByteBuffer.allocateDirect(bytes.length)
+              bb.put(bytes)
+              bb.flip();
+              bytes= null*/
+              
+              var wr = new WeakReference(ByteBuffer.wrap(bytes))
+              cacheMap = cacheMap + (url.toExternalForm() -> wr)
+              wr.get.duplicate()
+          }
+        case Some(cachedRef) => cachedRef.get.duplicate()
+      }
+    
+    }
+
+    // REturn values
+    //ref.get
+    //cacheMap(url.toExternalForm()).get.duplicate()
+  }
+
 }

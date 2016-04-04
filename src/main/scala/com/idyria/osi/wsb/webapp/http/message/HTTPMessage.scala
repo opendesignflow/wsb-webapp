@@ -56,7 +56,7 @@ object HTTPMessage extends MessageFactory {
 
     var part = data.asInstanceOf[MimePart]
 
-    println(s"Got http message for factory: " + part.protocolLines)
+    //println(s"Got http message for factory: " + part.protocolLines)
 
     //-- Request or Response?
     part.protocolLines(0) match {
@@ -549,12 +549,15 @@ $sessionId
       case _ => header.getBytes.size + content.capacity
     }
 
-    var res = ByteBuffer.allocate(totalSize)
+    var res = ByteBuffer.allocateDirect(totalSize)
     res.put(header.getBytes)
 
     content match {
       case null =>
-      case c => res.put(c)
+      case c => 
+        res.put(c)
+        c.clear()
+        content = null
     }
 
     //res.put(ByteBuffer.wrap("\n".getBytes))
