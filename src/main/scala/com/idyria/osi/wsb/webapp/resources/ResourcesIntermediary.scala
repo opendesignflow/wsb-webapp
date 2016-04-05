@@ -487,7 +487,7 @@ object ResourcesIntermediary {
   }
   def mapAndCache(url: URL,force : Boolean=false): ByteBuffer = {
     
-    var doForce = false
+    var doForce = true
     // Populate Cache
     this.synchronized {
 

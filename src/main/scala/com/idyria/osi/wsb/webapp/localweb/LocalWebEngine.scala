@@ -44,7 +44,13 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   var viewPool = scala.collection.mutable.Map[Session, LocalWebHTMLVIew]()
 
   // Init -> Compile View once, and be ready for replacements 
-  var mainViewInstance = LocalWebHTMLVIewCompiler.createView(viewClass, true)
+  var mainViewInstance = try {
+    LocalWebHTMLVIewCompiler.createView(viewClass, true)
+  } catch {
+    case e : Throwable =>
+      e.printStackTrace();
+      viewClass.newInstance();
+  }
 
   //-- View Replacement
   mainViewInstance.onWith("view.replace") {
