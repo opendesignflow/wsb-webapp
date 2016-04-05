@@ -231,7 +231,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
       req =>
 
-       // println(s"Got page request")
+        println(s"Got page request "+req.path)
 
         //-- Get View to call action on 
         //--------------------
@@ -248,11 +248,11 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         })
         view.request = Some(req)
 
-        //println(s"rendering")
+        println(s"rendering")
         var r = new HTTPResponse();
         try {
           var rendered = view.rerender
-         // println(s"Done Rendering")
+          println(s"Done Rendering")
           r.htmlContent = rendered
           response(r, req)
         } catch {

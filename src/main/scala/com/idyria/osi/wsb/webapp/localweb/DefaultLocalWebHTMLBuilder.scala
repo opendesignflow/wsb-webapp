@@ -8,9 +8,12 @@ import java.net.URI
 import com.idyria.osi.vui.html.HTMLNode
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import com.idyria.osi.vui.html.Html
+import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
+import scala.language.implicitConversions
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
+  
   var request: Option[HTTPRequest] = None
   var viewPath = ""
   var currentView: LocalWebHTMLVIew = null
@@ -98,7 +101,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     //-- Create Action String
     var currentViewName = "/"
 
-    +@("onclick" -> s"localWeb.buttonClick('${this.viewPath}/action/$code')")
+    //
+    //var cd = s"localWeb.buttonClick('${this.viewPath}/action/$code')".noDoubleSlash
+    
+    +@("onclick" -> (s"localWeb.buttonClick('${this.viewPath}/action/$code')").noDoubleSlash)
 
   }
 
@@ -145,7 +151,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
           id(targetId)
         }
 
-        var viewInstance = v.getClass.newInstance()
+        var viewInstance = v
         viewInstance.parentView = Some(this.currentView)
         viewInstance.viewPath = this.viewPath + "/" + targetId
 
@@ -155,7 +161,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       //-- If A Record exists for the placeHolder, just update
       case Some((container, view)) =>
 
-        var viewInstance = v.getClass.newInstance()
+        var viewInstance = v
         viewInstance.parentView = Some(this.currentView)
         viewInstance.viewPath = this.viewPath + "/" + targetId
 

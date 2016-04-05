@@ -13,10 +13,10 @@ var localWeb = {
 		var deffered = $.get(id);
 		deffered.done(function(data) {
 			console.log("Done...");
-			/*if (data) {
+			if (data) {
 				console.log("Reloading Page")
 				$("body").html(data);
-			}*/
+			}
 		});
 
 	};

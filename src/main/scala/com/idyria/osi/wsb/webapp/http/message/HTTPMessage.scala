@@ -52,6 +52,8 @@ trait HTTPMessage extends Message {
 
 object HTTPMessage extends MessageFactory {
 
+  
+
   def apply(data: Any): HTTPMessage = {
 
     var part = data.asInstanceOf[MimePart]
@@ -230,12 +232,11 @@ class HTTPRequest(
             }
             this.nextParts.collectFirst {
               case p if (p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;\\s*name=\"" + name + "\".*")) =>
-                
+
                 // Found something, save it 
                 var decoded = java.net.URLDecoder.decode(new String(p.bytes), "UTF-8")
-                this.urlParameters.update(name,decoded)
+                this.urlParameters.update(name, decoded)
                 decoded
-           
 
             }
 
@@ -554,7 +555,7 @@ $sessionId
 
     content match {
       case null =>
-      case c => 
+      case c =>
         res.put(c)
         c.clear()
         content = null
@@ -684,3 +685,5 @@ object HTTPResponse extends MessageFactory with TLogSource {
   }
 
 }
+
+
