@@ -10,12 +10,14 @@ import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import com.idyria.osi.vui.html.Html
 import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
 import scala.language.implicitConversions
+import scala.reflect.runtime.universe._
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
-  
   var request: Option[HTTPRequest] = None
+  
   var viewPath = ""
+  
   var currentView: LocalWebHTMLVIew = null
 
   override def html(cl: => Any) = {
@@ -87,24 +89,35 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
   var actions = Map[String, (HTMLNode[HTMLElement, _], HTMLNode[HTMLElement, _] => Unit)]()
 
-  override def onClick(cl: => Unit) = {
-
+  def getActionString(cl: => Unit) : String = {
+    
     //-- Get Hash code
     val node = currentNode
     var code = node.hashCode()
-
-    //-- Register action
-    actions = actions + (code.toString -> (node, { node =>
+    
+    //-- Register 
+    var v =  currentView.getProxy[LocalWebHTMLVIew].get
+    v.actions =  v.actions + (code.toString -> (node, { node =>
       cl
     }))
+   
+    code.toString
+    
+  }
+  
+  override def onClick(cl: => Unit) = {
+
+    var actionCode = this.getActionString(cl)
+    
+    
 
     //-- Create Action String
     var currentViewName = "/"
 
     //
     //var cd = s"localWeb.buttonClick('${this.viewPath}/action/$code')".noDoubleSlash
-    
-    +@("onclick" -> (s"localWeb.buttonClick('${this.viewPath}/action/$code')").noDoubleSlash)
+
+    +@("onclick" -> (s"localWeb.buttonClick('/action/${this.viewPath}/$actionCode')").noDoubleSlash)
 
   }
 
@@ -116,31 +129,55 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     +@("reRender" -> "true")
   }
 
-  def placeView(vc: Class[_ <: LocalWebHTMLVIew], targetId: String): LocalWebHTMLVIew = {
+  def placeView[VT <: LocalWebHTMLVIew : TypeTag](vc: Class[VT], targetId: String): LocalWebHTMLVIew = {
 
     //-- Compile
-    var createdView = LocalWebHTMLVIewCompiler.createView(vc)
+    var createdView = LocalWebHTMLVIewCompiler.createView[VT](None, vc)
 
     //-- Listen for reloading
-    createdView.onWith("view.replace") {
-      newClass: Class[_ <: LocalWebHTMLVIew] =>
+    /*createdView.onWith("view.replace") {
+      newClass: Class[VT] =>
 
         println(s"Repalcing placed view")
         //-- Replace view in container map
-        var placedView = placeView(newClass.newInstance(), targetId)
+        var placedView = placeView(LocalWebHTMLVIewCompiler.newInstance(Some(createdView), newClass), targetId)
 
         //-- trigger reload
         placedView.getTopParentView.@->("refresh")
-    }
+    }*/
     placeView(createdView, targetId)
 
   }
 
-  def placeView(v: LocalWebHTMLVIew, targetId: String): LocalWebHTMLVIew = {
+  /**
+   * If view ready is true, just take the object as new view
+   */
+  def placeView[VT <: LocalWebHTMLVIew : TypeTag](v: VT, targetId: String,viewready : Boolean = false): VT = {
 
-    //-- Recompile View Using 
+    //-- Recompile View Using  
     //------------------------------
+    //-- Compile 
+    var createdView = viewready match {
+      case true => v
+      case false => LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]],true) 
+    }
+    
+    //-- Listen for reloading
+    createdView.onWith("view.replace") {
+      newClass: Class[VT] =>
 
+        //println(s"Repalcing placed view")
+        
+        //-- Replace view in container map
+        var placedView = placeView(LocalWebHTMLVIewCompiler.newInstance(Some(createdView), newClass), targetId,viewready=true)
+
+        //println(s"View is now: "+viewPlaces(targetId))
+       // println(s"Should be: "+placedView)
+        
+        //-- trigger reload
+        placedView.getTopParentView.@->("refresh")
+    }
+    
     //currentNode.apply("reRender" -> "true")
     viewPlaces.get(targetId) match {
 
@@ -148,10 +185,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       case None =>
 
         var viewPLDIV = div {
-          id(targetId)
+          id(targetId) 
         }
 
-        var viewInstance = v
+        var viewInstance = createdView
         viewInstance.parentView = Some(this.currentView)
         viewInstance.viewPath = this.viewPath + "/" + targetId
 
@@ -161,7 +198,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       //-- If A Record exists for the placeHolder, just update
       case Some((container, view)) =>
 
-        var viewInstance = v
+        var viewInstance = createdView
         viewInstance.parentView = Some(this.currentView)
         viewInstance.viewPath = this.viewPath + "/" + targetId
 
@@ -199,12 +236,15 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
       //-- If A Record exists for the placeHolder, and view is not null, use it
       case Some((container, currentView)) =>
+        
+       // println(s"Replacing container with $currentView")
         container.clearChildren
         container.detach
         switchToNode(container, {
           add(currentView.rerender)
         })
 
+       // println(s"Container is noeew: "+container.toString())
         add(container)
     }
 

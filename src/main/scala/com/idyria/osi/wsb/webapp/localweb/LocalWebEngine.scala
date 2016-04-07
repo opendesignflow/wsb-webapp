@@ -45,9 +45,9 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   // Init -> Compile View once, and be ready for replacements 
   var mainViewInstance = try {
-    LocalWebHTMLVIewCompiler.createView(viewClass, true)
+    LocalWebHTMLVIewCompiler.createView(None, viewClass, true)
   } catch {
-    case e : Throwable =>
+    case e: Throwable =>
       e.printStackTrace();
       viewClass.newInstance();
   }
@@ -71,10 +71,12 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           }
 
           this.viewPool.update(session, instance)
+
+          instance.@->("refresh")
       }
 
-      //-- Send Update to active pools
-      websocketPool.foreach {
+    //-- Send Update to active pools
+    /* websocketPool.foreach {
         case (session, interface) =>
 
          // println(s"Sending WS Update")
@@ -87,7 +89,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
             case None =>
           }
 
-      }
+      }*/
   }
 
   //-- View Refresh can be requested
@@ -98,9 +100,17 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
       case (session, interface) =>
 
         println(s"Sending WS Update")
-        var message = new UpdateHtml
-        message.HTML = this.viewPool.get(session).get.rerender.toString
-        interface.writeSOAPPayload(message)
+
+        try {
+          var newHtml = this.viewPool.get(session).get.rerender.toString
+          var message = new UpdateHtml
+          message.HTML = newHtml
+          interface.writeSOAPPayload(message)
+        } catch {
+          case e: Throwable =>
+            e.printStackTrace()
+        }
+
     }
   }
 
@@ -124,9 +134,9 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           websocketPool.update(req.getSession, interface)
 
           req.networkContext.on("close") {
-           
+
             websocketPool -= req.getSession
-             println("Closing Websocket, remaning: "+websocketPool.size)
+            println("Closing Websocket, remaning: " + websocketPool.size)
           }
           //-- Send ack 
           //println(s"Say Hello");
@@ -225,7 +235,8 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
     }
 
   }
-  //-- Min Handler 
+
+  //-- Main Handler 
   //-------------------
 
   this <= new HTTPIntermediary {
@@ -237,13 +248,13 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
       req =>
 
-        println(s"Got page request "+req.path)
+        println(s"Got page request " + req.path)
 
         //-- Get View to call action on 
         //--------------------
         var view = viewPool.getOrElseUpdate(req.getSession, {
 
-        //  println(s"New view instance")
+          //  println(s"New view instance")
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
           instance.on("refresh") {
@@ -254,11 +265,14 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         })
         view.request = Some(req)
 
-        println(s"rendering")
+        //println(s"rendering")
+
         var r = new HTTPResponse();
         try {
           var rendered = view.rerender
-          println(s"Done Rendering")
+
+          //println(s"Done Rendering")
+
           r.htmlContent = rendered
           response(r, req)
         } catch {
@@ -290,6 +304,17 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         }).toString()*/
         response(r, req)*/
 
+    }
+  }
+
+  // Errors 
+  //--------------------
+  this <= new HTTPIntermediary {
+    this.acceptDown { r => r.errors.size > 0 }
+
+    this.onDownMessage { req =>
+
+      println(s"Request has errors")
     }
   }
 }
@@ -325,8 +350,8 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
       this.acceptDown { req => !req.upped }
       this.onDownMessage {
         req =>
-          //println(s"Default Handler for ${req.path}")
-         // println(s"Errors: ${req.errors.size}")
+        //println(s"Default Handler for ${req.path}")
+        // println(s"Errors: ${req.errors.size}")
       }
     }
 

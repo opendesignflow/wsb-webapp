@@ -12,6 +12,8 @@ class LocalWebHTMLVIew extends AView[HTMLElement,HTMLNode[HTMLElement,HTMLNode[H
 
  this.currentView = this
   
+ 
+ 
   override def clone = {
     getClass.newInstance()
   }
