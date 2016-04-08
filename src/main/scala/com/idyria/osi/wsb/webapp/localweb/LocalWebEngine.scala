@@ -33,14 +33,22 @@ import com.sun.deploy.uitoolkit.impl.fx.HostServicesFactory
 import javafx.scene.paint.Color
 import javafx.event.EventHandler
 import javafx.stage.WindowEvent
+import java.io.StringWriter
+import java.io.PrintWriter
+import java.nio.ByteBuffer
+import sun.rmi.transport.proxy.HttpOutputStream
+import com.idyria.osi.tea.compile.ClassDomainSupport
+import com.sun.xml.internal.ws.wsdl.parser.MexEntityResolver
 
 @xelement
 class Ack extends ElementBuffer {
 
 }
 
-class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWebHTMLVIew]) extends HTTPPathIntermediary(basePath) with DefaultBasicHTMLBuilder {
+class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWebHTMLVIew]) extends HTTPPathIntermediary(basePath) with DefaultBasicHTMLBuilder with ClassDomainSupport {
 
+  // View Pool
+  //-------------------
   var viewPool = scala.collection.mutable.Map[Session, LocalWebHTMLVIew]()
 
   // Init -> Compile View once, and be ready for replacements 
@@ -65,9 +73,25 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
 
+          // Events Propagation
+          //------------
           instance.on("refresh") {
             // Refresh must be propagated to the main view instance
             mainViewInstance.@->("refresh")
+          }
+          instance.onWith("soap.send") {
+            payload: ElementBuffer =>
+
+              websocketPool.get(session) match {
+                case Some(interface) =>
+                  interface.writeSOAPPayload(payload)
+                case None =>
+              }
+
+          }
+          instance.onWith("soap.broadcast") {
+            payload: ElementBuffer =>
+
           }
 
           this.viewPool.update(session, instance)
@@ -75,21 +99,15 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           instance.@->("refresh")
       }
 
-    //-- Send Update to active pools
-    /* websocketPool.foreach {
-        case (session, interface) =>
+  }
 
-         // println(s"Sending WS Update")
-
-          this.viewPool.get(session) match {
-            case Some(view) =>
-              var message = new UpdateHtml
-              message.HTML = view.rerender.toString
-              interface.writeSOAPPayload(message)
-            case None =>
-          }
-
-      }*/
+  def getViewForRequest(req: HTTPRequest) = {
+    this.viewPool.get(req.getSession) match {
+      case Some(view) =>
+        view.request = Some(req)
+        Some(view)
+      case None => None
+    }
   }
 
   //-- View Refresh can be requested
@@ -114,8 +132,60 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
     }
   }
 
+ 
+
   //-- Resources 
   //-----------------
+  this <= new HTTPPathIntermediary("/resources") {
+
+    this <= new ResourcesIntermediary("/")
+
+    this.onDownMessage {
+      req =>
+
+        getViewForRequest(req) match {
+          case Some(view) =>
+
+            // Extract path: /viewId/resources/resource/resource/
+            //--------------------
+            //var actionId = req.path.stripPrefix("/action/")
+            var resourcePath = req.path.split("/").filter(_.length > 0).toList
+
+            // Take until "resources" path found
+            var (viewPath, localResourcePath) = resourcePath.span { p => p != "resources" } match {
+              case (vp, lp) if (lp.size == 0) => (lp, vp)
+              case (vp, lp) => (vp, lp.drop(1))
+            }
+
+            //println(s"R Searching resource ${req.path} from view $viewPath , $localResourcePath")
+
+            //-- Search vies along path 
+            var currentView = view
+            viewPath.foreach {
+              nextViewName =>
+                //println(s"R Searching for view name $nextViewName in current")
+                currentView.viewPlaces.get(nextViewName) match {
+                  case Some((container, nextView)) => currentView = nextView
+                  case None =>
+                    throw new RuntimeException(s"Cannot find view named $nextViewName in current view, maybe the action path is wrong ")
+                }
+            }
+
+            //-- Make sure request is available
+            currentView.request = view.request
+
+            //-- Change classloader 
+            Thread.currentThread().setContextClassLoader(currentView.getClassLoader)
+            // println("new cl for resource intermediary is "+currentView.getClassLoader)
+            //-- Let real resource intermediary go on
+            req.path = localResourcePath.mkString("/", "/", "")
+
+          case None =>
+
+        }
+
+    }
+  }
   this <= new ResourcesIntermediary("/resources")
 
   // WebSocket
@@ -161,10 +231,10 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         //-- Get View to call action on 
         //--------------------
-        viewPool.get(req.getSession) match {
+        getViewForRequest(req) match {
           case Some(view) =>
 
-            // Extract path
+            // Extract path: /action/viewId/actionid
             //--------------------
             //var actionId = req.path.stripPrefix("/action/")
             var actionPath = req.path.split("/").filter(_.length > 0).toList
@@ -180,28 +250,57 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
                 currentView.viewPlaces.get(nextViewName) match {
                   case Some((container, nextView)) => currentView = nextView
                   case None =>
+                    println(s"view not found: "+nextViewName)
                     throw new RuntimeException(s"Cannot find view named $nextViewName in current view, maybe the action path is wrong ")
                 }
             }
 
-            //-- Now call on current view
+            //-- Make sure request is available
+            currentView.request = view.request
 
             //-- Get Action to call
             //---------------------
-            currentView.actions.get(actionId) match {
+            currentView.getActions.get(actionId) match {
               case Some((node, action)) =>
 
                 println(s"Found Action to call")
-                action(node)
 
-                //-- Prepare Response
-                var r = new HTTPResponse();
+                try {
+                  action(node)
+                  //-- Prepare Response
+                  var r = new HTTPResponse();
 
-                //-- ReRender, but get only body
-                if (node.attribute("reRender") != "") {
-                  r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[_, _]]).get.asInstanceOf[HTMLNode[_, HTMLNode[_, _]]]
+                  //-- ReRender, but get only body
+                  if (node.attribute("reRender") != "") {
+                    r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[_, _]]).get.asInstanceOf[HTMLNode[_, HTMLNode[_, _]]]
+                  } else {
+                    r.contentType = "text/plain"
+                    r.content = ByteBuffer.wrap("OK".getBytes)
+                  }
+                  response(r, req)
+
+                } catch {
+                  case e: Throwable =>
+                    e.printStackTrace()
+
+                    var r = new HTTPResponse();
+                    r.code = 503
+                    r.htmlContent = html {
+                      head {
+
+                      }
+                      body {
+                        textContent(s"An error occurent during action processing")
+                        var sw = new StringWriter
+                        e.printStackTrace(new PrintWriter(sw))
+                        pre(sw.toString()) {
+
+                        }
+                      }
+                    }
+                    response(r, req)
+
                 }
-                response(r, req)
 
               case None =>
 
@@ -257,10 +356,29 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           //  println(s"New view instance")
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
+          
+          // Events
+          //--------------
           instance.on("refresh") {
             // Refresh must be propagated to the main view instance
             mainViewInstance.@->("refresh")
           }
+          
+          instance.onWith("soap.send") {
+            payload: ElementBuffer =>
+
+              websocketPool.get(req.getSession) match {
+                case Some(interface) =>
+                  interface.writeSOAPPayload(payload)
+                case None =>
+              }
+
+          }
+          instance.onWith("soap.broadcast") {
+            payload: ElementBuffer =>
+
+          }
+          
           instance
         })
         view.request = Some(req)

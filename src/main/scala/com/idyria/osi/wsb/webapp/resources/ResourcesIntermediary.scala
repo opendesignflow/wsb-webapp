@@ -77,7 +77,7 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
     var res: Option[URL] = None
     // Try class Loader and stanadard file
     logFine[ResourcesIntermediary](s"**** Searching as Resource: ${extractedPath}")
-    getClass.getClassLoader.getResource(extractedPath) match {
+    Thread.currentThread().getContextClassLoader.getResource(extractedPath) match {
 
       case null =>
         this.fileSources.find {

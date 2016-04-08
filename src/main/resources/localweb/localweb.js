@@ -13,14 +13,47 @@ var localWeb = {
 		var deffered = $.get(id);
 		deffered.done(function(data) {
 			console.log("Done...");
-			if (data) {
+			if (data!="OK") {
 				console.log("Reloading Page")
-				$("body").html(data);
+				//$("body").html(data);
 			}
 		});
 
 	};
+	
+	/**
+	 * Bind Value
+	 */
+	localWeb.bindValue = function(element,actionPath) {
+		
+		
+		console.info("Value changed sending remote request for " + actionPath);
+		
+		//-- Get value 
+		var elt = $(element);
+		if (elt.attr("type")=="checkbox") {
+			var value = elt.is(":checked");
+		} else {
+			var value = elt.val();
+		}
+		
+		var name = $(element).attr("name");
+		
+		console.info("Sending "+value+" as name "+name);
+		
+		var deffered = $.get(actionPath+"?"+name+"="+value);
+		deffered.done(function(data) {
+			console.log("Done...");
+			
+		});
+		
+		
+		
+	};
 
+	
+	// Event Connection
+	//---------------------------
 	localWeb.makeEventConnection = function() {
 
 		var targetURL = "ws://" + window.location.hostname
@@ -31,15 +64,23 @@ var localWeb = {
 
 		// Log messages from the server
 		localWeb.wsConnection.onmessage = function(e) {
-			//console.log('Server: ' + e.data);
+			console.log('Server: ' + e.data);
 
-			// Get JSON
+			// Get SOAP JSON
+			//-------------
 			var soap = $.parseJSON("{" + e.data + "}");
 
+			
+			$(localWeb.wsConnection).trigger("soap",soap);
+			
+			
 			// Handle messages
 			// --------------
 			var body = soap.Envelope.Body;
-
+			
+			console.log("Keys: "+Object.keys(body));
+			$(localWeb.wsConnection).trigger("payload",[ Object.keys(body)[0],body[Object.keys(body)[0]]]);
+			
 			if (body.Ack) {
 				console.log("Got Acknowledge");
 			}
@@ -53,6 +94,20 @@ var localWeb = {
 			}
 
 		};
+	};
+	
+	localWeb.onPushData = function( name, f ) {
+		
+		// Registering function
+		$(localWeb.wsConnection).on("payload",function(event,pname,payload) {
+			
+			console.log("Got payload "+pname+" filtering for "+name);
+			if(pname==name) {
+				f(payload[0]);
+			}
+			
+		});
+		
 	};
 
 	/**
