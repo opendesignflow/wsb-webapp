@@ -237,26 +237,33 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
     head.field("OPCODE").value = 0x1
 
     //-- Length
+    var extendedPayloadLength = 0
     var lengthExtraBytes = buffer.remaining() match {
 
       // Length on 7 bits
-      case payloadLength if (payloadLength < 126) =>
+      case payloadLength if (payloadLength < 127) =>
 
+         logFine[WebsocketProtocolhandler](s"Length on 7 bits")
+        
         head.field("PayloadLen").value = payloadLength
         0
 
       // Length on 16 bits
       case payloadLength if (payloadLength < Math.pow(2, 16)) =>
 
+        logFine[WebsocketProtocolhandler](s"Length on 16 bits")
+        
         head.field("PayloadLen").value = 126
         head.field("ExtraPayloadLen").value = payloadLength
         2
 
       // Otherwise 64 bits
-      case _ =>
-
+      case payloadLength =>
+        
+        logFine[WebsocketProtocolhandler](s"Length on 64 bits")
+        
         head.field("PayloadLen").value = 127
-        sendDescription.register("ExtendedPayloadLen").value = payloadLength
+        extendedPayloadLength = payloadLength
 
         8
 
@@ -272,7 +279,7 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
 
     //head.explainMemory
 
-    logFine(s"Head byte 0 (payload +length: ${(head.value >>> 8).toBinaryString}")
+    logFine[WebsocketProtocolhandler](s"Head byte 0 (payload +length: ${(head.value >>> 8).toBinaryString}")
     outBuffer.put(((head.value >>> 24) & 0xFF).toByte)
 
     outBuffer.put(((head.value >>> 16) & 0xFF).toByte)
@@ -283,11 +290,14 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
         outBuffer.put(((head.value >>> 8) & 0xFF).toByte)
         outBuffer.put(((head.value >>> 0) & 0xFF).toByte)
       case 8 =>
-        outBuffer.putLong(sendDescription.register("ExtendedPayloadLen").value)
+        logFine[WebsocketProtocolhandler](s"64bits length: "+extendedPayloadLength)
+        outBuffer.putLong(extendedPayloadLength)
       case _ =>
     }
 
     outBuffer.put(buffer);
+    outBuffer.flip()
+    outBuffer
     
     // outBuffer.put(buffer);
 

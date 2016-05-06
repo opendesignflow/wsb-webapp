@@ -206,7 +206,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           req.networkContext.on("close") {
 
             websocketPool -= req.getSession
-            println("Closing Websocket, remaning: " + websocketPool.size)
+            println(s"Closing Websocket with state: ${req.networkContext}, remaning: " + websocketPool.size)
           }
           //-- Send ack 
           //println(s"Say Hello");

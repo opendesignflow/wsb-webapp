@@ -10,11 +10,12 @@ import com.idyria.osi.ooxoo.lib.json.JsonIO
 import com.idyria.osi.wsb.core.message.soap.SOAPMessage
 import com.idyria.osi.wsb.core.message.soap.JSONSOAPMessage
 import com.idyria.osi.wsb.core.message.soap.EnvelopeBody
+import com.idyria.osi.tea.logging.TLogSource
 
 /**
  * @author zm4632
  */
-class WebsocketInterface(val nc: TCPNetworkContext) {
+class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
 
   def writeMessage(el: ElementBuffer) = {
 
@@ -26,6 +27,10 @@ class WebsocketInterface(val nc: TCPNetworkContext) {
       //println(s"Converting to JSON WS message");
       var res = JsonIO(el, true)
 
+      logInfo(s"Converting to JSON WS message: "+res)
+      
+      
+      
       // Send
       //---------------
       //println(s"Sending WS message");

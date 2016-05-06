@@ -13,6 +13,7 @@ import scala.language.implicitConversions
 import scala.reflect.runtime.universe._
 import scala.reflect.ClassTag
 import com.idyria.osi.ooxoo.core.buffers.structural.AbstractDataBuffer
+import com.idyria.osi.ooxoo.core.buffers.datatypes.IntegerBuffer
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
@@ -92,7 +93,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
   var actions = Map[String, (HTMLNode[HTMLElement, _], HTMLNode[HTMLElement, _] => Unit)]()
 
   def getActions = actions
-  
+
   def getActionString(cl: => Unit): String = {
 
     //-- Get Hash code
@@ -119,7 +120,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     //
     //var cd = s"localWeb.buttonClick('${this.viewPath}/action/$code')".noDoubleSlash
 
-    +@("onclick" -> (s"localWeb.buttonClick('/action/${this.viewPath}/$actionCode')").noDoubleSlash)
+    +@("onclick" -> (s"localWeb.buttonClick(this,'/action/${this.viewPath}/$actionCode')").noDoubleSlash)
 
   }
 
@@ -274,6 +275,11 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         // Ensure input type is number
         +@("type" -> "number")
+        
+        // Enable float if necessary
+        if (baseClass == classOf[Double]) {
+          +@("step" -> "any")
+        }
 
         // Set name on element
         val targetNode = currentNode
@@ -355,20 +361,19 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
       // Boolean
       //------------------
-      case Some(baseClass) if(baseClass==classOf[Boolean]) => 
-        
-        
+      case Some(baseClass) if (baseClass == classOf[Boolean]) =>
+
         // Make sure it is a checkbox
         +@("type" -> "checkbox")
-        
-         // Set name on element
+
+        // Set name on element
         val targetNode = currentNode
         currentNode.attributes.get("name") match {
           case Some(name) => name
           case None =>
             +@("name" -> "value")
         }
-        
+
         // Register Action
         var action = this.getActionString {
 
@@ -386,11 +391,23 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         // bind to on change
         +@("onchange" -> s"localWeb.bindValue(this,'/action/${this.viewPath}/$action')".noDoubleSlash)
-        
-        
+
       //-- No Match error
       case None =>
         sys.error("Bind value on supports input types: " + supportedTypes)
+    }
+
+  }
+
+  /**
+   * BindValue with Buffers
+   */
+  def bindValue(vb: IntegerBuffer): Unit = {
+
+    +@("value" -> vb.toString())
+    this.bindValue { 
+      v: Int =>
+        vb.data = v
     }
 
   }

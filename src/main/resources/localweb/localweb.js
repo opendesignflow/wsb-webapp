@@ -6,16 +6,18 @@ var localWeb = {
 	/**
 	 * Call A Remote Action
 	 */
-	localWeb.buttonClick = function(id) {
+	localWeb.buttonClick = function(button,id) {
 
 		console.info("Button Clicked, sending remote request for " + id);
 
+		$(button).prop('disabled', true);
 		var deffered = $.get(id);
 		deffered.done(function(data) {
 			console.log("Done...");
+			$(button).prop('disabled', false);
 			if (data!="OK") {
 				console.log("Reloading Page")
-				//$("body").html(data);
+				$("body").html(data);
 			}
 		});
 
@@ -118,9 +120,9 @@ var localWeb = {
 	 */
 	localWeb.decodeHTML = function(uriHTML) {
 		return decodeURI(uriHTML).replace(/\++/g, " ").replace(/(%2F)+/g, "/")
-				.replace(/(%3A)+/g, ":").replace(/(%3D)+/g, "=").replace(
+				.replace(/(%3A)+/g, ":").replace(/(%3B)+/g, ";").replace(/(%3D)+/g, "=").replace(
 						/(%23)+/g, "#").replace(/(%40)+/g, "@").replace(
-						/(%2C)+/g, ",")
+						/(%2C)+/g, ",").replace(/(%2B)+/g, "+")
 	}
 
 	console.info("Welcome to localweb JS..." + window.location.pathname);
