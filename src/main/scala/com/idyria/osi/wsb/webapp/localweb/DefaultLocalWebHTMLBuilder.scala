@@ -14,6 +14,8 @@ import scala.reflect.runtime.universe._
 import scala.reflect.ClassTag
 import com.idyria.osi.ooxoo.core.buffers.structural.AbstractDataBuffer
 import com.idyria.osi.ooxoo.core.buffers.datatypes.IntegerBuffer
+import java.io.StringWriter
+import java.io.PrintWriter
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
@@ -244,7 +246,21 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         container.clearChildren
         container.detach
         switchToNode(container, {
-          add(currentView.rerender)
+          try {
+            var reRendered = currentView.rerender
+            add(reRendered)
+          } catch {
+            case e: Throwable =>
+              div {
+                textContent(s"An error occurent during action processing")
+                var sw = new StringWriter
+                e.printStackTrace(new PrintWriter(sw))
+                pre(sw.toString()) {
+
+                }
+              }
+          }
+
         })
 
         // println(s"Container is noeew: "+container.toString())
@@ -275,7 +291,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         // Ensure input type is number
         +@("type" -> "number")
-        
+
         // Enable float if necessary
         if (baseClass == classOf[Double]) {
           +@("step" -> "any")
@@ -405,7 +421,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
   def bindValue(vb: IntegerBuffer): Unit = {
 
     +@("value" -> vb.toString())
-    this.bindValue { 
+    this.bindValue {
       v: Int =>
         vb.data = v
     }

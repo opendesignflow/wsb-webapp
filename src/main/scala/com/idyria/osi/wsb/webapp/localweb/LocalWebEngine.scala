@@ -24,8 +24,6 @@ import com.idyria.osi.ooxoo.core.buffers.structural.xelement
 import com.idyria.osi.wsb.core.message.soap.SOAPMessage
 import com.idyria.osi.wsb.webapp.http.connector.websocket.WebsocketProtocolhandler
 import com.idyria.osi.ooxoo.core.buffers.datatypes.DateTimeBuffer
-import com.idyria.osi.vui.implementation.javafx.JavaFXRun
-import com.idyria.osi.vui.implementation.javafx.JavaFXNodeDelegate
 import javafx.scene.control.Hyperlink
 import javafx.scene.Scene
 import javafx.stage.Stage
@@ -39,6 +37,11 @@ import java.nio.ByteBuffer
 import sun.rmi.transport.proxy.HttpOutputStream
 import com.idyria.osi.tea.compile.ClassDomainSupport
 import com.sun.xml.internal.ws.wsdl.parser.MexEntityResolver
+import javax.swing.JFrame
+import javax.swing.JTextPane
+import javax.swing.JScrollPane
+import javax.swing.JTextArea
+import javax.swing.JEditorPane
 
 @xelement
 class Ack extends ElementBuffer {
@@ -514,12 +517,14 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   // GUI 
   //--------
-  var helperGUIMainVBox = new javafx.scene.layout.VBox();
+ // var helperGUIMainVBox = new javafx.scene.layout.VBox();
+  var uiFrame : Option[JFrame] = None
   override def lStart = {
     super.lStart
+    
     //-- Create GUI TO help
     //JavaFXRun.on
-    JavaFXRun.onJavaFX {
+   /* JavaFXRun.onJavaFX {
 
       var hostServices = HostServicesFactory.getInstance(JavaFXRun.application)
 
@@ -551,7 +556,28 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
       println(s"Done UI")
 
-    }
+    }*/
+    
+    
+    //-- Create Frame
+    var f = new JFrame("LocalWeb")
+    uiFrame = Some(f)
+    f.setSize(800, 600)
+    
+    //-- Add text
+    var tp = new JEditorPane
+    tp.setContentType("text/html")
+    tp.setText("""<html>
+      <h1>Web API</h1>
+      <p>
+      Open your Web Browser and navigate to <a href="http://localhost:8585/">http://localhost:8585/</a>
+      </p></html>
+      """.trim)
+    f.setContentPane(new JScrollPane(tp))
+    f.setVisible(true)
+    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+    
+    
   }
 
 }
