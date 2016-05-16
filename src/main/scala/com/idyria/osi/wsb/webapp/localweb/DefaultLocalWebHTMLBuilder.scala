@@ -164,7 +164,14 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     //-- Compile 
     var createdView = viewready match {
       case true => v
-      case false => LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]], true)
+      case false =>
+        try {
+          LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]], true)
+        } catch {
+          case e: Throwable =>
+
+            v
+        }
     }
 
     //-- Listen for reloading
@@ -203,11 +210,18 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       //-- If A Record exists for the placeHolder, just update
       case Some((container, view)) =>
 
+        // Update
+        //---------
         var viewInstance = createdView
         viewInstance.parentView = Some(this.currentView)
         viewInstance.viewPath = this.viewPath + "/" + targetId
 
         viewPlaces = viewPlaces + (targetId -> (container, viewInstance))
+
+        //-- Set Content 
+        viewPlaceHolder(targetId, "") {
+
+        }
 
         viewInstance
       //case Some((container, view)) => view 
@@ -270,7 +284,14 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
   }
 
   def detachView(targetId: String) = {
-    viewPlaces = viewPlaces - targetId
+    viewPlaces.get(targetId) match {
+      case Some((container, null)) =>
+      case Some((container, currentView)) =>
+        viewPlaces = viewPlaces + (targetId -> (container, null))
+      case _ =>
+         viewPlaces = viewPlaces - targetId
+    }
+   
   }
 
   // Autobinding

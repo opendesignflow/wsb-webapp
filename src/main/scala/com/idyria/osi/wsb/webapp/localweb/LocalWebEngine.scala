@@ -120,7 +120,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
     websocketPool.foreach {
       case (session, interface) =>
 
-        println(s"Sending WS Update")
+        logFine[SingleViewIntermediary](s"Sending WS Update")
 
         try {
           var newHtml = this.viewPool.get(session).get.rerender.toString
@@ -202,14 +202,14 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
 
         if (req.upped) {
-          println(s"Websocket opened")
+          logFine[SingleViewIntermediary](s"Websocket opened")
           var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
           websocketPool.update(req.getSession, interface)
 
           req.networkContext.on("close") {
 
             websocketPool -= req.getSession
-            println(s"Closing Websocket with state: ${req.networkContext}, remaning: " + websocketPool.size)
+            logFine[SingleViewIntermediary](s"Closing Websocket with state: ${req.networkContext}, remaning: " + websocketPool.size)
           }
           //-- Send ack 
           //println(s"Say Hello");
@@ -243,17 +243,17 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
             var actionPath = req.path.split("/").filter(_.length > 0).toList
             var actionId = actionPath.last
             var viewPath = actionPath.dropRight(1)
-            println(s"Action Path:" + actionPath)
+            logFine[SingleViewIntermediary](s"Action Path:" + actionPath)
 
             //-- Search vies along path 
             var currentView = view
             viewPath.foreach {
               nextViewName =>
-                println(s"Searching for view name $nextViewName in current")
+                logFine[SingleViewIntermediary](s"Searching for view name $nextViewName in current")
                 currentView.viewPlaces.get(nextViewName) match {
                   case Some((container, nextView)) => currentView = nextView
                   case None =>
-                    println(s"view not found: "+nextViewName)
+                    logFine[SingleViewIntermediary](s"view not found: "+nextViewName)
                     throw new RuntimeException(s"Cannot find view named $nextViewName in current view, maybe the action path is wrong ")
                 }
             }
@@ -266,7 +266,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
             currentView.getActions.get(actionId) match {
               case Some((node, action)) =>
 
-                println(s"Found Action to call")
+                logFine[SingleViewIntermediary](s"Found Action to call")
 
                 try {
                   action(node)
@@ -350,7 +350,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
       req =>
 
-        println(s"Got page request " + req.path)
+        logFine[SingleViewIntermediary](s"Got page request " + req.path)
 
         //-- Get View to call action on 
         //--------------------
@@ -435,7 +435,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
     this.onDownMessage { req =>
 
-      println(s"Request has errors")
+      logFine[SingleViewIntermediary](s"Request has errors")
     }
   }
 }
@@ -458,6 +458,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
   def enableDebug = {
     TLog.setLevel(classOf[ResourcesIntermediary], TLog.Level.FULL)
     TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
+    TLog.setLevel(classOf[SingleViewIntermediary], TLog.Level.FULL)
 
   }
 
