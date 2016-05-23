@@ -103,7 +103,7 @@ class HTTPRequest(
 
         logFine(s"[HTTP] URL Parameter: ${parameterMatch.group(1)} ${parameterMatch.group(2)}")
 
-        urlParameters.update(parameterMatch.group(1), parameterMatch.group(2))
+        urlParameters.update(parameterMatch.group(1), java.net.URLDecoder.decode(parameterMatch.group(2),"US-ASCII"))
       //this.addParameter()
       case None =>
 

@@ -72,6 +72,9 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
       case None            => path
     }*/
 
+    //-- Gather file sources
+    var allFileSources = this.fileSources ::: ResourcesIntermediary.fileSources
+
     logFine[ResourcesIntermediary](s"**** Searching resource in : ${fileSources}")
 
     var res: Option[URL] = None
@@ -80,7 +83,7 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
     Thread.currentThread().getContextClassLoader.getResource(extractedPath) match {
 
       case null =>
-        this.fileSources.find {
+        allFileSources.find {
           source =>
 
             // var possiblePath = new File(s"${source}${extractedPath}").toURI.toURL.toString
@@ -179,17 +182,16 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
             //-- Get Data      
             val maxReturnBuffer = 1024 * 1024
             var data = (start, stop) match {
-              
+
               // Full Content
               case (-1, -1) =>
 
-              
                 // Old
                 //response.content = swallow(resourceStream, 0, resourceStream.available())
-                
+
                 // New
                 response.content = swallow(resourceURL, 0, resourceStream.available())
-                
+
               // Remaining
               case (start, -1) =>
 
@@ -214,13 +216,13 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
                 response.addParameter("Content-Range", s"bytes $start-${totalLength - 1}/${totalLength}")
 
                 //ByteBuffer.wrap(swallow(resourceStream, start, resourceStream.available()))
-                
+
                 // Old
                 //response.content = swallow(resourceStream, start, totalLength)
-                
+
                 // New
                 response.content = swallow(resourceURL, start, totalLength)
-                
+
               // Range
               case (start, stop) =>
 
@@ -234,10 +236,10 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
                 response.addParameter("Content-Range", s"bytes $start-$stop/${totalLength}")
 
                 // resourceStream.skip(start)
-                
+
                 // Old
                 //response.content = swallow(resourceStream, start, stop)
-                
+
                 // New
                 response.content = swallow(resourceURL, start, stop)
             }
@@ -286,6 +288,8 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
               //response(HTTPResponse("video/webm", data), message)
               case path if (path.endsWith(".mp4")) =>
                 response.contentType = "video/mp4"
+              case path if (path.endsWith(".pdf")) =>
+                response.contentType = "application/pdf"
               //response(HTTPResponse("video/mp4", data), message)
 
               // Special Views
@@ -303,7 +307,7 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
             // Return response
             //println(s"Finished resource $resourceURL")
 
-            response.addParameter("Accept-Ranges", "bytes")
+            //response.addParameter("Accept-Ranges", "bytes")
             this.response(response, message)
 
           //-- Nothing found -> Continue to handler
@@ -381,7 +385,7 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
     }
 
   }
-  
+
   /**
    * Returns a byte array containing the totality of the InputStream.
    * @param is The available size should return the complete size of the stream
@@ -391,15 +395,15 @@ class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(baseP
 
     // Get Cached bytes 
     var bytes = ResourcesIntermediary.mapAndCache(is)
-    
+
     // Return requested portion
-    
+
     bytes.position(start)
     bytes.limit(stop)
-    
-   // bytes.flip()
+
+    // bytes.flip()
     //println(s"Got buffer for ${is} $start -> $stop, available: "+bytes.remaining())
-    
+
     bytes
     /*
     try {
@@ -476,32 +480,32 @@ object ResourcesIntermediary {
 
   var cacheWatcher = new FileWatcher
   cacheWatcher.start
-  
-  def discardResource(url:URL) = {
+
+  def discardResource(url: URL) = {
     this.synchronized {
       cacheMap.get(url.toExternalForm()) match {
         case Some(ref) => cacheMap = cacheMap - url.toExternalForm()
-        case None => 
+        case None =>
       }
     }
   }
-  def mapAndCache(url: URL,force : Boolean=false): ByteBuffer = {
-    
+  def mapAndCache(url: URL, force: Boolean = false): ByteBuffer = {
+
     var doForce = true
     // Populate Cache
     this.synchronized {
 
       cacheMap.get(url.toExternalForm()) match {
 
-        case v if(doForce ||v.isEmpty || v.get.get==null) =>
-          
+        case v if (doForce || v.isEmpty || v.get.get == null) =>
+
           // Map file
           //------------
           url.getProtocol match {
             case "file" =>
               //println("Mapping File")
               var file = new File(url.getFile)
-              
+
               /*cacheWatcher.onFileChange(file) {
                 file.exists() match {
                   case true => 
@@ -513,7 +517,6 @@ object ResourcesIntermediary {
                 }
                 
               }*/
-                
 
               /*var file = new File(url.getFile)
               var fileChannel = FileChannel.open(Paths.get(file.toURI()), StandardOpenOption.READ)
@@ -521,7 +524,7 @@ object ResourcesIntermediary {
               var bytes = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, file.getTotalSpace)
               bytes.load()
               var wr = new WeakReference(bytes)*/
-              
+
               var is = url.openStream()
               var bytes = TeaIOUtils.swallow(is)
               /*var bb = ByteBuffer.allocateDirect(bytes.length)
@@ -529,9 +532,7 @@ object ResourcesIntermediary {
               bb.flip();
               bytes= null*/
               var wr = new WeakReference(ByteBuffer.wrap(bytes))
-              
-              
-              
+
               cacheMap = cacheMap + (url.toExternalForm() -> wr)
               wr.get.duplicate()
             case other =>
@@ -542,19 +543,36 @@ object ResourcesIntermediary {
               bb.put(bytes)
               bb.flip();
               bytes= null*/
-              
+
               var wr = new WeakReference(ByteBuffer.wrap(bytes))
               cacheMap = cacheMap + (url.toExternalForm() -> wr)
               wr.get.duplicate()
           }
         case Some(cachedRef) => cachedRef.get.duplicate()
       }
-    
+
     }
 
     // REturn values
     //ref.get
     //cacheMap(url.toExternalForm()).get.duplicate()
+  }
+
+  var fileSources = List[String]()
+
+  /**
+   * Add a new File Source, that can be used as URL/File Search path
+   *
+   * IF source is the empty string, it is transformed to "." because it means "current folder"
+   */
+  def addFilesSource(source: String) = {
+
+    if (source == "") {
+      fileSources = "." :: fileSources
+    } else {
+      fileSources = source :: fileSources
+    }
+
   }
 
 }

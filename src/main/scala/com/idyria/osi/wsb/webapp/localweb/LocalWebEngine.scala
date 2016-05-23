@@ -42,6 +42,7 @@ import javax.swing.JTextPane
 import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.JEditorPane
+import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
 
 @xelement
 class Ack extends ElementBuffer {
@@ -63,25 +64,37 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
       viewClass.newInstance();
   }
 
+  def getMainViewInstance = this.mainViewInstance
+
   //-- View Replacement
-  mainViewInstance.onWith("view.replace") {
-    newClass: Class[_ <: LocalWebHTMLVIew] =>
+  val replaceViewClosure: (LocalWebHTMLVIew => Unit) = {
+    newInstance: LocalWebHTMLVIew =>
+
+      logFine[SingleViewIntermediary]("Replacing main View")
 
       //-- Set new Class as base class
-      this.viewClass = newClass
+      this.mainViewInstance.@->("clean")
+      this.mainViewInstance = newInstance
+      this.viewClass = newInstance.getClass
+
+      //-- Restore listening
+      getMainViewInstance.onWith("view.replace")(replaceViewClosure)
+      getMainViewInstance.on("refresh") {
+        refreshClosure()
+      }
 
       //-- Replace all views in pool
       this.viewPool.keys.foreach {
         session =>
-          var instance = viewClass.newInstance()
+          var instance = newInstance.getClass.newInstance
           instance.viewPath = basePath
 
           // Events Propagation
           //------------
-          instance.on("refresh") {
-            // Refresh must be propagated to the main view instance
-            mainViewInstance.@->("refresh")
-          }
+          //instance.on("refresh") {
+          // Refresh must be propagated to the main view instance
+          //getMainViewInstance.@->("refresh")
+          //}
           instance.onWith("soap.send") {
             payload: ElementBuffer =>
 
@@ -99,9 +112,11 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
           this.viewPool.update(session, instance)
 
-          instance.@->("refresh")
       }
+      // EOF Replace views
 
+      //-- Trigger main refresh
+      getMainViewInstance.@->("refresh")
   }
 
   def getViewForRequest(req: HTTPRequest) = {
@@ -114,7 +129,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   }
 
   //-- View Refresh can be requested
-  mainViewInstance.on("refresh") {
+  val refreshClosure = { () =>
 
     //-- Send Update to active pools
     websocketPool.foreach {
@@ -124,8 +139,15 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         try {
           var newHtml = this.viewPool.get(session).get.rerender.toString
+          
+          logFine[SingleViewIntermediary](s"HTML Out: "+newHtml)
+          
           var message = new UpdateHtml
           message.HTML = newHtml
+          
+          
+          logFine[SingleViewIntermediary](s"HTML Out: "+message.HTML)
+          
           interface.writeSOAPPayload(message)
         } catch {
           case e: Throwable =>
@@ -135,7 +157,15 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
     }
   }
 
- 
+  //-- Set Listening on Main View
+  getMainViewInstance.onWith("view.replace")(replaceViewClosure)
+  getMainViewInstance.on("refresh") {
+    refreshClosure()
+  }
+
+  //-- Refuse upped messages
+  //---------------
+  this.acceptDown { r => !r.upped }
 
   //-- Resources 
   //-----------------
@@ -160,7 +190,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
               case (vp, lp) => (vp, lp.drop(1))
             }
 
-            //println(s"R Searching resource ${req.path} from view $viewPath , $localResourcePath")
+            // println(s"R Searching resource ${req.path} from view $viewPath , $localResourcePath")
 
             //-- Search vies along path 
             var currentView = view
@@ -189,7 +219,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
     }
   }
-  this <= new ResourcesIntermediary("/resources")
+  // this <= new ResourcesIntermediary("/resources")
 
   // WebSocket
   //---------------------
@@ -241,7 +271,29 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
             //--------------------
             //var actionId = req.path.stripPrefix("/action/")
             var actionPath = req.path.split("/").filter(_.length > 0).toList
-            var actionId = actionPath.last
+
+            // Take until "action" path found
+            var (viewPath, localActionPath) = actionPath.span { p => p != "action" } match {
+              case (vp, lp) if (lp.size == 0) => (lp, vp)
+              case (vp, lp) => (vp, lp.drop(1))
+            }
+
+            //-- Search vies along path 
+            var currentView = view
+            viewPath.foreach {
+              nextViewName =>
+                //println(s"R Searching for view name $nextViewName in current")
+                currentView.viewPlaces.get(nextViewName) match {
+                  case Some((container, nextView)) => currentView = nextView
+                  case None =>
+                    throw new RuntimeException(s"Cannot find view named $nextViewName in current view, maybe the action path is wrong ")
+                }
+            }
+
+            //-- Make sure request is available
+            currentView.request = view.request
+
+            /*var actionId = actionPath.last
             var viewPath = actionPath.dropRight(1)
             logFine[SingleViewIntermediary](s"Action Path:" + actionPath)
 
@@ -256,10 +308,13 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
                     logFine[SingleViewIntermediary](s"view not found: "+nextViewName)
                     throw new RuntimeException(s"Cannot find view named $nextViewName in current view, maybe the action path is wrong ")
                 }
-            }
+            }*/
 
             //-- Make sure request is available
             currentView.request = view.request
+
+            //-- Action Id is the last
+            var actionId = localActionPath.mkString;
 
             //-- Get Action to call
             //---------------------
@@ -270,6 +325,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
                 try {
                   action(node)
+
                   //-- Prepare Response
                   var r = new HTTPResponse();
 
@@ -341,16 +397,28 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   //-- Main Handler 
   //-------------------
 
+  this.onDownMessage {
+    r =>
+
+      logFine[SingleViewIntermediary]("Message into: " + basePath)
+
+  }
+
   this <= new HTTPIntermediary {
 
-    this.acceptDown { r => !r.upped }
+    this.acceptDown { r =>
+      // println(s"Comparing: "+s"/$basePath".noDoubleSlash+" with "+r.path.toString)
+      //!r.upped && r.path.toString.startsWith(s"/$basePath".noDoubleSlash)
+      !r.upped && r.path.toString == "/"
+
+    }
 
     //-- Global case 
     this.onDownMessage {
 
       req =>
 
-        logFine[SingleViewIntermediary](s"Got page request " + req.path)
+        logFine[SingleViewIntermediary](s"Got page request on $basePath , path is:" + req.path)
 
         //-- Get View to call action on 
         //--------------------
@@ -359,14 +427,14 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           //  println(s"New view instance")
           var instance = viewClass.newInstance()
           instance.viewPath = basePath
-          
+
           // Events
           //--------------
           instance.on("refresh") {
             // Refresh must be propagated to the main view instance
-            mainViewInstance.@->("refresh")
+            getMainViewInstance.@->("refresh")
           }
-          
+
           instance.onWith("soap.send") {
             payload: ElementBuffer =>
 
@@ -381,7 +449,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
             payload: ElementBuffer =>
 
           }
-          
+
           instance
         })
         view.request = Some(req)
@@ -438,6 +506,31 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
       logFine[SingleViewIntermediary](s"Request has errors")
     }
   }
+
+  // 404 no Found
+  //-------------
+  this <= new HTTPIntermediary {
+    this.acceptDown { r => !r.upped }
+
+    this.onDownMessage { req =>
+
+      logFine[SingleViewIntermediary](s"404 for $basePath")
+      var r = new HTTPResponse();
+      r.code = 404
+
+      r.htmlContent = html {
+        head {
+
+        }
+        body {
+          p {
+            textContent("No Front View Defined")
+          }
+        }
+      }
+      response(r, req)
+    }
+  }
 }
 
 /**
@@ -456,8 +549,8 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
   // Default Broker
   //----------------------
   def enableDebug = {
-    TLog.setLevel(classOf[ResourcesIntermediary], TLog.Level.FULL)
-    TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
+    // TLog.setLevel(classOf[ResourcesIntermediary], TLog.Level.FULL)
+    //TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
     TLog.setLevel(classOf[SingleViewIntermediary], TLog.Level.FULL)
 
   }
@@ -472,6 +565,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
       this.acceptDown { req => !req.upped }
       this.onDownMessage {
         req =>
+          req.getSession.validity.add(java.util.Calendar.MINUTE, 30)
         //println(s"Default Handler for ${req.path}")
         // println(s"Errors: ${req.errors.size}")
       }
@@ -518,14 +612,14 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   // GUI 
   //--------
- // var helperGUIMainVBox = new javafx.scene.layout.VBox();
-  var uiFrame : Option[JFrame] = None
+  // var helperGUIMainVBox = new javafx.scene.layout.VBox();
+  var uiFrame: Option[JFrame] = None
   override def lStart = {
     super.lStart
-    
+
     //-- Create GUI TO help
     //JavaFXRun.on
-   /* JavaFXRun.onJavaFX {
+    /* JavaFXRun.onJavaFX {
 
       var hostServices = HostServicesFactory.getInstance(JavaFXRun.application)
 
@@ -558,13 +652,12 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
       println(s"Done UI")
 
     }*/
-    
-    
+
     //-- Create Frame
     var f = new JFrame("LocalWeb")
     uiFrame = Some(f)
     f.setSize(800, 600)
-    
+
     //-- Add text
     var tp = new JEditorPane
     tp.setContentType("text/html")
@@ -577,8 +670,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
     f.setContentPane(new JScrollPane(tp))
     f.setVisible(true)
     f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
-    
-    
+
   }
 
 }

@@ -25,6 +25,34 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
   var currentView: LocalWebHTMLVIew = null
 
+  // Temp Buffer
+  //------------------
+  var tempBuffer = Map[String,Any]()
+  
+  def inputToBuffer[VT <: Any](name:String)(cl: =>Any)(implicit tag : ClassTag[VT]) = {
+    var node = input {
+      bindValue {
+        v : VT => 
+          v.toString  match {
+            case "" => tempBuffer = tempBuffer - name
+            case _ =>  tempBuffer = tempBuffer.updated(name, v)
+          }
+          
+      }
+    }
+    switchToNode(node, cl)
+    node
+  }
+  
+  def getInputBufferValue(name:String) = this.tempBuffer.get(name)
+  
+  def putToTempBuffer(name:String,v:Any) = {
+    tempBuffer = tempBuffer.updated(name, v)
+  }
+  
+  // Elements
+  //-----------------
+  
   override def html(cl: => Any) = {
 
     // “<!DOCTYPE html>”.
@@ -94,6 +122,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
   var actions = Map[String, (HTMLNode[HTMLElement, _], HTMLNode[HTMLElement, _] => Unit)]()
 
+  def registerAction(id:String)(n:HTMLNode[HTMLElement, _])(actionCl: HTMLNode[HTMLElement, _] => Unit) : Unit = {
+    this.actions =this.actions + (id -> ( n ,actionCl))
+  }
+  
   def getActions = actions
 
   def getActionString(cl: => Unit): String = {
@@ -112,6 +144,29 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
   }
 
+  def createSpecialPath(specialType: String, code: String) = {
+    
+    var viewsPath = this.currentView.getParentViews
+    viewsPath.size match {
+      case 1 => 
+        s"/${viewsPath(0).asInstanceOf[LocalWebHTMLVIew].viewPath}/$specialType/$code".noDoubleSlash
+      case other => 
+        s"/${viewsPath(0).asInstanceOf[LocalWebHTMLVIew].viewPath}/$specialType/${viewsPath.drop(1).map(_.asInstanceOf[LocalWebHTMLVIew].viewPath).mkString("/")}/$specialType/$code".noDoubleSlash
+    }
+    
+    
+    /*
+    var splitted = this.viewPath.noDoubleSlash.split("/").toList
+    splitted.size match {
+      case 0 => s"/${this.viewPath}/$specialType/$code".noDoubleSlash 
+      case 1 => s"/${splitted(0)}/$specialType/$code".noDoubleSlash
+      case 2 => s"/${this.viewPath}/$specialType/$code".noDoubleSlash
+      case other => s"/${splitted(0)}/$specialType/${splitted.drop(1).mkString("/")}/$specialType/$code".noDoubleSlash
+    }*/
+  }
+
+ 
+  
   override def onClick(cl: => Unit) = {
 
     var actionCode = this.getActionString(cl)
@@ -122,7 +177,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     //
     //var cd = s"localWeb.buttonClick('${this.viewPath}/action/$code')".noDoubleSlash
 
-    +@("onclick" -> (s"localWeb.buttonClick(this,'/action/${this.viewPath}/$actionCode')").noDoubleSlash)
+    +@("onclick" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action",actionCode)}')").noDoubleSlash)
 
   }
 
@@ -132,6 +187,15 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
   def reRender = {
     +@("reRender" -> "true")
+  }
+  
+  def valuedOnPlacedView[VT <: LocalWebHTMLVIew](pl:String,v:String)(implicit tag : ClassTag[VT]) = {
+    viewPlaces.get(pl) match {
+      case Some((node,view)) if(view!=null && view.getClass.getCanonicalName.startsWith(tag.runtimeClass.getCanonicalName)) =>
+        v
+      case _ =>
+        ""
+    }
   }
 
   def placeView[VT <: LocalWebHTMLVIew: TypeTag](vc: Class[VT], targetId: String): LocalWebHTMLVIew = {
@@ -159,6 +223,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
    */
   def placeView[VT <: LocalWebHTMLVIew: TypeTag](v: VT, targetId: String, viewready: Boolean = false): VT = {
 
+    println(s"${hashCode} Place view for: "+targetId+" -> "+viewPlaces.get(targetId).isDefined)
+    
     //-- Recompile View Using  
     //------------------------------
     //-- Compile 
@@ -169,20 +235,23 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
           LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]], true)
         } catch {
           case e: Throwable =>
-
+            e.printStackTrace()
             v
         }
     }
 
     //-- Listen for reloading
     createdView.onWith("view.replace") {
-      newClass: Class[VT] =>
+      newView: VT =>
 
         //println(s"Repalcing placed view")
 
         //-- Replace view in container map
-        var placedView = placeView(LocalWebHTMLVIewCompiler.newInstance(Some(createdView), newClass), targetId, viewready = true)
+        //var placedView = placeView(LocalWebHTMLVIewCompiler.newInstance(Some(createdView), newClass), targetId, viewready = true)
+        var placedView = placeView(  newView, targetId, viewready = true)
 
+        
+      
         //println(s"View is now: "+viewPlaces(targetId))
         // println(s"Should be: "+placedView)
 
@@ -202,21 +271,25 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         var viewInstance = createdView
         viewInstance.parentView = Some(this.currentView)
-        viewInstance.viewPath = this.viewPath + "/" + targetId
+        viewInstance.viewPath = targetId
 
         viewPlaces = viewPlaces + (targetId -> (viewPLDIV, viewInstance))
 
         viewInstance
       //-- If A Record exists for the placeHolder, just update
-      case Some((container, view)) =>
+      case Some((container, view))  =>
 
         // Update
         //---------
         var viewInstance = createdView
         viewInstance.parentView = Some(this.currentView)
-        viewInstance.viewPath = this.viewPath + "/" + targetId
-
+        viewInstance.viewPath =  targetId
+        
         viewPlaces = viewPlaces + (targetId -> (container, viewInstance))
+        
+        //-- Clean
+        if(view!=null)
+          view.@->("clean")
 
         //-- Set Content 
         viewPlaceHolder(targetId, "") {
@@ -225,12 +298,15 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         viewInstance
       //case Some((container, view)) => view 
+     
     }
 
   }
 
   def viewPlaceHolder(targetId: String, cla: String)(default: => Unit): HTMLNode[HTMLElement, _] = {
 
+    println(s"${hashCode} Calling placeholder for: "+targetId+" -> "+viewPlaces.get(targetId).isDefined)
+    
     viewPlaces.get(targetId) match {
       //-- If no record for the placeHolder, create a default
       case None =>
@@ -364,7 +440,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'/action/${this.viewPath}/$action')".noDoubleSlash)
+        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action",action)}')".noDoubleSlash)
 
       // String
       //------------------
@@ -394,7 +470,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'/action/${this.viewPath}/$action')".noDoubleSlash)
+        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action",action)}')".noDoubleSlash)
 
       // Boolean
       //------------------
@@ -427,7 +503,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'/action/${this.viewPath}/$action')".noDoubleSlash)
+        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action",action)}')".noDoubleSlash)
 
       //-- No Match error
       case None =>

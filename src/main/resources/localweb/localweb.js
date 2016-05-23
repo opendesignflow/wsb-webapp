@@ -39,13 +39,20 @@ var localWeb = {
 			var value = elt.val();
 		}
 		
+		//-- Send Value
 		var name = $(element).attr("name");
 		
 		console.info("Sending "+value+" as name "+name);
 		
-		var deffered = $.get(actionPath+"?"+name+"="+value);
+		var deffered = $.get(actionPath+"?"+name+"="+encodeURIComponent(value));
 		deffered.done(function(data) {
 			console.log("Done...");
+			
+			//-- reRender if necessary
+			if (data!="OK") {
+				console.log("Reloading Page")
+				$("body").html(data);
+			}
 			
 		});
 		

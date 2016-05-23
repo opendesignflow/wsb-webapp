@@ -15,6 +15,7 @@ class LocalWebHTMLVIew extends AView[HTMLElement, HTMLNode[HTMLElement, HTMLNode
 
   this.currentView = this
 
+ 
   // Send backend Message
   //------------------------
   def sendBackendMessage(elt : ElementBuffer) = {
