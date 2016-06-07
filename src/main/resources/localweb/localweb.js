@@ -1,7 +1,9 @@
 
 var localWeb = {
-
-	};
+		
+		debug: false
+		
+};
 
 	/**
 	 * Call A Remote Action
@@ -11,7 +13,7 @@ var localWeb = {
 		console.info("Button Clicked, sending remote request for " + id);
 
 		$(button).prop('disabled', true);
-		var deffered = $.get(id);
+		var deffered = $.get(id+"?format=json");
 		deffered.done(function(data) {
 			console.log("Done...");
 			$(button).prop('disabled', false);
@@ -19,6 +21,15 @@ var localWeb = {
 				console.log("Reloading Page")
 				$("body").html(data);
 			}
+			
+			if ($(button).attr("reload")!="") {
+				location.reload();
+			}
+			
+		});
+		deffered.fail(function(data) {
+			console.log("Error in action ");
+			localWeb.faultFor(button,data.responseText);
 		});
 
 	};
@@ -44,22 +55,72 @@ var localWeb = {
 		
 		console.info("Sending "+value+" as name "+name);
 		
-		var deffered = $.get(actionPath+"?"+name+"="+encodeURIComponent(value));
+		var deffered = $.get(actionPath+"?format=json&"+name+"="+encodeURIComponent(value));
 		deffered.done(function(data) {
-			console.log("Done...");
+			console.log("Done 2...");
+			
+			//-- Hide error 
+			var errorNode = localWeb.errorNode(element);
+			console.log("Error node: "+errorNode);
+			if (errorNode) {
+				$(errorNode).css("display","none");
+			}
 			
 			//-- reRender if necessary
-			if (data!="OK") {
+			console.log("Reload node: "+$(element).attr("reload"));
+			if ($(element).attr("reload") && $(element).attr("reload") == true ) {
+				location.reload();
+			}
+			else if (data!="OK") {
 				console.log("Reloading Page")
 				$("body").html(data);
 			}
 			
+		});
+		deffered.fail(function(data) {
+			console.log("Error in value binding");
+			localWeb.faultFor(element,data.responseText);
 		});
 		
 		
 		
 	};
 
+	localWeb.faultFor = function(element, faultJsonString) {
+		
+		//console.info("Error Reason: "+faultJsonString[0]);
+		var fault = $.parseJSON("{" + faultJsonString + "}").Fault;
+		
+		//-- Get text
+		var text = localWeb.decodeHTML(fault.Reason.Text);
+		
+		//console.info("Error Reason: "+fault.Reason.Text);
+		
+		//-- Look for error in parent neighbor 
+		var errorBlockNeighbor = $(element).parent().find(".error:first");
+		if (errorBlockNeighbor) {
+			console.log("Found Error Container: "+errorBlockNeighbor);
+			$(errorBlockNeighbor).html(text);
+			$(errorBlockNeighbor).css("display","block");
+			
+		} else {
+			console.log("Error Container Not Found");
+		}
+		
+	};
+	
+	localWeb.errorNode = function(element) {
+		return $(element).parent().find(".error:first");
+		/*if (errorBlockNeighbor) {
+			console.log("Found Error Container: "+errorBlockNeighbor);
+			$(errorBlockNeighbor).html(text);
+			$(errorBlockNeighbor).css("display","block");
+			
+		} else {
+			console.log("Error Container Not Found");
+		}*/
+	};
+	
 	
 	// Event Connection
 	//---------------------------
@@ -73,7 +134,11 @@ var localWeb = {
 
 		// Log messages from the server
 		localWeb.wsConnection.onmessage = function(e) {
-			console.log('Server: ' + e.data);
+			
+			if(localWeb.debug==true) {
+				console.log('Server: ' + e.data);
+			}
+			
 
 			// Get SOAP JSON
 			//-------------
@@ -87,7 +152,9 @@ var localWeb = {
 			// --------------
 			var body = soap.Envelope.Body;
 			
-			console.log("Keys: "+Object.keys(body));
+			if(localWeb.debug==true) {
+				console.log("Keys: "+Object.keys(body));
+			}
 			$(localWeb.wsConnection).trigger("payload",[ Object.keys(body)[0],body[Object.keys(body)[0]]]);
 			
 			if (body.Ack) {
@@ -105,12 +172,17 @@ var localWeb = {
 		};
 	};
 	
+	/*
+	 * Function: f(payload)
+	 */
 	localWeb.onPushData = function( name, f ) {
 		
 		// Registering function
 		$(localWeb.wsConnection).on("payload",function(event,pname,payload) {
 			
-			console.log("Got payload "+pname+" filtering for "+name);
+			if(localWeb.debug==true) {
+				console.log("Got payload "+pname+" filtering for "+name);
+			}
 			if(pname==name) {
 				f(payload[0]);
 			}
@@ -129,7 +201,7 @@ var localWeb = {
 		return decodeURI(uriHTML).replace(/\++/g, " ").replace(/(%2F)+/g, "/")
 				.replace(/(%3A)+/g, ":").replace(/(%3B)+/g, ";").replace(/(%3D)+/g, "=").replace(
 						/(%23)+/g, "#").replace(/(%40)+/g, "@").replace(
-						/(%2C)+/g, ",").replace(/(%2B)+/g, "+")
+						/(%2C)+/g, ",").replace(/(%2B)+/g, "+").replace(/(%28)+/g, "(").replace(/(%29)+/g, ")")
 	}
 
 	console.info("Welcome to localweb JS..." + window.location.pathname);

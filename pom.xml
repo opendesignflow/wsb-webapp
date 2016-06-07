@@ -215,11 +215,6 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>com.idyria.osi.aib</groupId>
-			<artifactId>aib-core</artifactId>
-			<version>3.1.1-SNAPSHOT</version>
-		</dependency>
-		<dependency>
 			<groupId>com.idyria.osi.ooxoo</groupId>
 			<artifactId>ooxoo-db</artifactId>
 			<version>3.1.2-SNAPSHOT</version>

@@ -1,6 +1,11 @@
 package com.idyria.osi.wsb.webapp.http.message
 
 class HTTPPathIntermediary(var basePath: String) extends HTTPIntermediary {
+  
+  // Make sure basePath has no double slash
+  require(basePath!=null)
+  basePath = basePath.replaceAll("//+", "/")
+  
   acceptDown { message =>
   //println(s"Testing message with path: "+message.path+" against "+basePath)
     message.path.startsWith(basePath)

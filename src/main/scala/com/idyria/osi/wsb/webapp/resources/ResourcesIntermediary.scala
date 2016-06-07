@@ -17,7 +17,7 @@ import java.nio.channels.FileChannel
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import com.idyria.utils.java.io.TeaIOUtils
-import com.idyria.osi.aib.core.utils.files.FileWatcher
+import com.idyria.osi.tea.files.FileWatcher
 
 class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(basePath) {
   name = "Simple File Resources"
@@ -566,12 +566,18 @@ object ResourcesIntermediary {
    * IF source is the empty string, it is transformed to "." because it means "current folder"
    */
   def addFilesSource(source: String) = {
-
-    if (source == "") {
-      fileSources = "." :: fileSources
-    } else {
-      fileSources = source :: fileSources
+    
+    var realSource = source match {
+      case "" => "."
+      case s => s
     }
+    
+    fileSources.contains(realSource) match {
+      case true => 
+      case false => fileSources = source :: fileSources
+    }
+    
+  
 
   }
 

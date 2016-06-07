@@ -43,13 +43,16 @@ import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.JEditorPane
 import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
+import com.idyria.osi.wsb.core.message.soap.Fault
+import com.idyria.osi.wsb.core.message.soap.FaultCode_Value
+import com.idyria.osi.ooxoo.lib.json.JsonIO
 
 @xelement
 class Ack extends ElementBuffer {
 
 }
 
-class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWebHTMLVIew]) extends HTTPPathIntermediary(basePath) with DefaultBasicHTMLBuilder with ClassDomainSupport {
+class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWebHTMLVIew]) extends HTTPPathIntermediary("/" + basePath) with DefaultBasicHTMLBuilder with ClassDomainSupport {
 
   // View Pool
   //-------------------
@@ -139,15 +142,14 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         try {
           var newHtml = this.viewPool.get(session).get.rerender.toString
-          
-          logFine[SingleViewIntermediary](s"HTML Out: "+newHtml)
-          
+
+          logFine[SingleViewIntermediary](s"HTML Out: " + newHtml)
+
           var message = new UpdateHtml
           message.HTML = newHtml
-          
-          
-          logFine[SingleViewIntermediary](s"HTML Out: "+message.HTML)
-          
+
+          logFine[SingleViewIntermediary](s"HTML Out: " + message.HTML)
+
           interface.writeSOAPPayload(message)
         } catch {
           case e: Throwable =>
@@ -343,20 +345,42 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
                     e.printStackTrace()
 
                     var r = new HTTPResponse();
-                    r.code = 503
-                    r.htmlContent = html {
-                      head {
+                    r.code = 400
+                    req.getURLParameter("format") match {
+                      case Some("json") =>
 
-                      }
-                      body {
-                        textContent(s"An error occurent during action processing")
-                        var sw = new StringWriter
-                        e.printStackTrace(new PrintWriter(sw))
-                        pre(sw.toString()) {
+                        //-- Create
+                        var fault = new Fault
+                        fault.code.value = new FaultCode_Value
+                        fault.code.value.selectReceiver
 
+                        //-- Set Content
+                        /*var sw = new StringWriter
+                        e.printStackTrace(new PrintWriter(sw))*/
+                        fault.reason.text = e.getLocalizedMessage
+
+                        // Convert to String 
+                        var res = JsonIO(fault, true)
+                        println("ERRROOR RES: " + res)
+                        r.contentType = "application/json"
+                        r.content = ByteBuffer.wrap(res.getBytes)
+
+                      case _ =>
+                        r.htmlContent = html {
+                          head {
+
+                          }
+                          body {
+                            textContent(s"An error occurent during action processing")
+                            var sw = new StringWriter
+                            e.printStackTrace(new PrintWriter(sw))
+                            pre(sw.toString()) {
+
+                            }
+                          }
                         }
-                      }
                     }
+
                     response(r, req)
 
                 }
@@ -364,7 +388,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
               case None =>
 
                 var r = new HTTPResponse();
-                r.code = 503
+                r.code = 400
                 r.htmlContent = html {
                   head {
 
@@ -407,9 +431,9 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   this <= new HTTPIntermediary {
 
     this.acceptDown { r =>
-      // println(s"Comparing: "+s"/$basePath".noDoubleSlash+" with "+r.path.toString)
+     // println(s"Comparing: " + s"/$basePath".noDoubleSlash + " with " + r.path.toString)
       //!r.upped && r.path.toString.startsWith(s"/$basePath".noDoubleSlash)
-      !r.upped && r.path.toString == "/"
+      !r.upped && (r.path.toString == "/" )
 
     }
 
@@ -559,9 +583,14 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
     //println(s"Received HTTP: "+req.path)
 
+    this.onDownMessage {
+      req =>
+        req.getSession.validity.add(java.util.Calendar.MINUTE, 30)
+    }
+
     // Default Request Handler 
     //----------------
-    this <= new HTTPIntermediary {
+    /*this <= new HTTPIntermediary {
       this.acceptDown { req => !req.upped }
       this.onDownMessage {
         req =>
@@ -569,7 +598,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
         //println(s"Default Handler for ${req.path}")
         // println(s"Errors: ${req.errors.size}")
       }
-    }
+    }*/
 
   }
   this.broker <= topViewsIntermediary
@@ -577,7 +606,24 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
   // Views
   //-----------------
   def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]): SingleViewIntermediary = {
-    topViewsIntermediary.prepend(new SingleViewIntermediary(path, cl)).asInstanceOf[SingleViewIntermediary]
+    
+    var newIntermediary = new SingleViewIntermediary(path, cl)
+    val viewIntermediaries = LocalWebEngine.topViewsIntermediary.intermediaries.collect {
+      case i if (classOf[SingleViewIntermediary].isInstance(i)) => i.asInstanceOf[SingleViewIntermediary]
+    }
+    viewIntermediaries.find {
+      i => i.basePath.length()<=newIntermediary.basePath.length
+    } match {
+      case Some(intermediaryRightAfter) => 
+        //println(s"Add Intermediary $path before")
+        topViewsIntermediary.addIntermediaryBefore(intermediaryRightAfter, newIntermediary).asInstanceOf[SingleViewIntermediary]
+      case None => 
+       // topViewsIntermediary.prepend(newIntermediary).asInstanceOf[SingleViewIntermediary]
+        topViewsIntermediary <= newIntermediary
+        newIntermediary
+    }
+
+    
   }
 
   // Management
@@ -654,23 +700,36 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
     }*/
 
     //-- Create Frame
-    var f = new JFrame("LocalWeb")
-    uiFrame = Some(f)
-    f.setSize(800, 600)
+    uiFrame match {
+      case Some(frame) =>
+        frame.setVisible(true)
+      case None =>
+        var f = new JFrame("LocalWeb")
+        uiFrame = Some(f)
+        f.setSize(800, 600)
 
-    //-- Add text
-    var tp = new JEditorPane
-    tp.setContentType("text/html")
-    tp.setText("""<html>
+        //-- Add text
+        var tp = new JEditorPane
+        tp.setContentType("text/html")
+        tp.setText("""<html>
       <h1>Web API</h1>
       <p>
       Open your Web Browser and navigate to <a href="http://localhost:8585/">http://localhost:8585/</a>
       </p></html>
       """.trim)
-    f.setContentPane(new JScrollPane(tp))
-    f.setVisible(true)
-    f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+        f.setContentPane(new JScrollPane(tp))
+        f.setVisible(true)
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+    }
 
+  }
+
+  override def lStop = {
+    uiFrame match {
+      case Some(frame) =>
+        frame.dispose()
+      case None =>
+    }
   }
 
 }

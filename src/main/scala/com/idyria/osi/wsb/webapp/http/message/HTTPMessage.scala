@@ -504,7 +504,7 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
       case ct => headerLines = headerLines :+ s"Content-Type: $ct"
     }
 
-    headerLines = headerLines :+ "Cache-Control: no-cache"
+    //headerLines = headerLines :+ "Cache-Control: no-cache"
 
     content match {
       case null =>

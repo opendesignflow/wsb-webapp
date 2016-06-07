@@ -1,23 +1,27 @@
 package com.idyria.osi.wsb.webapp.localweb
 
-import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder
-import com.idyria.osi.vui.html.Script
-import com.idyria.osi.vui.html.Head
-import org.w3c.dom.html.HTMLElement
-import java.net.URI
-import com.idyria.osi.vui.html.HTMLNode
-import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
-import com.idyria.osi.vui.html.Html
-import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
-import scala.language.implicitConversions
-import scala.reflect.runtime.universe._
-import scala.reflect.ClassTag
-import com.idyria.osi.ooxoo.core.buffers.structural.AbstractDataBuffer
-import com.idyria.osi.ooxoo.core.buffers.datatypes.IntegerBuffer
-import java.io.StringWriter
 import java.io.PrintWriter
+import java.io.StringWriter
+import java.net.URI
 
-trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe._
+
+import org.w3c.dom.html.HTMLElement
+
+import com.idyria.osi.ooxoo.core.buffers.datatypes.IntegerBuffer
+import com.idyria.osi.ooxoo.core.buffers.structural.AbstractDataBuffer
+import com.idyria.osi.vui.html.HTMLNode
+import com.idyria.osi.vui.html.Head
+import com.idyria.osi.vui.html.Html
+import com.idyria.osi.vui.html.Script
+import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder
+import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
+import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import com.idyria.osi.tea.logging.TLogSource
+
+trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource {
 
   var request: Option[HTTPRequest] = None
 
@@ -27,32 +31,117 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
   // Temp Buffer
   //------------------
-  var tempBuffer = Map[String,Any]()
-  
-  def inputToBuffer[VT <: Any](name:String)(cl: =>Any)(implicit tag : ClassTag[VT]) = {
+  var tempBuffer = Map[String, Any]()
+
+  /**
+   * Value will be set to temp buffer map
+   */
+  def inputToBuffer[VT <: Any](name: String,value:String)(cl: => Any)(implicit tag: ClassTag[VT]) = {
+    
+    putToTempBuffer(name, value)
+    
     var node = input {
+      +@("value" -> value.toString)
       bindValue {
-        v : VT => 
-          v.toString  match {
+        v: VT =>
+          v.toString match {
             case "" => tempBuffer = tempBuffer - name
-            case _ =>  tempBuffer = tempBuffer.updated(name, v)
+            case _ => tempBuffer = tempBuffer.updated(name, v)
           }
-          
+
       }
     }
     switchToNode(node, cl)
     node
   }
-  
-  def getInputBufferValue(name:String) = this.tempBuffer.get(name)
-  
-  def putToTempBuffer(name:String,v:Any) = {
+  def inputToBufferWithDefault[VT <: Any](name: String, default: VT)(cl: => Any)(implicit tag: ClassTag[VT]) = {
+
+    //-- Set Default Value
+    var actualValue = getTempBufferValue[VT](name) match {
+      case None =>
+         default
+      case Some(v) => 
+        v
+    }
+
+    //-- Create UI
+    inputToBuffer[VT](name, actualValue.toString)(cl)
+    /*var node = input {
+      +@("value" -> actualValue.toString)
+      bindValue {
+        v: VT =>
+          v.toString match {
+            case "" => tempBuffer = tempBuffer - name
+            case _ => tempBuffer = tempBuffer.updated(name, v)
+          }
+
+      }
+    }
+    switchToNode(node, cl)*/
+    //node
+  }
+
+  /**
+   * Assume Strig if class tag was not overriden
+   */
+  def getTempBufferValue[VT <: Any](name: String)(implicit tag: ClassTag[VT]): Option[VT] = this.tempBuffer.get(name) match {
+    case None => None
+     case Some(v) if (tag.runtimeClass.isInstance(v)) => Some(v.asInstanceOf[VT])
+    case Some(v) => 
+      throw new RuntimeException(s"Getting input buffer value for $name failed because requested type $tag does not match value's ${v.getClass()}")
+  }
+
+  def putToTempBuffer(name: String, v: Any) = {
     tempBuffer = tempBuffer.updated(name, v)
   }
-  
+
+  def tempBufferSelect(name: String, values: (String, String)*): com.idyria.osi.vui.html.Select[HTMLElement, com.idyria.osi.vui.html.Select[HTMLElement, _]] = tempBufferSelect(name, values.toList)
+  def tempBufferSelect(name: String, values: List[(String, String)]): com.idyria.osi.vui.html.Select[HTMLElement, com.idyria.osi.vui.html.Select[HTMLElement, _]] = {
+
+    //-- Set Default to First
+    var selectedValue = this.getTempBufferValue[String](name) match {
+      case None if (values.size > 0) =>
+        this.putToTempBuffer(name, values.head._1)
+        values.head._1
+      // Reset default if necessary
+      case Some(v) if (values.find { case (value, text) => value == v }.isEmpty) =>
+        this.putToTempBuffer(name, values.head._1)
+        values.head._1
+
+      case Some(v) =>
+
+        v
+    }
+
+    //-- Create GUI
+    select {
+      +@("name" -> name)
+      values.foreach {
+        case (value, text) =>
+          option(value) {
+            if (selectedValue == value) {
+              +@("selected" -> "true")
+            }
+            textContent(text)
+          }
+      }
+
+      bindValue {
+        str: String =>
+          putToTempBuffer(name, str)
+      }
+    }
+  }
+
+  // Edit
+  //-----------
+  /*def onNode[NT <: HTMLNode[HTMLElement,_]](n:NT)(cl: => Any) : Any = {
+    switchToNode(n, cl)
+  }*/
+
   // Elements
   //-----------------
-  
+
   override def html(cl: => Any) = {
 
     // “<!DOCTYPE html>”.
@@ -122,10 +211,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
   var actions = Map[String, (HTMLNode[HTMLElement, _], HTMLNode[HTMLElement, _] => Unit)]()
 
-  def registerAction(id:String)(n:HTMLNode[HTMLElement, _])(actionCl: HTMLNode[HTMLElement, _] => Unit) : Unit = {
-    this.actions =this.actions + (id -> ( n ,actionCl))
+  def registerAction(id: String)(n: HTMLNode[HTMLElement, _])(actionCl: HTMLNode[HTMLElement, _] => Unit): Unit = {
+    this.actions = this.actions + (id -> (n, actionCl))
   }
-  
+
   def getActions = actions
 
   def getActionString(cl: => Unit): String = {
@@ -140,21 +229,21 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       cl
     }))
 
+   // println(s"Registered action $code on "+v.viewPath)
     code.toString
 
   }
 
   def createSpecialPath(specialType: String, code: String) = {
-    
+
     var viewsPath = this.currentView.getParentViews
     viewsPath.size match {
-      case 1 => 
+      case 1 =>
         s"/${viewsPath(0).asInstanceOf[LocalWebHTMLVIew].viewPath}/$specialType/$code".noDoubleSlash
-      case other => 
+      case other =>
         s"/${viewsPath(0).asInstanceOf[LocalWebHTMLVIew].viewPath}/$specialType/${viewsPath.drop(1).map(_.asInstanceOf[LocalWebHTMLVIew].viewPath).mkString("/")}/$specialType/$code".noDoubleSlash
     }
-    
-    
+
     /*
     var splitted = this.viewPath.noDoubleSlash.split("/").toList
     splitted.size match {
@@ -165,8 +254,12 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     }*/
   }
 
- 
-  
+  def onClickReload(cl: => Unit) = {
+    reload 
+    onClick {
+      cl
+    }
+  }
   override def onClick(cl: => Unit) = {
 
     var actionCode = this.getActionString(cl)
@@ -177,7 +270,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     //
     //var cd = s"localWeb.buttonClick('${this.viewPath}/action/$code')".noDoubleSlash
 
-    +@("onclick" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action",actionCode)}')").noDoubleSlash)
+    +@("onclick" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}')").noDoubleSlash)
 
   }
 
@@ -188,10 +281,13 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
   def reRender = {
     +@("reRender" -> "true")
   }
-  
-  def valuedOnPlacedView[VT <: LocalWebHTMLVIew](pl:String,v:String)(implicit tag : ClassTag[VT]) = {
+  def reload = {
+    +@("reload" -> "true")
+  }
+
+  def valuedOnPlacedView[VT <: LocalWebHTMLVIew](pl: String, v: String)(implicit tag: ClassTag[VT]) = {
     viewPlaces.get(pl) match {
-      case Some((node,view)) if(view!=null && view.getClass.getCanonicalName.startsWith(tag.runtimeClass.getCanonicalName)) =>
+      case Some((node, view)) if (view != null && view.getClass.getCanonicalName.startsWith(tag.runtimeClass.getCanonicalName)) =>
         v
       case _ =>
         ""
@@ -223,8 +319,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
    */
   def placeView[VT <: LocalWebHTMLVIew: TypeTag](v: VT, targetId: String, viewready: Boolean = false): VT = {
 
-    println(s"${hashCode} Place view for: "+targetId+" -> "+viewPlaces.get(targetId).isDefined)
-    
+    println(s"${hashCode} Place view for: " + targetId + " -> " + viewPlaces.get(targetId).isDefined)
+
     //-- Recompile View Using  
     //------------------------------
     //-- Compile 
@@ -248,10 +344,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         //-- Replace view in container map
         //var placedView = placeView(LocalWebHTMLVIewCompiler.newInstance(Some(createdView), newClass), targetId, viewready = true)
-        var placedView = placeView(  newView, targetId, viewready = true)
+        var placedView = placeView(newView, targetId, viewready = true)
 
-        
-      
         //println(s"View is now: "+viewPlaces(targetId))
         // println(s"Should be: "+placedView)
 
@@ -277,18 +371,18 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         viewInstance
       //-- If A Record exists for the placeHolder, just update
-      case Some((container, view))  =>
+      case Some((container, view)) =>
 
         // Update
         //---------
         var viewInstance = createdView
         viewInstance.parentView = Some(this.currentView)
-        viewInstance.viewPath =  targetId
-        
+        viewInstance.viewPath = targetId
+
         viewPlaces = viewPlaces + (targetId -> (container, viewInstance))
-        
+
         //-- Clean
-        if(view!=null)
+        if (view != null)
           view.@->("clean")
 
         //-- Set Content 
@@ -298,15 +392,15 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
         viewInstance
       //case Some((container, view)) => view 
-     
+
     }
 
   }
 
   def viewPlaceHolder(targetId: String, cla: String)(default: => Unit): HTMLNode[HTMLElement, _] = {
 
-    println(s"${hashCode} Calling placeholder for: "+targetId+" -> "+viewPlaces.get(targetId).isDefined)
-    
+    logFine[DefaultLocalWebHTMLBuilder](s"${hashCode} Calling placeholder for: " + targetId + " -> " + viewPlaces.get(targetId).isDefined)
+
     viewPlaces.get(targetId) match {
       //-- If no record for the placeHolder, create a default
       case None =>
@@ -365,9 +459,9 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
       case Some((container, currentView)) =>
         viewPlaces = viewPlaces + (targetId -> (container, null))
       case _ =>
-         viewPlaces = viewPlaces - targetId
+        viewPlaces = viewPlaces - targetId
     }
-   
+
   }
 
   // Autobinding
@@ -378,13 +472,13 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
    */
   def bindValue[V](cl: V => Unit)(implicit tag: ClassTag[V]): Unit = {
 
-    val supportedTypes = List(classOf[Boolean], classOf[Long], classOf[Int], classOf[Double], classOf[Number], classOf[String], classOf[AbstractDataBuffer[_]])
+    val supportedTypes = List(classOf[Boolean], classOf[Long], classOf[Int], classOf[Integer], classOf[Double], classOf[Number], classOf[String], classOf[AbstractDataBuffer[_]])
 
     supportedTypes.find { parentClass => parentClass.isAssignableFrom(tag.runtimeClass) } match {
 
       //-- Number
       //-------------------
-      case Some(baseClass) if (baseClass == classOf[Number] || baseClass == classOf[Int] || baseClass == classOf[Long] || baseClass == classOf[Double]) =>
+      case Some(baseClass) if (baseClass == classOf[Number] || baseClass == classOf[Int] || baseClass == classOf[Integer] || baseClass == classOf[Long] || baseClass == classOf[Double]) =>
 
         // Ensure input type is number
         +@("type" -> "number")
@@ -425,6 +519,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
 
                   cl(v.toInt.asInstanceOf[V])
 
+                case c if (classOf[Integer].isAssignableFrom(c)) =>
+
+                  cl(Integer.parseInt(v).asInstanceOf[V])
+
                 case c if (classOf[Double].isAssignableFrom(c)) =>
 
                   cl(v.toDouble.asInstanceOf[V])
@@ -440,7 +538,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action",action)}')".noDoubleSlash)
+        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
 
       // String
       //------------------
@@ -470,7 +568,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action",action)}')".noDoubleSlash)
+        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
 
       // Boolean
       //------------------
@@ -503,7 +601,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action",action)}')".noDoubleSlash)
+        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
 
       //-- No Match error
       case None =>
@@ -520,7 +618,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder {
     +@("value" -> vb.toString())
     this.bindValue {
       v: Int =>
-        vb.data = v
+        vb.set(v)
     }
 
   }
