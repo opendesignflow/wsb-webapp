@@ -24,13 +24,6 @@ import com.idyria.osi.ooxoo.core.buffers.structural.xelement
 import com.idyria.osi.wsb.core.message.soap.SOAPMessage
 import com.idyria.osi.wsb.webapp.http.connector.websocket.WebsocketProtocolhandler
 import com.idyria.osi.ooxoo.core.buffers.datatypes.DateTimeBuffer
-import javafx.scene.control.Hyperlink
-import javafx.scene.Scene
-import javafx.stage.Stage
-import com.sun.deploy.uitoolkit.impl.fx.HostServicesFactory
-import javafx.scene.paint.Color
-import javafx.event.EventHandler
-import javafx.stage.WindowEvent
 import java.io.StringWriter
 import java.io.PrintWriter
 import java.nio.ByteBuffer
