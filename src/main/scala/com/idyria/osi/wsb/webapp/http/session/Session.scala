@@ -70,7 +70,10 @@ class Session(var id: String, var host: String) extends TLogSource {
   /**
    *
    */
-  def validityString: String = String.format("%tc", this.validity);
+  def validityString: String = {
+    //String.format("%tc", this.validity);
+    String.format("%1$ta,%1$td-%1$tb-%1$tY %1$tT GMT", this.validity);
+  }
 
 }
 

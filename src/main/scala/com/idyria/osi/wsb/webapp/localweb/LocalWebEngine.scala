@@ -471,44 +471,25 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         })
         view.request = Some(req)
 
-        //println(s"rendering")
+        logFine[SingleViewIntermediary](s"rendering")
 
         var r = new HTTPResponse();
         try {
           var rendered = view.rerender
 
-          //println(s"Done Rendering")
+          logFine[SingleViewIntermediary](s"Done Rendering")
 
           r.htmlContent = rendered
           response(r, req)
+          
+          logFine[SingleViewIntermediary](s"Response Sent")
         } catch {
           case e: Throwable =>
             e.printStackTrace()
             req(e)
         }
 
-      //-- Front View Error if none defined
-      /*case req if (req.path == "/" && frontViewStack.size == 0) =>
-        println(s"Received Message: " + req.path)
-
-        var r = new HTTPResponse();
-        r.code = 404
-
-        r.htmlContent = html {
-          head {
-
-          }
-          body {
-            p {
-              textContent("No Front View Defined")
-            }
-          }
-        }
-        /*r.contentType = "text/html"
-        r.content = (html {
-          
-        }).toString()*/
-        response(r, req)*/
+      
 
     }
   }
@@ -580,7 +561,11 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
       req =>
         req.getSession.validity.add(java.util.Calendar.MINUTE, 30)
     }
-
+    this.onUpMessage[HTTPResponse] { 
+      m => 
+       // println("Session INter,ediary got up response")
+    }
+    
     // Default Request Handler 
     //----------------
     /*this <= new HTTPIntermediary {
@@ -718,6 +703,9 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
   }
 
   override def lStop = {
+    super.lStop
+    
+    //-- Close Frame
     uiFrame match {
       case Some(frame) =>
         frame.dispose()

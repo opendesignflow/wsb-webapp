@@ -20,6 +20,7 @@ import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder
 import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import com.idyria.osi.tea.logging.TLogSource
+import java.io.File
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource {
 
@@ -36,10 +37,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   /**
    * Value will be set to temp buffer map
    */
-  def inputToBuffer[VT <: Any](name: String,value:String)(cl: => Any)(implicit tag: ClassTag[VT]) = {
-    
+  def inputToBuffer[VT <: Any](name: String, value: String)(cl: => Any)(implicit tag: ClassTag[VT]) = {
+
     putToTempBuffer(name, value)
-    
+
     var node = input {
       +@("value" -> value.toString)
       bindValue {
@@ -59,8 +60,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     //-- Set Default Value
     var actualValue = getTempBufferValue[VT](name) match {
       case None =>
-         default
-      case Some(v) => 
+        default
+      case Some(v) =>
         v
     }
 
@@ -86,8 +87,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
    */
   def getTempBufferValue[VT <: Any](name: String)(implicit tag: ClassTag[VT]): Option[VT] = this.tempBuffer.get(name) match {
     case None => None
-     case Some(v) if (tag.runtimeClass.isInstance(v)) => Some(v.asInstanceOf[VT])
-    case Some(v) => 
+    case Some(v) if (tag.runtimeClass.isInstance(v)) => Some(v.asInstanceOf[VT])
+    case Some(v) =>
       throw new RuntimeException(s"Getting input buffer value for $name failed because requested type $tag does not match value's ${v.getClass()}")
   }
 
@@ -133,6 +134,42 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     }
   }
 
+  def tempBufferRadio[VT <: Any : ClassTag](text:String)(valueNameAndObject: Tuple2[String,VT])(cl: => Any) = {
+    
+    // Get actual value
+    var actualValue = getTempBufferValue[VT](valueNameAndObject._1)
+    
+    // Create Radio
+    //-----------------
+    var r = input {
+      +@("type" -> "radio")
+      +@("name" -> valueNameAndObject._1)
+      
+      // If actual Value is this one, preselect
+      actualValue match {
+        case Some(actual) if (actual.toString==valueNameAndObject._2.toString) => 
+          +@("checked" -> "true")
+        case _ => 
+      }
+      
+      // Bind value to select current
+      bindValue {
+        str:String => 
+          //str match {
+           // case v if (v==valueNameAndObject._2.toString) => 
+              putToTempBuffer(valueNameAndObject._1, valueNameAndObject._2)
+            //case _ => 
+          //}
+      }
+      
+      textContent(text)
+      
+      // Extra stuff
+      cl
+    }
+    
+  }
+  
   // Edit
   //-----------
   /*def onNode[NT <: HTMLNode[HTMLElement,_]](n:NT)(cl: => Any) : Any = {
@@ -229,7 +266,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
       cl
     }))
 
-   // println(s"Registered action $code on "+v.viewPath)
+    // println(s"Registered action $code on "+v.viewPath)
     code.toString
 
   }
@@ -255,7 +292,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   }
 
   def onClickReload(cl: => Unit) = {
-    reload 
+    reload
     onClick {
       cl
     }
@@ -620,6 +657,36 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
       v: Int =>
         vb.set(v)
     }
+
+  }
+
+  // File Drop Stuff
+  //------------
+  def onFileDrop(cl: File => Unit) = {
+
+
+    /*var code = this.getActionString({
+      () =>
+        request.get.getURLParameter("file") match {
+          case Some(f) =>
+            cl(new File(f))
+          case None =>
+            throw new RuntimeException("Cannot call action related to file drop without file url argument")
+        }
+    })*/
+    var code = this.getActionString{
+    
+        request.get.getURLParameter("file") match {
+          case Some(f) =>
+            cl(new File(f))
+          case None =>
+            throw new RuntimeException("Cannot call action related to file drop without file url argument")
+        }
+    }
+    var path = createSpecialPath("action", code)
+
+    +@("ondragover" -> "localWeb.allowDropFile(event)")
+    +@("ondrop" -> s"localWeb.fileDrop(event,'$path')")
 
   }
 
