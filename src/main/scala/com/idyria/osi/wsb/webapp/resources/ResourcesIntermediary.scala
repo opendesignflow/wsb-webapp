@@ -16,8 +16,8 @@ import java.lang.ref.WeakReference
 import java.nio.channels.FileChannel
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
-import com.idyria.utils.java.io.TeaIOUtils
 import com.idyria.osi.tea.files.FileWatcher
+import com.idyria.osi.tea.io.TeaIOUtils
 
 class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(basePath) {
   name = "Simple File Resources"

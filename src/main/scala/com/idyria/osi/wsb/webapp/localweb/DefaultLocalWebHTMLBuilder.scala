@@ -1,8 +1,10 @@
 package com.idyria.osi.wsb.webapp.localweb
 
+import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.net.URI
+import java.util.prefs.Preferences
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -12,6 +14,7 @@ import org.w3c.dom.html.HTMLElement
 
 import com.idyria.osi.ooxoo.core.buffers.datatypes.IntegerBuffer
 import com.idyria.osi.ooxoo.core.buffers.structural.AbstractDataBuffer
+import com.idyria.osi.tea.logging.TLogSource
 import com.idyria.osi.vui.html.HTMLNode
 import com.idyria.osi.vui.html.Head
 import com.idyria.osi.vui.html.Html
@@ -19,8 +22,11 @@ import com.idyria.osi.vui.html.Script
 import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder
 import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
-import com.idyria.osi.tea.logging.TLogSource
-import java.io.File
+import java.util.prefs.PreferenceChangeListener
+import java.util.prefs.PreferenceChangeEvent
+import com.idyria.osi.vui.html.Input
+import com.idyria.osi.vui.html.Textarea
+import com.idyria.osi.ooxoo.core.buffers.datatypes.XSDStringBuffer
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource {
 
@@ -95,6 +101,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   def putToTempBuffer(name: String, v: Any) = {
     tempBuffer = tempBuffer.updated(name, v)
   }
+  
+  def deleteFromTempBuffer(name:String) = {
+    tempBuffer = tempBuffer - name
+  }
 
   def tempBufferSelect(name: String, values: (String, String)*): com.idyria.osi.vui.html.Select[HTMLElement, com.idyria.osi.vui.html.Select[HTMLElement, _]] = tempBufferSelect(name, values.toList)
   def tempBufferSelect(name: String, values: List[(String, String)]): com.idyria.osi.vui.html.Select[HTMLElement, com.idyria.osi.vui.html.Select[HTMLElement, _]] = {
@@ -134,42 +144,42 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     }
   }
 
-  def tempBufferRadio[VT <: Any : ClassTag](text:String)(valueNameAndObject: Tuple2[String,VT])(cl: => Any) = {
-    
+  def tempBufferRadio[VT <: Any: ClassTag](text: String)(valueNameAndObject: Tuple2[String, VT])(cl: => Any) = {
+
     // Get actual value
     var actualValue = getTempBufferValue[VT](valueNameAndObject._1)
-    
+
     // Create Radio
     //-----------------
     var r = input {
       +@("type" -> "radio")
       +@("name" -> valueNameAndObject._1)
-      
+
       // If actual Value is this one, preselect
       actualValue match {
-        case Some(actual) if (actual.toString==valueNameAndObject._2.toString) => 
+        case Some(actual) if (actual.toString == valueNameAndObject._2.toString) =>
           +@("checked" -> "true")
-        case _ => 
+        case _ =>
       }
-      
+
       // Bind value to select current
       bindValue {
-        str:String => 
+        str: String =>
           //str match {
-           // case v if (v==valueNameAndObject._2.toString) => 
-              putToTempBuffer(valueNameAndObject._1, valueNameAndObject._2)
-            //case _ => 
-          //}
+          // case v if (v==valueNameAndObject._2.toString) => 
+          putToTempBuffer(valueNameAndObject._1, valueNameAndObject._2)
+        //case _ => 
+        //}
       }
-      
+
       textContent(text)
-      
+
       // Extra stuff
       cl
     }
-    
+
   }
-  
+
   // Edit
   //-----------
   /*def onNode[NT <: HTMLNode[HTMLElement,_]](n:NT)(cl: => Any) : Any = {
@@ -254,11 +264,12 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
 
   def getActions = actions
 
-  def getActionString(cl: => Unit): String = {
+  def getActionString(cl: => Unit, codeprefix: String = ""): String = {
 
     //-- Get Hash code
     val node = currentNode
-    var code = node.hashCode()
+    var code = codeprefix + "" + node.hashCode()
+    //var code = cl.hashCode()
 
     //-- Register 
     var v = this
@@ -271,7 +282,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
 
   }
 
-  def createSpecialPath(specialType: String, code: String) = {
+  def createSpecialPath(specialType: String, code: String) : String = {
 
     var viewsPath = this.currentView.getParentViews
     viewsPath.size match {
@@ -281,15 +292,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
         s"/${viewsPath(0).asInstanceOf[LocalWebHTMLVIew].viewPath}/$specialType/${viewsPath.drop(1).map(_.asInstanceOf[LocalWebHTMLVIew].viewPath).mkString("/")}/$specialType/$code".noDoubleSlash
     }
 
-    /*
-    var splitted = this.viewPath.noDoubleSlash.split("/").toList
-    splitted.size match {
-      case 0 => s"/${this.viewPath}/$specialType/$code".noDoubleSlash 
-      case 1 => s"/${splitted(0)}/$specialType/$code".noDoubleSlash
-      case 2 => s"/${this.viewPath}/$specialType/$code".noDoubleSlash
-      case other => s"/${splitted(0)}/$specialType/${splitted.drop(1).mkString("/")}/$specialType/$code".noDoubleSlash
-    }*/
   }
+  
+  implicit def strToURI(str:String) : URI = new URI(str)
+
 
   def onClickReload(cl: => Unit) = {
     reload
@@ -297,16 +303,105 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
       cl
     }
   }
-  override def onClick(cl: => Unit) = {
+
+  def onNodeClick(node: Option[HTMLNode[HTMLElement, _]])(cl: => Unit): Unit = {
+
+    //println(s"On Node click: "+node)
+
+    node match {
+      case Some(n) =>
+        onNode(n) {
+          onClick(cl)
+        }
+      case None =>
+    }
+
+  }
+
+  def onNodeMousePressed(node: Option[HTMLNode[HTMLElement, _]])(cl: => Unit): Unit = {
+
+    // println(s"On Node click: "+node)
+
+    node match {
+      case Some(n) =>
+        onNode(n) {
+          onMousePressed(cl)
+        }
+      case None =>
+    }
+
+  }
+
+  def onNodeMouseReleased(node: Option[HTMLNode[HTMLElement, _]])(cl: => Unit): Unit = {
+
+    // println(s"On Node click: "+node)
+
+    node match {
+      case Some(n) =>
+        onNode(n) {
+          onMouseReleased(cl)
+        }
+      case None =>
+    }
+
+  }
+
+  /**
+   * Called with true when mouse is downn, with false if up
+   */
+  def onNodeisPressed(node: Option[HTMLNode[HTMLElement, _]])(cl: PartialFunction[Boolean, Unit]): Unit = {
+
+    node match {
+      case Some(n) =>
+        onNode(n) {
+          onMousePressed {
+
+            if (cl.isDefinedAt(true)) {
+              cl(true)
+            }
+
+          }
+          onMouseReleased {
+            if (cl.isDefinedAt(false)) {
+              cl(false)
+            }
+          }
+        }
+      case None =>
+    }
+
+  }
+
+  def onMousePressed(cl: => Unit): Unit = {
+
+    var actionCode = this.getActionString(cl, "mousepressed")
+
+    //println(s"Mouse Pressed -> " + actionCode)
+
+    +@("onmousedown" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}',noUpdate=true)").noDoubleSlash)
+    +@("touchmove" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}',noUpdate=true)").noDoubleSlash)
+    //touchstart
+  }
+
+  def onMouseReleased(cl: => Unit): Unit = {
+
+    var actionCode = this.getActionString(cl, "mousereleased")
+
+    // println(s"Mouse Released -> " + actionCode)
+
+    +@("onmouseup" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}',noUpdate=true)").noDoubleSlash)
+    +@("touchend" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}',noUpdate=true)").noDoubleSlash)
+  }
+
+  def onKeyTyped(cl: Char => Unit) = {
+
+    var actionCode = this.getActionString({ cl('a') }, "onkeyup")
+    +@("onkeyup" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}',noUpdate=true)").noDoubleSlash)
+  }
+
+  override def onClick(cl: => Unit): Unit = {
 
     var actionCode = this.getActionString(cl)
-
-    //-- Create Action String
-    var currentViewName = "/"
-
-    //
-    //var cd = s"localWeb.buttonClick('${this.viewPath}/action/$code')".noDoubleSlash
-
     +@("onclick" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}')").noDoubleSlash)
 
   }
@@ -331,7 +426,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     }
   }
 
-  def placeView[VT <: LocalWebHTMLVIew: TypeTag](vc: Class[VT], targetId: String): LocalWebHTMLVIew = {
+  def placeView[VT <: LocalWebHTMLVIew: TypeTag](vc: Class[VT], targetId: String)(implicit tag: ClassTag[VT]): LocalWebHTMLVIew = {
 
     //-- Compile
     var createdView = LocalWebHTMLVIewCompiler.createView[VT](None, vc)
@@ -347,16 +442,16 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
         //-- trigger reload
         placedView.getTopParentView.@->("refresh")
     }*/
-    placeView(createdView, targetId)
+    placeView[VT](createdView, targetId)
 
   }
 
   /**
    * If view ready is true, just take the object as new view
    */
-  def placeView[VT <: LocalWebHTMLVIew: TypeTag](v: VT, targetId: String, viewready: Boolean = false): VT = {
+  def placeView[VT <: LocalWebHTMLVIew: TypeTag](v: VT, targetId: String, viewready: Boolean = false)(implicit tag: ClassTag[VT]): VT = {
 
-    println(s"${hashCode} Place view for: " + targetId + " -> " + viewPlaces.get(targetId).isDefined)
+    //println(s"${hashCode} Place view for: " + targetId + " -> " + viewPlaces.get(targetId).isDefined)
 
     //-- Recompile View Using  
     //------------------------------
@@ -504,14 +599,23 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   // Autobinding
   //---------------------------
 
+  val bindSupportedTypes = List(classOf[Boolean], classOf[Long], classOf[Int], classOf[Integer], classOf[Double], classOf[Number], classOf[String], classOf[AbstractDataBuffer[_]])
+
+  def bindGetType[V](tag: ClassTag[V]) = {
+    bindSupportedTypes.find { parentClass => parentClass.isAssignableFrom(tag.runtimeClass) }
+  }
+
   /**
    * Support String, Number and OOXOO Datatypes Buffers
    */
   def bindValue[V](cl: V => Unit)(implicit tag: ClassTag[V]): Unit = {
 
-    val supportedTypes = List(classOf[Boolean], classOf[Long], classOf[Int], classOf[Integer], classOf[Double], classOf[Number], classOf[String], classOf[AbstractDataBuffer[_]])
+    var eventName = currentNode match {
+      case t: Textarea[_, _] => "onchange"
+      case other => "onchange"
+    }
 
-    supportedTypes.find { parentClass => parentClass.isAssignableFrom(tag.runtimeClass) } match {
+    bindSupportedTypes.find { parentClass => parentClass.isAssignableFrom(tag.runtimeClass) } match {
 
       //-- Number
       //-------------------
@@ -575,7 +679,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
+        +@(eventName -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
 
       // String
       //------------------
@@ -605,7 +709,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
+        +@(eventName -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
 
       // Boolean
       //------------------
@@ -628,6 +732,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
           // Check URL parameters
           currentView.getProxy[LocalWebHTMLVIew].get.request.get.getURLParameter(targetNode.attributes("name").toString) match {
 
+            case Some("on") =>
+              cl(true.asInstanceOf[V])
+            case Some("off") =>
+              cl(false.asInstanceOf[V])
             case Some(v) =>
 
               cl(v.toBoolean.asInstanceOf[V])
@@ -638,11 +746,11 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
         }
 
         // bind to on change
-        +@("onchange" -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
+        +@(eventName -> s"localWeb.bindValue(this,'${createSpecialPath("action", action)}')".noDoubleSlash)
 
       //-- No Match error
       case None =>
-        sys.error("Bind value on supports input types: " + supportedTypes)
+        sys.error("Bind value on supports input types: " + bindSupportedTypes)
     }
 
   }
@@ -659,11 +767,181 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     }
 
   }
+  
+   /**
+   * BindValue with Buffers
+   */
+  def bindValue(vb: XSDStringBuffer): Unit = {
+
+    +@("value" -> vb.toString())
+    this.bindValue {
+      v: String =>
+        vb.data = v
+       
+    }
+
+  }
+
+  /**
+   * Use Preferences to save and recall value
+   * This custom run closure is called once when binding is done
+   */
+  def bindToPreference[V](p: Preferences, key: String, default: V)(cl: V => Unit)(implicit tag: ClassTag[V]): Unit = {
+
+    // Find the data type
+    val dataType = bindGetType[V](tag)
+
+    //-- Get Value for preference
+    val valueFromPref = dataType match {
+      case Some(baseClass) if (baseClass == classOf[Boolean]) =>
+
+        bindValue {
+          v: Boolean =>
+
+            p.putBoolean(key, v)
+
+            // Run closure
+            cl(v.asInstanceOf[V])
+        }
+
+        //println(s"Got value from pref: ")
+        val value = p.getBoolean(key, default.asInstanceOf[Boolean]).asInstanceOf[V]
+
+        // Set to default value, used checked attribute for boolean components
+        p.getBoolean(key, default.asInstanceOf[Boolean]).asInstanceOf[V] match {
+          case true =>
+            +@("checked" -> "")
+            true
+          case false =>
+            false
+        }
+
+      case Some(baseClass) if (baseClass == classOf[Int]) =>
+
+        bindValue {
+          v: Int =>
+
+            p.putInt(key, v)
+
+            // Run closure
+            cl(v.asInstanceOf[V])
+        }
+
+        p.getInt(key, default.asInstanceOf[Int]).asInstanceOf[V]
+
+      case Some(baseClass) if (baseClass == classOf[Long]) =>
+
+        bindValue {
+          v: Long =>
+
+            p.putLong(key, v)
+
+            // Run closure
+            cl(v.asInstanceOf[V])
+        }
+
+        p.getLong(key, default.asInstanceOf[Long]).asInstanceOf[V]
+
+      case Some(baseClass) if (baseClass == classOf[Double]) =>
+
+        bindValue {
+          v: Double =>
+
+            //println(s"Saving to pref: $key -> $v")
+            // Save Pref
+            p.putDouble(key, v)
+
+            // Run closure
+            cl(v.asInstanceOf[V])
+        }
+
+        p.getDouble(key, default.asInstanceOf[Double]).asInstanceOf[V]
+
+      case Some(baseClass) if (baseClass == classOf[String]) =>
+
+        bindValue {
+          v: String =>
+
+            //println(s"Saving to pref: $key -> $v")
+            // Save Pref
+            p.put(key, v)
+
+            // Run closure
+            cl(v.asInstanceOf[V])
+        }
+
+        p.get(key, default.asInstanceOf[String]).asInstanceOf[V]
+
+      case _ => sys.error(s"Not Supported datatype: ${tag.runtimeClass}")
+    }
+
+    //-- Run custom closure at least once before begin
+    cl(valueFromPref.asInstanceOf[V])
+
+    //-- Set to default value if not set
+    this.currentNode match {
+      case t: Textarea[_, _] =>
+        if (t.textContent=="") {
+          textContent( valueFromPref.toString)
+        }
+            
+      case other =>
+        this.currentNode.attributeOption("value") match {
+          case None =>
+            +@("value" -> valueFromPref.toString)
+          case _ =>
+        }
+    }
+
+    // If no ID on element, set one based on preferences string key
+    this.currentNode.attributeOption("id") match {
+      case None =>
+        id(key)
+      case _ =>
+    }
+
+  }
+
+  def bindSelectToPref(p: Preferences, key: String, values: List[(String, String)])(cl: String => Unit) = {
+
+    // Get Value from preference with default being the first of provided values
+    //--------
+    var valueFromPrefs = p.get(key, values(0)._1)
+
+    // Create Select
+    //----------
+    select {
+      +@("name" -> key)
+      values.foreach {
+        case (value, text) =>
+
+          option(value) {
+            // +@("value" -> value)
+            textContent(text)
+
+            // Mark selected if same value as one from preferences
+            if (value == valueFromPrefs) {
+              +@("selected" -> "true")
+            }
+          }
+      }
+
+      bindValue {
+        str: String =>
+          p.put(key, str)
+          cl(str)
+      }
+
+    }
+
+    // Run custom closure at least once before begin
+    //--------
+    cl(valueFromPrefs)
+  }
 
   // File Drop Stuff
   //------------
   def onFileDrop(cl: File => Unit) = {
-
 
     /*var code = this.getActionString({
       () =>
@@ -674,14 +952,14 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
             throw new RuntimeException("Cannot call action related to file drop without file url argument")
         }
     })*/
-    var code = this.getActionString{
-    
-        request.get.getURLParameter("file") match {
-          case Some(f) =>
-            cl(new File(f))
-          case None =>
-            throw new RuntimeException("Cannot call action related to file drop without file url argument")
-        }
+    var code = this.getActionString {
+
+      request.get.getURLParameter("file") match {
+        case Some(f) =>
+          cl(new File(f))
+        case None =>
+          throw new RuntimeException("Cannot call action related to file drop without file url argument")
+      }
     }
     var path = createSpecialPath("action", code)
 

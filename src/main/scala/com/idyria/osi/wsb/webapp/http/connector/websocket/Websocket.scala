@@ -51,174 +51,239 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
 
   def receive(buffer: ByteBuffer): Boolean = {
 
+    var stop = false
+
     logFine[WebsocketProtocolhandler](s"Received some Websocket datas, with ordering: ${buffer.order().toString()} (native: ${java.nio.ByteOrder.nativeOrder()}), capacity: " + buffer.remaining())
 
     //buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+    do {
+      remainingDatas match {
 
-    remainingDatas match {
+        // Message Mode
+        //--------------------
+        case 0 =>
 
-      // Message Mode
-      //--------------------
-      case 0 =>
+          // Take the first 4 Bytes and analyse using header
+          //---------------------------
+          var header = bytesDescription.register("header")
+          header.value = buffer.getInt()
 
-        // Take the first 4 Bytes and analyse using header
+          //header.explainMemory
+
+          logFine[WebsocketProtocolhandler]("After header remaining: " + buffer.remaining())
+
+          // !!
+          // !! The ordering of following code is mandatory (because of buffer sequential reading)
+          // !!
+
+          // Get Payload Length
+          //-------------------
+          payloadLength = header.field("PayloadLen").value match {
+
+            // Last two bytes of Header Bytes are not used as payload length, so rewind by 2
+            case l if (l < 126) =>
+
+              buffer.position(buffer.position - 2)
+              l.toInt
+
+            // Take last two bytes of header as length
+            case l if (l == 126) => (header.field("ExtraPayloadLen").value).toInt
+
+            // Use ExtraPayloadLen and Extended PayLoad len as one register to concatenate the bytes
+            case _ =>
+
+              var extendedLength = bytesDescription.register("ExtendedPayloadLen")
+
+              //-- Rewind 2 bytes in buffer, and read a Long 
+              buffer.position(buffer.position() - 2)
+              extendedLength.value = buffer.getLong()
+
+              extendedLength.value.data.toInt
+          }
+
+          logFine[WebsocketProtocolhandler](s"After payload length ($payloadLength): " + buffer.remaining())
+
+          // Get Masking Key Octets
+          //-----------------------
+          maskingKey = header.field("MASK").value match {
+
+            //-- Read 4 bytes of masking key
+            case 1 =>
+              var key = buffer.getInt
+
+              logFine[WebsocketProtocolhandler](s"Masking key: " + key.toHexString)
+
+              var keyOctets = Array((key >> 0) & 0xFF, (key >>> 8) & 0xFF, (key >>> 16) & 0xFF, (key >>> 24) & 0xFF)
+
+              //-- Reverse Bytes if ordering of system and buffer differs
+              buffer.order() match {
+                case order if (order != java.nio.ByteOrder.nativeOrder()) => Some(keyOctets.reverse)
+                case _ => Some(keyOctets)
+              }
+
+            case 0 =>
+
+              None
+          }
+
+          logFine[WebsocketProtocolhandler]("After key length: " + buffer.remaining())
+
+          // Handle data type
+          //--------------------------
+          logFine[WebsocketProtocolhandler]("OPCODE: " + header.field("OPCODE").value)
+          header.field("OPCODE").value match {
+
+            case WebsocketProtocolhandler.OpCode.CONTINUATION =>
+            case WebsocketProtocolhandler.OpCode.TEXT_FRAME =>
+
+            //println(s"Found Text Data of length: " + payloadLength)
+            //println(s"Countent: " + new String(payLoad.map { v => v.toChar }))
+
+            case WebsocketProtocolhandler.OpCode.PING =>
+            case WebsocketProtocolhandler.OpCode.PONG =>
+            case WebsocketProtocolhandler.OpCode.BINARY_FRAME =>
+            case WebsocketProtocolhandler.OpCode.CLOSE =>
+              //this.context.asInstanceOf[TCPNetworkContext].socket.close()
+              remainingDatas = 0
+              payloadLength = 0
+
+              throw new ClosedChannelException
+            case code => throw new ProtocolException(s"OPCCODE $code is not handled")
+
+          }
+
+          // Get PayLoad
+          //-----------------
+          try {
+            //-- Prepare output Buffer
+            this.readDatas = ByteBuffer.allocate(payloadLength)
+            remainingDatas = payloadLength - buffer.remaining()
+
+            //-- Read Data up to buffer payload length
+            remainingDatas match {
+
+              //-- all data here
+              case diff if (diff < 0) =>
+
+                //remainingDatas = remainingDatas - remain
+                //println(s"Reading data to readDatas (size=${readDatas.capacity()}), length=$payloadLength")
+
+                var receivingArray = new Array[Byte](payloadLength)
+                var readBuffer = buffer.get(receivingArray)
+
+                this.readDatas.clear()
+
+               //println(s"Reading data to readDatas (size=${readDatas.capacity()}), length in readBuffer=${readBuffer.remaining()}, length in readArray=${receivingArray.length}")
+
+                this.readDatas.put(receivingArray)
+                remainingDatas = 0
+              //-- Not enough data
+              case remain =>
+
+                this.readDatas.put(buffer)
+
+              //this.readDatas.put(buffer.get(new Array[Byte](remainingDatas)))
+              //   remainingDatas = 0
+
+            }
+
+            //
+
+            //this.readDatas.put(buffer.get(new Array[Byte](payloadLength)))
+            //this.readDatas.put(buffer)
+
+          } catch {
+            case e: java.nio.BufferOverflowException =>
+              println(s"Error during payload read")
+              e.printStackTrace(System.out)
+          }
+
+        // Data Receive mode
         //---------------------------
-        var header = bytesDescription.register("header")
-        header.value = buffer.getInt()
+        case _ =>
 
-        //header.explainMemory
+          //-- Read
+          logFine[WebsocketProtocolhandler](s"Receiving data, remaining: $remainingDatas , buffer has: ${buffer.remaining()},")
+          buffer.remaining() match {
 
-        logFine("After header remaining: " + buffer.remaining())
+            //-- less than needed
+            case remain if (remain <= remainingDatas) =>
 
-        // !!
-        // !! The ordering of following code is mandatory (because of buffer sequential reading)
-        // !!
+              remainingDatas = remainingDatas - remain
+              this.readDatas.put(buffer)
 
-        // Get Payload Length
-        //-------------------
-        payloadLength = header.field("PayloadLen").value match {
+            //-- More or enough
+            case remain if (remain > remainingDatas) =>
 
-          // Last two bytes of Header Bytes are not used as payload length, so rewind by 2
-          case l if (l < 126) =>
+              var receivingArray = new Array[Byte](remainingDatas)
+              var readBuffer = buffer.get(receivingArray)
 
-            buffer.position(buffer.position - 2)
-            l.toInt
+              this.readDatas.put(receivingArray)
+              remainingDatas = 0
 
-          // Take last two bytes of header as length
-          case l if (l == 126) => (header.field("ExtraPayloadLen").value).toInt
+          }
 
-          // Use ExtraPayloadLen and Extended PayLoad len as one register to concatenate the bytes
-          case _ =>
+      }
 
-            var extendedLength = bytesDescription.register("ExtendedPayloadLen")
+      // Finish Datas
+      //------------------
+      remainingDatas match {
+        case 0 =>
 
-            //-- Rewind 2 bytes in buffer, and read a Long 
-            buffer.position(buffer.position() - 2)
-            extendedLength.value = buffer.getLong()
+          //var array = new Array[Byte](payloadLength)
+          // readDatas.flip()
+          var array = readDatas.array
 
-            extendedLength.value.data.toInt
-        }
+          logFine[WebsocketProtocolhandler](s"Decoding length: " + array.length)
 
-        logFine(s"After payload length ($payloadLength): " + buffer.remaining())
+          var payLoad = maskingKey match {
 
-        // Get Masking Key Octets
-        //-----------------------
-        maskingKey = header.field("MASK").value match {
+            //-- Decode Through key XOR buffer
+            case Some(keyOctets) =>
 
-          //-- Read 4 bytes of masking key
-          case 1 =>
-            var key = buffer.getInt
+              // Map to char to avoid Signed Byte logic, and reverse the bytes which are in the wrong order
+              // var intArray = array.map { _.toInt match { case v if (v < 0) => ~(v);case v => v } }
 
-            logFine(s"Masking key: " + key.toHexString)
+              //-- Reverse Bytes if ordering of system and buffer differs
+              var intArray = buffer.order() match {
+                case order if (order != java.nio.ByteOrder.nativeOrder()) => array.map { v => (v & 0xFF) }
+                case _ => array.map { v => (v & 0xFF) }
+              }
 
-            var keyOctets = Array((key >> 0) & 0xFF, (key >>> 8) & 0xFF, (key >>> 16) & 0xFF, (key >>> 24) & 0xFF)
+              WebsocketProtocolhandler.unmask(intArray, keyOctets)
 
-            //-- Reverse Bytes if ordering of system and buffer differs
-            buffer.order() match {
-              case order if (order != java.nio.ByteOrder.nativeOrder()) => Some(keyOctets.reverse)
-              case _ => Some(keyOctets)
-            }
+            //-- Don't decode
+            case None =>
 
-          case 0 =>
+              buffer.order() match {
+                case order if (order != java.nio.ByteOrder.nativeOrder()) => array.reverse.map { v => (v & 0xFF) }
+                case _ => array.map { v => (v & 0xFF) }
+              }
 
-            None
-        }
+          }
 
-        logFine("After key length: " + buffer.remaining())
-
-        // Get PayLoad
-        //-----------------
-
-        //-- Prepare output Buffer
-        this.readDatas = ByteBuffer.allocate(payloadLength)
-
-        //-- Read Data up to buffer end
-
-        remainingDatas = payloadLength - buffer.remaining()
-        this.readDatas.put(buffer)
-
-        // Handle data type
-        //--------------------------
-        logFine("OPCODE: " + header.field("OPCODE").value)
-        header.field("OPCODE").value match {
-
-          case WebsocketProtocolhandler.OpCode.TEXT_FRAME   =>
-
-          //println(s"Found Text Data of length: " + payloadLength)
+          //-- Stack results
           //println(s"Countent: " + new String(payLoad.map { v => v.toChar }))
+          this.availableDatas += (ByteBuffer.wrap(payLoad.map { v => v.toByte }))
 
-          case WebsocketProtocolhandler.OpCode.PING         =>
-          case WebsocketProtocolhandler.OpCode.PONG         =>
-          case WebsocketProtocolhandler.OpCode.BINARY_FRAME =>
-          case WebsocketProtocolhandler.OpCode.CLOSE =>
-            //this.context.asInstanceOf[TCPNetworkContext].socket.close()
-            throw new ClosedChannelException
-          case code => throw new ProtocolException(s"OPCCODE $code is not handled")
+          logFine[WebsocketProtocolhandler](s"Stacked: " + new String(this.availableDatas.head.array()))
 
-        }
-        
+          payloadLength = 0
+        case _ =>
+      }
 
-      // Data Receive mode
-      //---------------------------
-      case _ =>
+      stop = buffer.remaining() == 0
+      
+      logFine[WebsocketProtocolhandler](s"Stopping: " + stop)
+      //var res = (remainingDatas == 0)
 
-        //-- Read
-        remainingDatas = payloadLength - buffer.remaining()
-        this.readDatas.put(buffer)
+      // println(s"Remaining datas to wait for: " + remainingDatas + "//" + res)
 
-    }
+      //res
 
-    // Finish Datas
-    //------------------
-    remainingDatas match {
-      case 0 =>
+    } while (!stop)
 
-        //var array = new Array[Byte](payloadLength)
-        // readDatas.flip()
-        var array = readDatas.array
-
-        logFine(s"Decoding length: " + array.length)
-
-        var payLoad = maskingKey match {
-
-          //-- Decode Through key XOR buffer
-          case Some(keyOctets) =>
-
-            // Map to char to avoid Signed Byte logic, and reverse the bytes which are in the wrong order
-            // var intArray = array.map { _.toInt match { case v if (v < 0) => ~(v);case v => v } }
-
-            //-- Reverse Bytes if ordering of system and buffer differs
-            var intArray = buffer.order() match {
-              case order if (order != java.nio.ByteOrder.nativeOrder()) => array.map { v => (v & 0xFF) }
-              case _ => array.map { v => (v & 0xFF) }
-            }
-
-            WebsocketProtocolhandler.unmask(intArray, keyOctets)
-
-          //-- Don't decode
-          case None =>
-
-            buffer.order() match {
-              case order if (order != java.nio.ByteOrder.nativeOrder()) => array.reverse.map { v => (v & 0xFF) }
-              case _ => array.map { v => (v & 0xFF) }
-            }
-
-        }
-
-        //-- Stack results
-        //println(s"Countent: " + new String(payLoad.map { v => v.toChar }))
-        this.availableDatas += (ByteBuffer.wrap(payLoad.map { v => v.toByte }))
-
-        logFine(s"Stacked: " + new String(this.availableDatas.head.array()))
-
-        payloadLength = 0
-      case _ =>
-    }
-    var res = (remainingDatas == 0)
-
-    // println(s"Remaining datas to wait for: " + remainingDatas + "//" + res)
-
-    res
+    true
 
   }
 
@@ -243,8 +308,8 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
       // Length on 7 bits
       case payloadLength if (payloadLength < 127) =>
 
-         logFine[WebsocketProtocolhandler](s"Length on 7 bits")
-        
+        logFine[WebsocketProtocolhandler](s"Length on 7 bits")
+
         head.field("PayloadLen").value = payloadLength
         0
 
@@ -252,16 +317,16 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
       case payloadLength if (payloadLength < Math.pow(2, 16)) =>
 
         logFine[WebsocketProtocolhandler](s"Length on 16 bits")
-        
+
         head.field("PayloadLen").value = 126
         head.field("ExtraPayloadLen").value = payloadLength
         2
 
       // Otherwise 64 bits
       case payloadLength =>
-        
+
         logFine[WebsocketProtocolhandler](s"Length on 64 bits")
-        
+
         head.field("PayloadLen").value = 127
         extendedPayloadLength = payloadLength
 
@@ -290,7 +355,7 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
         outBuffer.put(((head.value >>> 8) & 0xFF).toByte)
         outBuffer.put(((head.value >>> 0) & 0xFF).toByte)
       case 8 =>
-        logFine[WebsocketProtocolhandler](s"64bits length: "+extendedPayloadLength)
+        logFine[WebsocketProtocolhandler](s"64bits length: " + extendedPayloadLength)
         outBuffer.putLong(extendedPayloadLength)
       case _ =>
     }
@@ -298,10 +363,9 @@ class WebsocketProtocolhandler(var localContext: NetworkContext) extends Protoco
     outBuffer.put(buffer);
     outBuffer.flip()
     outBuffer
-    
+
     // outBuffer.put(buffer);
 
-   
   }
 
 }

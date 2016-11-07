@@ -11,6 +11,12 @@ import com.idyria.osi.ooxoo.model.ModelBuilder
   new producer(value = classOf[MDProducer])))
 object LocalWebModels extends ModelBuilder {
 
+  // Message Flow
+  //---------------------
+  "Done" is {
+    
+  }
+  
   // Messages
   //------------------
   "HeartBeat" is {
@@ -20,6 +26,13 @@ object LocalWebModels extends ModelBuilder {
   "UpdateHtml" is {
     "HTML" ofType "cdata"
   }
+  
+  "UpdateText" is {
+    "Id" ofType "string"
+    "Text" ofType "cdata"
+  }
+  
+  //
 
   
   

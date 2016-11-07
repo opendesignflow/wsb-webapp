@@ -4,6 +4,7 @@ var localWeb = {
 
 };
 
+var test = 0;
 
 localWeb.callAction = function(sender, path,data) {
 
@@ -36,23 +37,31 @@ localWeb.callAction = function(sender, path,data) {
 /**
  * Call A Remote Action
  */
-localWeb.buttonClick = function(button, id) {
-
-	console.info("Button Clicked, sending remote request for " + id);
+localWeb.buttonClick = function(button, id,noUpdate=false) {
+	
+	//e.preventDefault();
+	
+	console.info("Button Clicked, sending remote request for " + id+ " -> "+$(button).attr("reload"));
 
 	$(button).prop('disabled', true);
 	var deffered = $.get(id + "?format=json");
 	deffered.done(function(data) {
 		console.log("Done...");
-		$(button).prop('disabled', false);
-		if (data != "OK") {
-			console.log("Reloading Page")
-			$("body").html(data);
-		}
+		
+		//-- update reload
+		if(!noUpdate) {
+			$(button).prop('disabled', false);
+			if (data != "OK") {
+				console.log("Reloading Page")
+				$("body").html(data);
+			}
 
-		if ($(button).attr("reload") != "") {
-			location.reload();
+			if ($(button).attr("reload")) {
+				location.reload();
+			}
 		}
+		
+		
 
 	});
 	deffered.fail(function(data) {
@@ -155,6 +164,40 @@ localWeb.makeEventConnection = function() {
 	localWeb.wsConnection = new WebSocket(targetURL, [ 'soap' ]);
 
 	// Log messages from the server
+	//---------------
+	localWeb.wsConnection.onopen = function (event) {
+		if (localWeb.debug == true) {
+			console.log('Connection Done');
+			
+			localWeb.onPushData("HeartBeat",function(hb) {
+				
+				console.log("Got Heartbeat");
+				
+				
+			});
+			
+			
+			//Update text
+			//-------------------
+			localWeb.onPushData("UpdateText",function(updateText) {
+				
+				var id = localWeb.decodeHTML(updateText.Id)
+				//console.log("Got update text for: "+updateText.Id)
+				
+				var targetElement = $("#"+id);
+				if (targetElement) {
+					if (targetElement.is("input") && targetElement.attr("value")!=localWeb.decodeHTML(updateText.Text) ) {
+						
+						targetElement.attr("value",localWeb.decodeHTML(updateText.Text));
+					} else {
+						targetElement.html(localWeb.decodeHTML(updateText.Text));
+					}
+					
+				}
+				
+			});
+		}
+	};
 	localWeb.wsConnection.onmessage = function(e) {
 
 		if (localWeb.debug == true) {
@@ -174,9 +217,15 @@ localWeb.makeEventConnection = function() {
 		if (localWeb.debug == true) {
 			console.log("Keys: " + Object.keys(body));
 		}
-		$(localWeb.wsConnection).trigger("payload",
+		
+		
+		$(localWeb.wsConnection).triggerHandler("payload",
 				[ Object.keys(body)[0], body[Object.keys(body)[0]] ]);
-
+		
+		if (localWeb.debug == true) {
+			console.log("Triggering on "+test+"  "+$._data( $(localWeb.wsConnection), 'events' ));
+		}
+		
 		if (body.Ack) {
 			console.log("Got Acknowledge");
 		}
@@ -194,8 +243,14 @@ localWeb.makeEventConnection = function() {
 													.decodeHTML(body.UpdateHtml[0].HTML)))
 									.select("body"));
 		}
-
+		
+		
+		
+	
 	};
+	//-- EOF Update message
+	
+	
 };
 
 /*
@@ -203,19 +258,65 @@ localWeb.makeEventConnection = function() {
  */
 localWeb.onPushData = function(name, f) {
 
+	// Running
+	if (localWeb.debug == true) {
+		console.log("Registering handler for: "+name);
+	}
+	
 	// Registering function
 	$(localWeb.wsConnection).on("payload", function(event, pname, payload) {
 
+		// Running
 		if (localWeb.debug == true) {
 			console.log("Got payload " + pname + " filtering for " + name);
 		}
-		if (pname == name) {
-			f(payload[0]);
-		}
+		
+		// Call Function
+		
+			if (pname == name) {
+				try {
+					//f(payload[0]);
+					requestAnimationFrame(function(ts) {
+						f(payload[0]);
+					});
+				} finally {
+					// Done
+					localWeb.sendMessageToServer("Done");
+				}
+				
+			}
+		
+		
 
 	});
 
 };
+
+localWeb.sendMessageToServer = function(json, f) {
+	
+	var soap = {
+	    Envelope: {
+	    	Header:{
+	    		
+	    	},
+	    	Body: {
+	    		Done : {
+	    			
+	    		}
+	    	}
+	
+	    }
+	  };
+	var str = JSON.stringify(soap);
+	
+	if (localWeb.debug == true) {
+		console.log("Sending back: "+str);
+	}
+	
+	localWeb.wsConnection.send(str);
+};
+
+
 
 /**
  * Decodes the URL Encoded HTML back to normal html that can be loaded in the
@@ -261,7 +362,12 @@ localWeb.fileDrop = function(event,action) {
 }
 
 
-
+// Message Handling
+//---------------------
 
 console.info("Welcome to localweb JS..." + window.location.pathname);
 localWeb.makeEventConnection();
+
+
+
+

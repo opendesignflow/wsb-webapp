@@ -39,6 +39,8 @@ import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
 import com.idyria.osi.wsb.core.message.soap.Fault
 import com.idyria.osi.wsb.core.message.soap.FaultCode_Value
 import com.idyria.osi.ooxoo.lib.json.JsonIO
+import com.idyria.osi.wsb.core.message.Message
+import com.idyria.osi.ooxoo.core.buffers.structural.AnyXList
 
 @xelement
 class Ack extends ElementBuffer {
@@ -46,6 +48,8 @@ class Ack extends ElementBuffer {
 }
 
 class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWebHTMLVIew]) extends HTTPPathIntermediary("/" + basePath) with DefaultBasicHTMLBuilder with ClassDomainSupport {
+
+  AnyXList(classOf[Done])
 
   // View Pool
   //-------------------
@@ -97,6 +101,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
               websocketPool.get(session) match {
                 case Some(interface) =>
                   interface.writeSOAPPayload(payload)
+                  interface.catchNextDone
                 case None =>
               }
 
@@ -153,7 +158,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   }
 
   //-- Set Listening on Main View
-  getMainViewInstance.onWith("view.replace")(replaceViewClosure)
+  getMainViewInstance.onWith[LocalWebHTMLVIew]("view.replace")(replaceViewClosure)
   getMainViewInstance.on("refresh") {
     refreshClosure()
   }
@@ -218,6 +223,10 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   // WebSocket
   //---------------------
+
+  //-- Listen to specific protocol messages for this view
+
+  //-- Create Websocket starter
   var websocketPool = scala.collection.mutable.Map[Session, WebsocketInterface]()
   this <= new WebsocketIntermediary {
 
@@ -424,9 +433,9 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   this <= new HTTPIntermediary {
 
     this.acceptDown { r =>
-     // println(s"Comparing: " + s"/$basePath".noDoubleSlash + " with " + r.path.toString)
+      // println(s"Comparing: " + s"/$basePath".noDoubleSlash + " with " + r.path.toString)
       //!r.upped && r.path.toString.startsWith(s"/$basePath".noDoubleSlash)
-      !r.upped && (r.path.toString == "/" )
+      !r.upped && (r.path.toString == "/")
 
     }
 
@@ -457,7 +466,10 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
               websocketPool.get(req.getSession) match {
                 case Some(interface) =>
+
                   interface.writeSOAPPayload(payload)
+                  interface.catchNextDone
+
                 case None =>
               }
 
@@ -481,15 +493,13 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
           r.htmlContent = rendered
           response(r, req)
-          
+
           logFine[SingleViewIntermediary](s"Response Sent")
         } catch {
           case e: Throwable =>
             e.printStackTrace()
             req(e)
         }
-
-      
 
     }
   }
@@ -499,9 +509,44 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   this <= new HTTPIntermediary {
     this.acceptDown { r => r.errors.size > 0 }
 
-    this.onDownMessage { req =>
+    this.onDownMessage { 
+      req =>
 
       logFine[SingleViewIntermediary](s"Request has errors")
+      try {
+        var r = new HTTPResponse();
+        r.code = 503
+
+        r.htmlContent = html {
+          head {
+            
+          }
+          body {
+            p {
+              text("Some Errors have been detected")
+            }
+            req.errors.foreach {
+              err =>
+                h1("Error: " + err.getLocalizedMessage) {
+
+                }
+                var strOut = new StringWriter
+                err.printStackTrace(new PrintWriter(strOut))
+                pre(strOut.toString()) {
+
+                }
+            }
+          }
+        }
+
+        response(r, req)
+        
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+         
+      }
+
     }
   }
 
@@ -561,11 +606,11 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
       req =>
         req.getSession.validity.add(java.util.Calendar.MINUTE, 30)
     }
-    this.onUpMessage[HTTPResponse] { 
-      m => 
-       // println("Session INter,ediary got up response")
+    this.onUpMessage[HTTPResponse] {
+      m =>
+      // println("Session INter,ediary got up response")
     }
-    
+
     // Default Request Handler 
     //----------------
     /*this <= new HTTPIntermediary {
@@ -584,9 +629,12 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
   // Views
   //-----------------
   def addViewHandler(path: String, cl: Class[_ <: LocalWebHTMLVIew]): SingleViewIntermediary = {
-    
+
     var newIntermediary = new SingleViewIntermediary(path, cl)
-    val viewIntermediaries = LocalWebEngine.topViewsIntermediary.intermediaries.collect {
+
+    this.addViewHandler(newIntermediary).asInstanceOf[SingleViewIntermediary]
+
+    /*val viewIntermediaries = LocalWebEngine.topViewsIntermediary.intermediaries.collect {
       case i if (classOf[SingleViewIntermediary].isInstance(i)) => i.asInstanceOf[SingleViewIntermediary]
     }
     viewIntermediaries.find {
@@ -600,8 +648,32 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
         topViewsIntermediary <= newIntermediary
         newIntermediary
     }
+*/
 
-    
+  }
+
+  def addViewHandler[IT <: HTTPPathIntermediary](newIntermediary: IT): IT = {
+
+    var path = newIntermediary.basePath
+    val viewIntermediaries = LocalWebEngine.topViewsIntermediary.intermediaries.collect {
+      case i if (classOf[SingleViewIntermediary].isInstance(i)) => i.asInstanceOf[SingleViewIntermediary]
+    }
+    viewIntermediaries.find {
+      i => i.basePath.length() <= newIntermediary.basePath.length
+    } match {
+      case Some(intermediaryRightAfter) =>
+        //println(s"Add Intermediary $path before")
+        topViewsIntermediary.addIntermediaryBefore(intermediaryRightAfter, newIntermediary).asInstanceOf[IT]
+      case None =>
+        // topViewsIntermediary.prepend(newIntermediary).asInstanceOf[SingleViewIntermediary]
+        topViewsIntermediary <= newIntermediary
+        newIntermediary
+    }
+
+  }
+
+  def dispatchMessage(msg: Message) = {
+    this.network.dispatch(msg)
   }
 
   // Management
@@ -704,7 +776,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
   override def lStop = {
     super.lStop
-    
+
     //-- Close Frame
     uiFrame match {
       case Some(frame) =>

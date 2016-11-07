@@ -23,14 +23,16 @@ package com.idyria.osi.wsb.webapp.http.message
 
 import com.idyria.osi.wsb.core.broker.tree.MessageIntermediary
 
+import scala.reflect._
+
 class HTTPIntermediary extends MessageIntermediary[HTTPRequest] {
 
-  def messageType = classOf[HTTPRequest]
+  val ttag = classTag[HTTPRequest]
 
 }
 
 class HTTPResponseIntermediary extends MessageIntermediary[HTTPResponse] {
 
-  def messageType = classOf[HTTPResponse]
+ val ttag = classTag[HTTPResponse]
 
 }

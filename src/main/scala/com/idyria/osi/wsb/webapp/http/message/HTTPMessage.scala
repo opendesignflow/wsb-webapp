@@ -582,6 +582,13 @@ $sessionId
 
   // Dummy
   def htmlContent: HTMLNode[_, HTMLNode[_, _]] = null
+  
+  
+  def setTextContent(str:String) = {
+    this.contentType = "text/plain"
+    this.content= ByteBuffer.wrap(str.getBytes)
+  }
+  
 
 }
 object HTTPResponse extends MessageFactory with TLogSource {
