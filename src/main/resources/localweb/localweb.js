@@ -281,7 +281,7 @@ localWeb.onPushData = function(name, f) {
 					});
 				} finally {
 					// Done
-					localWeb.sendMessageToServer("Done");
+					//localWeb.sendMessageToServer("Done");
 				}
 				
 			}

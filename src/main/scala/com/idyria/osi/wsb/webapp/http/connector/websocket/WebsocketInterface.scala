@@ -50,7 +50,7 @@ class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
 
   def catchNextDone = {
 
-    var receivedSem = new Semaphore(0)
+    /* receivedSem = new Semaphore(0)
     nc.relatedConnector.onWithTransient[Envelope]("message.received") {
       soap =>
        // println(s"Done Received SOAP")
@@ -72,6 +72,8 @@ class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
     }
     receivedSem.acquire
     nc.relatedConnector.deregister(closeId)
+    
+    */
     
   }
 
