@@ -27,6 +27,8 @@ import java.util.prefs.PreferenceChangeEvent
 import com.idyria.osi.vui.html.Input
 import com.idyria.osi.vui.html.Textarea
 import com.idyria.osi.ooxoo.core.buffers.datatypes.XSDStringBuffer
+import com.idyria.osi.ooxoo.core.buffers.datatypes.BooleanBuffer
+import scala.collection.mutable.Stack
 
 trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource {
 
@@ -257,7 +259,47 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   //-----------------------
 
   var actions = Map[String, (HTMLNode[HTMLElement, _], HTMLNode[HTMLElement, _] => Unit)]()
+  var actionName : Option[String] = None
+  var actionData = Stack[(String,String)]()
 
+   /**
+   * Action name
+   */
+  def withActionName(str:String)(cl: => Unit) = {
+     try {
+       this.actionName = Some(str)
+       cl
+     } finally {
+       this.actionName = None
+     }
+  }
+  
+  /**
+   *(name,fetchJavaScript)
+   */
+  def withActionData(data:(String,String)*)(cl: => Unit) = {
+    try {
+      data.foreach { tuple => this.actionData.push(tuple)}
+      cl
+    } finally {
+      data.foreach { tuple => this.actionData.pop}
+    }
+  }
+  
+  /**
+   * Return empty array if necessary
+   */
+  def actionDataToJSArray = {
+   /* this.actionData.size match {
+      case 
+    }*/
+    this.actionData.map {
+     // case (name,js) => s"""{'name': '$name','expr': '$js'}"""
+       //case (name,js) => s"""'$name','$js'"""
+       case (name,js) => s"""${name}:'$js'"""
+    }.mkString("{",",","}")
+  }
+  
   def registerAction(id: String)(n: HTMLNode[HTMLElement, _])(actionCl: HTMLNode[HTMLElement, _] => Unit): Unit = {
     this.actions = this.actions + (id -> (n, actionCl))
   }
@@ -268,8 +310,11 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
 
     //-- Get Hash code
     val node = currentNode
-    var code = codeprefix + "" + node.hashCode()
-    //var code = cl.hashCode()
+    var code = this.actionName match {
+      case Some(name) => name
+      case None =>  codeprefix + "" + node.hashCode()
+    }
+
 
     //-- Register 
     var v = this
@@ -296,6 +341,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   
   implicit def strToURI(str:String) : URI = new URI(str)
 
+ 
 
   def onClickReload(cl: => Unit) = {
     reload
@@ -394,9 +440,20 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   }
 
   def onKeyTyped(cl: Char => Unit) = {
-
+  
+    
     var actionCode = this.getActionString({ cl('a') }, "onkeyup")
     +@("onkeyup" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}',noUpdate=true)").noDoubleSlash)
+  }
+  def onFilteredKeyTyped(filters:String*)(cl: Char => Unit) = {
+  
+    //-- Get Path
+    var actionCode = this.getActionString({ cl('a') }, "onkeydown")
+    
+    //-- Get Data
+    //var data = 
+    
+    +@("onkeydown" -> (s"localWeb.filteredKeyTyped(event,this,[${filters.map {f =>s"function (e){return $f;}" }.mkString(",")}],'${createSpecialPath("action", actionCode)}',${actionDataToJSArray})").noDoubleSlash)
   }
 
   override def onClick(cl: => Unit): Unit = {
@@ -758,7 +815,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   /**
    * BindValue with Buffers
    */
-  def bindValue(vb: IntegerBuffer): Unit = {
+  def bindBufferValue(vb: IntegerBuffer): Unit = {
 
     +@("value" -> vb.toString())
     this.bindValue {
@@ -771,11 +828,27 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
    /**
    * BindValue with Buffers
    */
-  def bindValue(vb: XSDStringBuffer): Unit = {
+  def bindBufferValue(vb: XSDStringBuffer): Unit = {
 
     +@("value" -> vb.toString())
     this.bindValue {
       v: String =>
+        vb.data = v
+       
+    }
+
+  }
+  
+  def bindBufferValue(vb: BooleanBuffer): Unit = {
+
+    vb.data.booleanValue() match {
+      case true => 
+         +@("checked" ->"true")
+      case false => 
+    }
+   
+    this.bindValue {
+      v: Boolean =>
         vb.data = v
        
     }

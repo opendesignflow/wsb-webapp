@@ -10,10 +10,23 @@ localWeb.callAction = function(sender, path,data) {
 
 	console.info("Running action, sending remote request for " + path);
 
-	data.format = "json";
+	//-- Make data real format
+	var sendData = {};
+	sendData.format = "json";
+	$(data).each(function(key,val) {
+		
+		var key = Object.keys(val)[0]
+		var valScript = Object.values(val)[0]
+		console.log("Function name: "+valScript);
+		
+		var val = window["'"+valScript+"'"](sender);
+		 //= eval(valScript);
+	
+		console.log("Sending data: "+key+", value: "+val);
+	});
 	
 	$(sender).prop('disabled', true);
-	var deffered = $.get(path,data);
+	var deffered = $.get(path,sendData);
 	deffered.done(function(data) {
 		console.log("Done...");
 		$(sender).prop('disabled', false);
@@ -22,16 +35,50 @@ localWeb.callAction = function(sender, path,data) {
 			$("body").html(data);
 		}
 
-		if ($(sender).attr("reload") != "") {
+		if ($(sender).attr("reload")) {
+			
 			location.reload();
 		}
 
 	});
 	deffered.fail(function(data) {
+		$(sender).prop('disabled', false);
 		console.log("Error in action ");
 		localWeb.faultFor(sender, data.responseText);
 	});
 
+};
+
+
+localWeb.filteredKeyTyped = function(event,source,filters,path,data) {
+	
+	//-- Filter
+	var accept = true;
+	$(filters).each(function(i,cl) {
+		 if (!cl(event)) {
+			 accept = false;
+			 
+		 }
+	});
+	
+	
+	
+	//-- send message
+	if (accept) {
+		
+		//-- Take care or data
+		console.log("Action data: "+data);
+		
+		event.preventDefault();
+		event.stopPropagation();
+		console.log("Accepted action....");
+		localWeb.callAction(source,path,data);
+		return false;
+	} else {
+		console.log("Action refused");
+		return true;
+	}
+	
 };
 
 /**
@@ -66,6 +113,7 @@ localWeb.buttonClick = function(button, id,noUpdate=false) {
 	});
 	deffered.fail(function(data) {
 		console.log("Error in action ");
+		$(sender).prop('disabled', false);
 		localWeb.faultFor(button, data.responseText);
 	});
 
@@ -252,6 +300,9 @@ localWeb.makeEventConnection = function() {
 	
 	
 };
+
+
+
 
 /*
  * Function: f(payload)
