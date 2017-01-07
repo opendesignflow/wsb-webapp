@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.idyria.osi.wsb</groupId>
 	<artifactId>wsb-webapp</artifactId>
-	<version>2.0.0-SNAPSHOT</version>
+	<version>2.0.0</version>
 	<inceptionYear>2013</inceptionYear>
 	<name>WSB Webapp</name>
 
@@ -49,12 +49,12 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-ooxoo-plugin</artifactId>
-				<version>3.1.2-SNAPSHOT</version>
+				<version>3.1.2</version>
 				<dependencies>
 					<dependency>
 						<groupId>com.idyria.osi.wsb</groupId>
 						<artifactId>wsb-core</artifactId>
-						<version>3.2.0-SNAPSHOT</version>
+						<version>3.2.0</version>
 					</dependency>
 				</dependencies>
 				<executions>
@@ -217,12 +217,12 @@
 		<dependency>
 			<groupId>com.idyria.osi.ooxoo</groupId>
 			<artifactId>ooxoo-db</artifactId>
-			<version>3.1.2-SNAPSHOT</version>
+			<version>3.1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.idyria.osi.wsb</groupId>
 			<artifactId>wsb-core</artifactId>
-			<version>3.2.0-SNAPSHOT</version>
+			<version>3.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.idyria.osi.java-utils</groupId>
@@ -266,7 +266,7 @@
 		<dependency>
 			<groupId>com.idyria.osi.vui2</groupId>
 			<artifactId>vui2-html</artifactId>
-			<version>2.0.0-SNAPSHOT</version>
+			<version>2.0.0</version>
 		</dependency>
 		<!-- <dependency> -->
 		<!-- <groupId>com.idyria.osi.vui2</groupId> -->
