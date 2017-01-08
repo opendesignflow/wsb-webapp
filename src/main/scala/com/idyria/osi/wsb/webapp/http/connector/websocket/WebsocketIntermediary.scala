@@ -2,7 +2,6 @@ package com.idyria.osi.wsb.webapp.http.connector.websocket
 
 import com.idyria.osi.wsb.webapp.http.message.HTTPIntermediary
 import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
-import uni.hd.cag.utils.security.sha1.SHA1Utils
 import java.util.Base64
 
 class WebsocketIntermediary extends HTTPIntermediary {
