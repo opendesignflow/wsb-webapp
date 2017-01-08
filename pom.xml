@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.odfi.wsb</groupId>
 	<artifactId>wsb-webapp</artifactId>
-	<version>2.1.0</version>
+	<version>2.1.1-SNAPSHOT</version>
 	<inceptionYear>2013</inceptionYear>
 	<name>WSB Webapp</name>
 
