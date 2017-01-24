@@ -517,7 +517,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
       case true => v
       case false =>
         try {
-          LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]], true)
+          LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]], listen = false)
         } catch {
           case e: Throwable =>
             e.printStackTrace()
