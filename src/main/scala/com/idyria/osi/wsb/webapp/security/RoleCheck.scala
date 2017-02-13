@@ -45,7 +45,7 @@ class RoleCheck extends AuthenticateRule with TLogSource {
 
            
             // Take user and search
-            var user = request.getSession[User]("user").get
+            var user = request.getSession.get[User]("user").get
 
              println(s"Checking role $roleToCheck to ${user.roles.map { sr =>sr.roleId.toString }}")
             

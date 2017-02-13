@@ -101,7 +101,7 @@ abstract class IdentityController {
     //  -> federate identities
     //  -> otherwise authenticate
     //-------------
-    request.getSession[User]("user") match {
+    request.getSession.get[User]("user") match {
       case Some(user: User) =>
 
         // If no federated identity have the same provider as this one, just record
@@ -135,7 +135,7 @@ abstract class IdentityController {
           case Some(user) =>
 
             println(s"Found loaded user")
-            request.getSession("user" -> user)
+            request.getSession.get("user" -> user)
 
             ""
 
@@ -143,7 +143,7 @@ abstract class IdentityController {
           case None =>
 
             println(s"Switching to register view")
-            request.getSession("token" -> token)
+            request.getSession.get("token" -> token)
             registerViewId
 
         }
@@ -158,18 +158,18 @@ abstract class IdentityController {
     def execute(application: WebApplication, request: HTTPRequest): String = {
 
       try {
-        request.getSession[User]("user") match {
+        request.getSession.get[User]("user") match {
           case Some(user) =>
-            federateIdentity(request, user, request.getSession[AuthToken]("token").get)
+            federateIdentity(request, user, request.getSession.get[AuthToken]("token").get)
 
           case None =>
-            createIdentity(request, request.getSession[AuthToken]("token").get)
-            doAuthenticated(request, request.getSession[AuthToken]("token").get)
+            createIdentity(request, request.getSession.get[AuthToken]("token").get)
+            doAuthenticated(request, request.getSession.get[AuthToken]("token").get)
         }
 
       } finally {
         // Remove auth token to reset state
-        request.getSession.values = request.getSession.values - "token"
+        request.getSession.get.values = request.getSession.get.values - "token"
       }
 
     }

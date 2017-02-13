@@ -13,7 +13,7 @@ class SessionIntermediary extends HTTPIntermediary {
     logFine[SessionIntermediary](s"Taking care of session...")
     var s = req.getSession
 
-    logFine[SessionIntermediary](s"Session Number: " + s.id)
+    logFine[SessionIntermediary](s"Session Number: " + s.get.id)
   }
   this.onUpMessage[HTTPResponse] { resp =>
     

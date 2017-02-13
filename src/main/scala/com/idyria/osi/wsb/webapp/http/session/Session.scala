@@ -53,17 +53,18 @@ class Session(var id: String, var host: String) extends TLogSource {
 
   }
 
-  def apply[T<:Any](name: String): Option[T] = {
+  def apply[T <: Any](name: String): Option[T] = {
 
     logFine(s"[Session] Searching value from id $id and instance ${hashCode}")
     this.values.get(name).asInstanceOf[Option[T]]
   }
-  
+
   /**
    * Clear a key in the values
    */
-  def clear(name:String)  = values.contains(name) match {
-    case true => values = values - name; true
+  def clear(name: String) = values.contains(name) match {
+    case true =>
+      values = values - name; true
     case false => false
   }
 
@@ -83,14 +84,29 @@ object Session extends TLogSource {
 
   var longGenerator = new com.idyria.osi.tea.random.UniqueLongGenerator
 
+  def sessionDefined(message: HTTPRequest): Boolean = {
+
+    message.session.isDefined match {
+      case true => true
+      case false =>
+
+        // Return true if already in map
+        message.cookies.get("SSID") match {
+          case Some(ssid) => sessions.contains(ssid)
+          case None => false
+        }
+    }
+
+  }
+
   /**
    * Creates a new Session, or returns an existing one for the user
    */
   def apply(message: HTTPRequest): Session = {
 
     // Return if existing
-    if (message.session != null)
-      return message.session
+    if (message.session.isDefined)
+      return message.session.get
 
     // Return if already in map
     message.cookies.get("SSID") match {

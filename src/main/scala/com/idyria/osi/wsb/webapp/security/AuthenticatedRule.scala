@@ -35,7 +35,7 @@ class AuthenticatedRule extends NavigationRule {
 
   def evaluate(application: WebApplication, request: HTTPRequest): Boolean = {
 
-    request.getSession("token") match {
+    request.getSession.get("token") match {
       case Some(authenticated) =>
 
         println("[Authenticated] Yes")
@@ -81,7 +81,7 @@ class IdentifiedRule extends NavigationRule {
 
   def evaluate(application: WebApplication, request: HTTPRequest): Boolean = {
 
-    request.getSession("user") match {
+    request.getSession.get("user") match {
       case Some(authenticated) =>
 
         println("[Authenticated] Yes")

@@ -121,7 +121,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   }
 
   def getViewForRequest(req: HTTPRequest) = {
-    this.viewPool.get(req.getSession) match {
+    this.viewPool.get(req.getSession.get) match {
       case Some(view) =>
         view.request = Some(req)
         Some(view)
@@ -238,11 +238,11 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         if (req.upped) {
           logFine[SingleViewIntermediary](s"Websocket opened")
           var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
-          websocketPool.update(req.getSession, interface)
+          websocketPool.update(req.getSession.get, interface)
 
-          req.networkContext.on("close") {
+          req.networkContext.get.on("close") {
 
-            websocketPool -= req.getSession
+            websocketPool -= req.getSession.get
             logFine[SingleViewIntermediary](s"Closing Websocket with state: ${req.networkContext}, remaning: " + websocketPool.size)
           }
           //-- Send ack 
@@ -448,7 +448,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         //-- Get View to call action on 
         //--------------------
-        var view = viewPool.getOrElseUpdate(req.getSession, {
+        var view = viewPool.getOrElseUpdate(req.getSession.get, {
 
           //  println(s"New view instance")
           var instance = viewClass.newInstance()
@@ -464,7 +464,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           instance.onWith("soap.send") {
             payload: ElementBuffer =>
 
-              websocketPool.get(req.getSession) match {
+              websocketPool.get(req.getSession.get) match {
                 case Some(interface) =>
 
                   interface.writeSOAPPayload(payload)
@@ -604,7 +604,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
     this.onDownMessage {
       req =>
-        req.getSession.validity.add(java.util.Calendar.MINUTE, 30)
+        req.getSession.get.validity.add(java.util.Calendar.MINUTE, 30)
     }
     this.onUpMessage[HTTPResponse] {
       m =>

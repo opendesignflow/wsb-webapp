@@ -40,9 +40,11 @@ trait HTTPMessage extends Message {
   /**
    * The current session if available
    */
-  var session: Session = null
+  var session: Option[Session] = None
 
-  def getSession: Session = session
+  def getSession  = session
+  
+  def hasSession = session.isDefined
 
   // Cookies
   //----------
@@ -132,6 +134,13 @@ class HTTPRequest(
 
     this.qualifier = s"http:${this.path}:$operation"
   }
+  
+  /**
+   * Changes the message path by removing a prefix
+   */
+  def stripPathPrefix(prefix:String) = {
+    changePath( path.stripPrefix(prefix))
+  }
 
   def toBytes = {
 
@@ -175,10 +184,12 @@ class HTTPRequest(
 
   // Session
   //-------------------
-  override def getSession: Session = {
-    this.session = Session(this)
+  override def getSession = {
+    this.session = Some(Session(this))
     this.session
   }
+  
+  override  def hasSession = Session.sessionDefined(this)
 
   // URL Parameters
   //-------------------------
@@ -276,6 +287,18 @@ class HTTPRequest(
     }
 
   }
+  
+  
+  // General Utilities
+  //------------------
+  def isLocalHost = {
+    this.getParameter("Host") match {
+      case Some(host) => host.contains("localhost") ||  host.contains("127.0.0.1") 
+      case None => false
+    }
+  }
+  
+  
 }
 
 object HTTPRequest extends MessageFactory with TLogSource {
@@ -346,7 +369,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
     //-- Destination URL is a network context parameter
     //-----------------------
-    var ctx = new TCPNetworkContext("tcp+http+http://" + url.getHost())
+    var ctx =Some( new TCPNetworkContext("tcp+http+http://" + url.getHost()))
     request.networkContext = ctx
 
     request
@@ -512,10 +535,10 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
     }
 
     var sessionId = ""
-    if (this.getSession != null) {
+    if (this.getSession.isDefined) {
 
       //sessionId = s"""Set-Cookie: SSID=${this.getSession.id}; Domain=${this.getSession.host}; Path=${this.getSession.path}; Expires=${this.getSession.validityString};"""
-      sessionId = s"""Set-Cookie: SSID=${this.getSession.id}; Path=${this.getSession.path}; Expires=${this.getSession.validityString};"""
+      sessionId = s"""Set-Cookie: SSID=${this.getSession.get.id}; Path=${this.getSession.get.path}; Expires=${this.getSession.get.validityString};"""
 
       //sessionId = s"""Set-Cookie: SSID=${this.getSession.id}; Expires=${this.getSession.validityString};"""
       //sessionId = s"""Set-Cookie: SSID=${this.getSession.id};"""
@@ -689,6 +712,18 @@ object HTTPResponse extends MessageFactory with TLogSource {
     r.content = ByteBuffer.wrap(content.getBytes)
     r
 
+  }
+  
+  //-- Standard codes
+  def c503 = {
+    var resp = new HTTPResponse
+    resp.code = 503
+    resp
+  }
+  def c404 = {
+    var resp = new HTTPResponse
+    resp.code = 404
+    resp
   }
 
 }
