@@ -20,8 +20,8 @@ class SessionIntermediary extends HTTPIntermediary {
     //println(s"Got Response to answer with " -> resp.relatedMessage)
     
     resp.relatedMessage match {
-      case null =>
-      case req: HTTPRequest if (req.session != null) =>
+      case None =>
+      case Some(req: HTTPRequest) if (req.session.isDefined) =>
         resp.session = req.getSession
       case _ =>
     }
