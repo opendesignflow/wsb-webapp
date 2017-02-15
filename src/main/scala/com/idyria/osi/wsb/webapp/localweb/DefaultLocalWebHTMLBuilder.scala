@@ -452,7 +452,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     +@("onkeydown" -> (s"localWeb.filteredKeyTyped(event,this,[${filters.map { f => s"function (e){return $f;}" }.mkString(",")}],'${createSpecialPath("action", actionCode)}',${actionDataToJSArray})").noDoubleSlash)
   }
 
-  override def onClick(cl: => Unit): Unit = {
+  def onClick(cl: => Unit): Unit = {
 
     var actionCode = this.getActionString(cl)
     +@("onclick" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}')").noDoubleSlash)
