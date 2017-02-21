@@ -11,7 +11,7 @@
 	<parent>
 		<groupId>org.odfi</groupId>
 		<artifactId>superpom-scala</artifactId>
-		<version>2.12.1.r2</version>
+		<version>2.12.1.r4</version>
 	</parent>
 
 	<!-- SCM -->
@@ -201,16 +201,17 @@
 
 
 	<dependencies>
-		<dependency>
-			<groupId>org.odfi.ooxoo</groupId>
-			<artifactId>ooxoo-db</artifactId>
-			<version>3.2.2</version>
-		</dependency>
+		
 		<dependency>
 			<groupId>org.odfi.wsb</groupId>
 			<artifactId>wsb-core</artifactId>
 			<version>3.3.1-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+            <groupId>org.odfi.ooxoo</groupId>
+            <artifactId>ooxoo-db</artifactId>
+            <version>3.2.3-SNAPSHOT</version>
+        </dependency>
 <!-- 		<dependency> -->
 <!-- 			<groupId>com.idyria.osi.java-utils</groupId> -->
 <!-- 			<artifactId>security-utils</artifactId> -->
