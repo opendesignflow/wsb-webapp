@@ -38,7 +38,7 @@ abstract class IdentityController {
   // Roles and stuff
   //------------------------
 
-  var securityConfig = database.container("security").document[SecurityConfig]("config.xml")
+  var securityConfig = database.container("security").documentFromClass[SecurityConfig]("config.xml")
 
   // Providers configuration
   //-----------------
