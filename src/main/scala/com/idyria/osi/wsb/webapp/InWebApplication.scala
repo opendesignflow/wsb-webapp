@@ -3,8 +3,9 @@ package com.idyria.osi.wsb.webapp
 import com.idyria.osi.tea.listeners.ListeningSupport
 import com.idyria.osi.wsb.core.broker.tree.Intermediary
 import com.idyria.osi.wsb.webapp.http.message.HTTPMessage
+import com.idyria.osi.wsb.webapp.http.message.HTTPIntermediary
 
-trait InWebApplication extends Intermediary[HTTPMessage] with ListeningSupport {
+trait InWebApplication extends HTTPIntermediary with ListeningSupport {
 
   //-- Required context webapplication
   var application: WebApplication = null

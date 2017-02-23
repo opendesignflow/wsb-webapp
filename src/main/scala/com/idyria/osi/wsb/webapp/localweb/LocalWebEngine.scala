@@ -41,6 +41,7 @@ import com.idyria.osi.wsb.core.message.soap.FaultCode_Value
 import com.idyria.osi.ooxoo.lib.json.JsonIO
 import com.idyria.osi.wsb.core.message.Message
 import com.idyria.osi.ooxoo.core.buffers.structural.AnyXList
+import org.w3c.dom.html.HTMLElement
 
 @xelement
 class Ack extends ElementBuffer {
@@ -57,7 +58,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   // Init -> Compile View once, and be ready for replacements 
   var mainViewInstance = try {
-    LocalWebHTMLVIewCompiler.createView(None, viewClass, true)
+    LocalWebHTMLVIewCompiler.createView(None, viewClass,listen =  false)
   } catch {
     case e: Throwable =>
       e.printStackTrace();
@@ -98,6 +99,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           instance.onWith("soap.send") {
             payload: ElementBuffer =>
 
+              println(s"WS Send: "+payload)
               websocketPool.get(session) match {
                 case Some(interface) =>
                   interface.writeSOAPPayload(payload)
@@ -165,7 +167,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   //-- Refuse upped messages
   //---------------
-  this.acceptDown { r => !r.upped }
+  this.acceptDown[HTTPRequest] { r => !r.upped }
 
   //-- Resources 
   //-----------------
@@ -236,8 +238,8 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
 
         if (req.upped) {
-          logFine[SingleViewIntermediary](s"Websocket opened")
-          var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
+          logFine[SingleViewIntermediary](s"Websocket opened for: "+req.getSession)
+          var interface = new WebsocketInterface(req.networkContext.get.asInstanceOf[TCPNetworkContext])
           websocketPool.update(req.getSession.get, interface)
 
           req.networkContext.get.on("close") {
@@ -245,7 +247,11 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
             websocketPool -= req.getSession.get
             logFine[SingleViewIntermediary](s"Closing Websocket with state: ${req.networkContext}, remaning: " + websocketPool.size)
           }
+          
+          
           //-- Send ack 
+          logFine[SingleViewIntermediary](s"Sending HearthBeat acknowledge")
+          Thread.sleep(500) // Wait a bit to let webpage finish loading js
           //println(s"Say Hello");
           var hb = new HeartBeat
           hb.time = System.currentTimeMillis()
@@ -335,7 +341,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
                   //-- ReRender, but get only body
                   if (node.attribute("reRender") != "") {
-                    r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[_, _]]).get.asInstanceOf[HTMLNode[_, HTMLNode[_, _]]]
+                    r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[HTMLElement, _]]).get.asInstanceOf[HTMLNode[HTMLElement, _]]
                   } else {
                     r.contentType = "text/plain"
                     r.content = ByteBuffer.wrap("OK".getBytes)
@@ -432,7 +438,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   this <= new HTTPIntermediary {
 
-    this.acceptDown { r =>
+    this.acceptDown[HTTPRequest] { r =>
       // println(s"Comparing: " + s"/$basePath".noDoubleSlash + " with " + r.path.toString)
       //!r.upped && r.path.toString.startsWith(s"/$basePath".noDoubleSlash)
       !r.upped && (r.path.toString == "/")
@@ -464,12 +470,19 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           instance.onWith("soap.send") {
             payload: ElementBuffer =>
 
+              
+              //println(s"WS Send: "+payload+"->"+req.getSession)
+              /*websocketPool.foreach {
+                case (k,v) => 
+                  println(s"Session with socket:"+k)
+              }*/
               websocketPool.get(req.getSession.get) match {
                 case Some(interface) =>
 
+                  //println(s"Writing")
                   interface.writeSOAPPayload(payload)
                   interface.catchNextDone
-
+                 //  println(s"Done")
                 case None =>
               }
 
@@ -483,7 +496,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         })
         view.request = Some(req)
 
-        logFine[SingleViewIntermediary](s"rendering")
+        logFine[SingleViewIntermediary](s"rendering: "+req.getSession)
 
         var r = new HTTPResponse();
         try {
@@ -507,7 +520,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   // Errors 
   //--------------------
   this <= new HTTPIntermediary {
-    this.acceptDown { r => r.errors.size > 0 }
+    this.acceptDown[HTTPRequest] { r => r.errors.size > 0 }
 
     this.onDownMessage { 
       req =>
@@ -553,7 +566,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   // 404 no Found
   //-------------
   this <= new HTTPIntermediary {
-    this.acceptDown { r => !r.upped }
+    this.acceptDown[HTTPRequest] { r => !r.upped }
 
     this.onDownMessage { req =>
 

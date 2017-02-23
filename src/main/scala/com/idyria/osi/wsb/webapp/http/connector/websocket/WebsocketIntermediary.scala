@@ -3,10 +3,12 @@ package com.idyria.osi.wsb.webapp.http.connector.websocket
 import com.idyria.osi.wsb.webapp.http.message.HTTPIntermediary
 import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
 import java.util.Base64
+import com.idyria.osi.wsb.webapp.http.message.HTTPMessage
+import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 
 class WebsocketIntermediary extends HTTPIntermediary {
 
-  this.acceptDown { req =>
+  this.acceptDown[HTTPRequest] { req =>
     (req.getParameter("Connection"),req.getParameter("Upgrade"), req.getParameter("Sec-WebSocket-Version")) match {
 
       case (Some(conn),Some(protocol), Some("13")) if(conn.toLowerCase().contains("upgrade") && protocol.toLowerCase()=="websocket") => true

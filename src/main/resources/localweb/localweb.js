@@ -225,13 +225,6 @@ localWeb.makeEventConnection = function() {
 		if (localWeb.debug == true) {
 			console.log('Connection Done');
 			
-			localWeb.onPushData("HeartBeat",function(hb) {
-				
-				console.log("Got Heartbeat");
-				
-				
-			});
-			
 			
 			//Update text
 			//-------------------
@@ -426,6 +419,14 @@ localWeb.fileDrop = function(event,action) {
 
 console.info("Welcome to localweb JS..." + window.location.pathname);
 localWeb.makeEventConnection();
+
+
+localWeb.onPushData("HeartBeat",function(hb) {
+	
+	console.log("Got Heartbeat");
+	
+	
+});
 
 
 

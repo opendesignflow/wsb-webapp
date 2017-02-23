@@ -6,7 +6,7 @@ class HTTPPathIntermediary(var basePath: String) extends HTTPIntermediary {
   require(basePath != null)
   basePath = ("/" + basePath).replaceAll("//+", "/")
 
-  acceptDown { message =>
+  acceptDown[HTTPRequest] { message =>
     logFine[HTTPPathIntermediary](s"Testing message with path: " + message.path + " against " + basePath)
     message.path.startsWith(basePath)
   }

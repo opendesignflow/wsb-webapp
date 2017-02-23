@@ -34,6 +34,7 @@ import java.io.ByteArrayInputStream
 import java.util.zip.GZIPInputStream
 import java.io.ByteArrayOutputStream
 import com.idyria.osi.vui.html.HTMLNode
+import org.w3c.dom.html.HTMLElement
 
 trait HTTPMessage extends Message {
 
@@ -598,13 +599,17 @@ $sessionId
 
   // Content
   //--------------
-  def htmlContent_=(h: HTMLNode[_, HTMLNode[_, _]]): Unit = {
+  var __htmlContent : Option[HTMLNode[HTMLElement, _]] = None
+  
+  def htmlContent_=(h: HTMLNode[HTMLElement, _]): Unit = {
+    __htmlContent = Some(h)
     this.contentType = "text/html"
     this.content = ByteBuffer.wrap(h.toString().getBytes)
+    htmlContent
   }
 
   // Dummy
-  def htmlContent: HTMLNode[_, HTMLNode[_, _]] = null
+  def htmlContent = __htmlContent
   
   
   def setTextContent(str:String) = {
