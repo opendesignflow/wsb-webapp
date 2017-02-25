@@ -19,7 +19,7 @@ class HTTPContentTypeTest extends FunSuite with GivenWhenThen {
    // TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
 
     //-- Read Response and print
-    var bytes = Source.fromInputStream(getClass().getClassLoader().getResourceAsStream("com.idyria.osi.wsb.webapp.http/stream.bin")).grouped(2).map {
+    var bytes = Source.fromInputStream(getClass().getResourceAsStream("stream.bin")).grouped(2).map {
       hex =>
         Integer.parseInt(hex.mkString, 16)
     }.map(_.toByte).toArray
@@ -51,7 +51,7 @@ class HTTPContentTypeTest extends FunSuite with GivenWhenThen {
     //TLog.setLevel(classOf[HTTPProtocolHandler], TLog.Level.FULL)
 
     //-- Read Response and print
-    var bytes = Source.fromInputStream(getClass().getClassLoader().getResourceAsStream("com.idyria.osi.wsb.webapp.http/stream.bin")).grouped(2).map {
+    var bytes = Source.fromInputStream(getClass().getResourceAsStream("stream.bin")).grouped(2).map {
       hex =>
         Integer.parseInt(hex.mkString, 16)
     }.map(_.toByte).toArray
