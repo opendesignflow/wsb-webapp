@@ -763,7 +763,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
     //-- Create Frame
     GraphicsEnvironment.isHeadless() match {
-      case true =>
+      case false =>
         uiFrame match {
           case Some(frame) =>
             frame.setVisible(true)
@@ -785,7 +785,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
             f.setVisible(true)
             f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
         }
-      case false =>
+      case true =>
     }
 
   }
