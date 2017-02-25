@@ -11,6 +11,7 @@ import com.idyria.osi.wsb.webapp.mime.MimePart
 import com.idyria.osi.wsb.webapp.mime.DefaultMimePart
 import com.idyria.osi.wsb.webapp.http.message.HTTPMessage
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
+import org.scalatest.Ignore
 
 class HTTPContentTypeTest extends FunSuite with GivenWhenThen {
 
@@ -85,6 +86,7 @@ class HTTPContentTypeTest extends FunSuite with GivenWhenThen {
 
   }
   
+  /*
   test("Fast parse Multipart") {
     
     var mp = new DefaultMimePart
@@ -170,6 +172,6 @@ Content-Disposition: form-data; name="eaction"
     
     
     
-  }
+  }*/
 
 }
