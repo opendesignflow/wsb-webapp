@@ -24,6 +24,7 @@ package com.idyria.osi.wsb.webapp.http.session
 import com.idyria.osi.wsb.webapp.http.message._
 import java.util.TimeZone
 import com.idyria.osi.tea.logging.TLogSource
+import scala.reflect.ClassTag
 
 /**
  * Persistent memory accross requests for a user
@@ -74,6 +75,19 @@ class Session(var id: String, var host: String) extends TLogSource {
   def validityString: String = {
     //String.format("%tc", this.validity);
     String.format("%1$ta,%1$td-%1$tb-%1$tY %1$tT GMT", this.validity);
+  }
+  
+  
+  // Values utils
+  //------------
+  def findValueOfType[T](implicit tag : ClassTag[T]) = {
+    this.values.find {
+      case (k,v:T) => true
+      case other => false
+    } match {
+      case None => None
+      case Some((k,v:T)) => Some(k,v)
+    }
   }
 
 }

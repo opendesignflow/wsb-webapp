@@ -516,7 +516,7 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
   def toBytes: ByteBuffer = {
 
     var headerLines = List[String]()
-    headerLines = headerLines :+ s"HTTP/1.1 ${HTTPErrorCodes.codeToStatus(code)}"
+    headerLines = headerLines :+ s"HTTP/1.1 ${HTTPCodes.codeToStatus(code)}"
 
     // Add Standard Parameters
     //-----------------------------------
