@@ -11,7 +11,7 @@
 	<parent>
 		<groupId>org.odfi</groupId>
 		<artifactId>superpom-scala</artifactId>
-		<version>2.12.1.r7</version>
+		<version>2.12.1.r9</version>
 	</parent>
 
 	<!-- SCM -->
@@ -158,7 +158,7 @@
 			</snapshots>
 			<id>odfi.central</id>
 			<name>plugins-release</name>
-			<url>https://www.opendesignflow.org/maven/repository/internal/</url>
+			<url>http://www.opendesignflow.org/maven/repository/internal/</url>
 		</pluginRepository>
 		<pluginRepository>
 			<snapshots>
@@ -166,7 +166,7 @@
 			</snapshots>
 			<id>odfi.snapshots</id>
 			<name>plugins-snapshot</name>
-			<url>https://www.opendesignflow.org/maven/repository/snapshots/</url>
+			<url>http://www.opendesignflow.org/maven/repository/snapshots/</url>
 		</pluginRepository>
 	</pluginRepositories>
 	<repositories>
@@ -187,7 +187,7 @@
 			</snapshots>
 			<id>odfi.central</id>
 			<name>odfi-release</name>
-			<url>https://www.opendesignflow.org/maven/repository/internal/</url>
+			<url>http://www.opendesignflow.org/maven/repository/internal/</url>
 		</repository>
 		<repository>
 			<snapshots>
@@ -195,7 +195,7 @@
             </snapshots>
 			<id>odfi.snapshots</id>
 			<name>odfi-snapshot</name>
-			<url>https://www.opendesignflow.org/maven/repository/snapshots/</url>
+			<url>http://www.opendesignflow.org/maven/repository/snapshots/</url>
 		</repository>
 	</repositories>
 
