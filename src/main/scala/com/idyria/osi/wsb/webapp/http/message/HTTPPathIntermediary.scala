@@ -2,13 +2,16 @@ package com.idyria.osi.wsb.webapp.http.message
 
 class HTTPPathIntermediary(var basePath: String) extends HTTPIntermediary {
 
+  //tlogEnableFull[HTTPPathIntermediary]
+  
   // Make sure basePath has no double slash
   require(basePath != null)
   basePath = ("/" + basePath).replaceAll("//+", "/")
 
   acceptDown[HTTPRequest] { message =>
-    logFine[HTTPPathIntermediary](s"Testing message with path: " + message.path + " against " + basePath)
-    message.path.startsWith(basePath)
+    val res =  message.path.startsWith(basePath)
+    logFine[HTTPPathIntermediary](s"($res)Testing message with path: " + message.originalPath + " against " + basePath +" , subtree: "+this.intermediaries.filter{i => i.isInstanceOf[HTTPPathIntermediary]}.map {i => i.asInstanceOf[HTTPPathIntermediary].basePath})
+    res
   }
 
   this.onDownMessage {

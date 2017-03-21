@@ -114,6 +114,13 @@ class HTTPRequest(
 
     case None =>
   }
+  
+  //-- Allow removing url parameters
+  def removeURLParameter(name:String) = this.urlParameters.get(name) match {
+    case None => 
+    case Some(v) => 
+      this.urlParameters = this.urlParameters - name
+  }
 
   //-- Ensure path has no URL parameters
   this.path = this.path.split("""\?""").head
@@ -185,9 +192,11 @@ class HTTPRequest(
 
   // Session
   //-------------------
-  override def getSession = {
-    this.session = Some(Session(this))
-    this.session
+  override def getSession = this.session match {
+    case Some(s) => Some(s)
+    case None => 
+      this.session = Some(Session(this))
+      this.session
   }
   
   override  def hasSession = Session.sessionDefined(this)

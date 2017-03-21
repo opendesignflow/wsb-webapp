@@ -25,7 +25,7 @@ import com.idyria.osi.wsb.core.broker.tree.MessageIntermediary
 
 import scala.reflect._
 
-class HTTPIntermediary extends MessageIntermediary[HTTPRequest] {
+trait HTTPIntermediary extends MessageIntermediary[HTTPRequest] {
 
   val ttag = classTag[HTTPRequest]
 
