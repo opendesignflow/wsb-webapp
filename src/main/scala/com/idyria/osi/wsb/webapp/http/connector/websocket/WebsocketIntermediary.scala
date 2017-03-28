@@ -82,9 +82,12 @@ trait WebsocketIntermediary extends HTTPIntermediary {
           websocketPool.update(req.getSession.get, interface)
           
           req.networkContext.get.enableInputPayloadSignaling = true  
-          req.networkContext.get.on("close") {
-
-            websocketPool -= req.getSession.get
+          req.networkContext.get.onClose {
+ 
+            websocketPool.synchronized {
+               websocketPool -= req.getSession.get
+            }
+            //websocketPool -= req.getSession.get
             logFine[WebsocketIntermediary](s"Closing Websocket with state: ${req.networkContext}, remaning: " + websocketPool.size)
           }
 

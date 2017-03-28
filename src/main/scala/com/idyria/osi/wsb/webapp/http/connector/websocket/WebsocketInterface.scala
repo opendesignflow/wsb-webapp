@@ -31,7 +31,7 @@ class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
       // Send
       //---------------
       //println(s"Sending WS message");
-      nc.relatedConnector.send(ByteBuffer.wrap(res.getBytes), nc)
+      nc.relatedConnector.send(bytes, nc)
     }
   }
 
