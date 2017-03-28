@@ -80,7 +80,8 @@ trait WebsocketIntermediary extends HTTPIntermediary {
           logFine[WebsocketIntermediary](s"Websocket opened for: " + req.getSession)
           var interface = new WebsocketInterface(req.networkContext.get.asInstanceOf[TCPNetworkContext])
           websocketPool.update(req.getSession.get, interface)
-
+          
+          req.networkContext.get.enableInputPayloadSignaling = true  
           req.networkContext.get.on("close") {
 
             websocketPool -= req.getSession.get
