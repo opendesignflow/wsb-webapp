@@ -43,8 +43,8 @@ trait HTTPMessage extends Message {
    */
   var session: Option[Session] = None
 
-  def getSession  = session
-  
+  def getSession = session
+
   def hasSession = session.isDefined
 
   // Cookies
@@ -54,8 +54,6 @@ trait HTTPMessage extends Message {
 }
 
 object HTTPMessage extends MessageFactory {
-
-  
 
   def apply(data: Any): HTTPMessage = {
 
@@ -100,7 +98,22 @@ class HTTPRequest(
   path.split("""\?""").lastOption match {
 
     //-- Query part
-    case Some(queryPart) => queryPart.split("&").foreach("""([\w_-]+)=(.+)""".r.findFirstMatchIn(_) match {
+    case Some(queryPart) =>
+
+      queryPart.split("&").foreach {
+        parameterString =>
+
+          val splitValue = parameterString.split("=")
+          val name = splitValue(0)
+          val value = splitValue.length match {
+            case 1 => ""
+            //-- If a value is set, remove name from array and reconstruct in case the value has unencoded "="
+            case other => java.net.URLDecoder.decode(splitValue.drop(1).mkString("="), "UTF-8")
+          }
+          urlParameters.update(name, value)
+      }
+
+    /*queryPart.split("&").foreach("""([\w_-]+)=(.+)""".r.findFirstMatchIn(_) match {
 
       case Some(parameterMatch) =>
 
@@ -110,15 +123,15 @@ class HTTPRequest(
       //this.addParameter()
       case None =>
 
-    })
+    })*/
 
     case None =>
   }
-  
+
   //-- Allow removing url parameters
-  def removeURLParameter(name:String) = this.urlParameters.get(name) match {
-    case None => 
-    case Some(v) => 
+  def removeURLParameter(name: String) = this.urlParameters.get(name) match {
+    case None =>
+    case Some(v) =>
       this.urlParameters = this.urlParameters - name
   }
 
@@ -142,12 +155,12 @@ class HTTPRequest(
 
     this.qualifier = s"http:${this.path}:$operation"
   }
-  
+
   /**
    * Changes the message path by removing a prefix
    */
-  def stripPathPrefix(prefix:String) = {
-    changePath( path.stripPrefix(prefix))
+  def stripPathPrefix(prefix: String) = {
+    changePath(path.stripPrefix(prefix))
   }
 
   def toBytes = {
@@ -194,15 +207,30 @@ class HTTPRequest(
   //-------------------
   override def getSession = this.session match {
     case Some(s) => Some(s)
-    case None => 
+    case None =>
       this.session = Some(Session(this))
       this.session
   }
-  
-  override  def hasSession = Session.sessionDefined(this)
+
+  override def hasSession = Session.sessionDefined(this)
 
   // URL Parameters
   //-------------------------
+
+  /**
+   * @throws IllegalArgumentExeption if not all parameters are met
+   */
+  def ensureURLParameters(names: List[String]) = {
+
+    names.foreach {
+      p =>
+        this.getURLParameter(p) match {
+          case Some(found) =>
+          case None =>
+            throw new IllegalArgumentException(s"Required URL Parameter $p was not found ")
+        }
+    }
+  }
 
   /**
    * If the content type matches application/x-www-form-urlencoded
@@ -297,18 +325,16 @@ class HTTPRequest(
     }
 
   }
-  
-  
+
   // General Utilities
   //------------------
   def isLocalHost = {
     this.getParameter("Host") match {
-      case Some(host) => host.contains("localhost") ||  host.contains("127.0.0.1") 
+      case Some(host) => host.contains("localhost") || host.contains("127.0.0.1")
       case None => false
     }
   }
-  
-  
+
 }
 
 object HTTPRequest extends MessageFactory with TLogSource {
@@ -379,7 +405,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
     //-- Destination URL is a network context parameter
     //-----------------------
-    var ctx =Some( new TCPNetworkContext("tcp+http+http://" + url.getHost()))
+    var ctx = Some(new TCPNetworkContext("tcp+http+http://" + url.getHost()))
     request.networkContext = ctx
 
     request
@@ -608,8 +634,8 @@ $sessionId
 
   // Content
   //--------------
-  var __htmlContent : Option[HTMLNode[HTMLElement, _]] = None
-  
+  var __htmlContent: Option[HTMLNode[HTMLElement, _]] = None
+
   def htmlContent_=(h: HTMLNode[HTMLElement, _]): Unit = {
     __htmlContent = Some(h)
     this.contentType = "text/html"
@@ -619,13 +645,11 @@ $sessionId
 
   // Dummy
   def htmlContent = __htmlContent
-  
-  
-  def setTextContent(str:String) = {
+
+  def setTextContent(str: String) = {
     this.contentType = "text/plain"
-    this.content= ByteBuffer.wrap(str.getBytes)
+    this.content = ByteBuffer.wrap(str.getBytes)
   }
-  
 
 }
 object HTTPResponse extends MessageFactory with TLogSource {
@@ -727,7 +751,7 @@ object HTTPResponse extends MessageFactory with TLogSource {
     r
 
   }
-  
+
   //-- Standard codes
   def c503 = {
     var resp = new HTTPResponse
@@ -737,6 +761,12 @@ object HTTPResponse extends MessageFactory with TLogSource {
   def c404 = {
     var resp = new HTTPResponse
     resp.code = 404
+    resp
+  }
+  def temporaryRedirect(target:String) = {
+    var resp = new HTTPResponse
+    resp.code = HTTPCodes.Temporary_Redirect
+    resp.addParameter("Location",target)
     resp
   }
 
