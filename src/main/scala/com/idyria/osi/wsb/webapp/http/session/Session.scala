@@ -80,6 +80,25 @@ class Session(var id: String, var host: String) extends TLogSource {
   
   // Values utils
   //------------
+  
+  def removeValue(name:String) = synchronized {
+    
+    this.values.contains(name) match {
+      case true => 
+        this.values = this.values - name
+      case false =>
+    }
+    
+  }
+  
+  def hasValueOfNameAndType[T](name:String)(implicit tag : ClassTag[T]) =  {
+    this.values.get(name) match {
+      case Some(v) if (tag.runtimeClass.isInstance(v)) => true
+      case other => false
+    }
+  }
+  
+  
   def findValueOfType[T](implicit tag : ClassTag[T]) = {
     this.values.find {
       case (k,v:T) => true
