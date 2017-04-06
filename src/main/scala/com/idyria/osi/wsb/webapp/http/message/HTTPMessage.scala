@@ -84,9 +84,10 @@ class HTTPRequest(
     var path: String,
     var version: String) extends MimePart with HTTPMessage with TLogSource {
 
+    
   // Path and URL parameters separation
   //---------------------
-  path = path.replaceAll("//+", "/")
+
 
   var originalPath = this.path.split("""\?""").head
   def originalURL = "http://" + (this.getParameter("Host").get + "/" + originalPath).replace("//", "/")
@@ -128,6 +129,7 @@ class HTTPRequest(
     case None =>
   }
 
+
   //-- Allow removing url parameters
   def removeURLParameter(name: String) = this.urlParameters.get(name) match {
     case None =>
@@ -137,6 +139,9 @@ class HTTPRequest(
 
   //-- Ensure path has no URL parameters
   this.path = this.path.split("""\?""").head
+    
+  // Do this now and not earlier to avoid mangling of the path values (GET)
+  path = path.replaceAll("//+", "/")
 
   // Use Path as qualifier
   this.qualifier = s"http:$path:$operation"
