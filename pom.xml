@@ -26,6 +26,8 @@
 	<!-- #### -->
 	<properties>
 		<github.global.server>github</github.global.server>
+		<ooxoo.version>3.2.3-SNAPSHOT</ooxoo.version>
+		<wsb.version>3.3.1-SNAPSHOT</wsb.version>
 	</properties>
 
 	<organization>
@@ -49,12 +51,12 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-ooxoo-plugin</artifactId>
-				<version>3.2.2</version>
+				<version>${ooxoo.version}</version>
 				<dependencies>
 					<dependency>
 						<groupId>org.odfi.wsb</groupId>
 						<artifactId>wsb-core</artifactId>
-						<version>3.3.0</version>
+						<version>${wsb.version}</version>
 					</dependency>
 				</dependencies>
 				<executions>
@@ -193,7 +195,7 @@
 		<dependency>
 			<groupId>org.odfi.wsb</groupId>
 			<artifactId>wsb-core</artifactId>
-			<version>3.3.1-SNAPSHOT</version>
+			<version>${wsb.version}</version>
 		</dependency>
 		<dependency>
             <groupId>org.odfi.ooxoo</groupId>
