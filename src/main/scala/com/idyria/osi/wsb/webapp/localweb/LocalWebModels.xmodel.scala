@@ -10,7 +10,7 @@ import com.idyria.osi.ooxoo.model.ModelBuilder
   new producer(value = classOf[ScalaProducer]),
   new producer(value = classOf[MDProducer])))
 object LocalWebModels extends ModelBuilder {
-
+ 
   // Message Flow
   //---------------------
   "Done" is {

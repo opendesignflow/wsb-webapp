@@ -4,7 +4,6 @@ import com.idyria.osi.wsb.webapp.http.message.HTTPIntermediary
 import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
 import java.nio.ByteBuffer
 import java.net.URL
-import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import java.io.File
 import com.idyria.osi.wsb.webapp.http.message.HTTPPathIntermediary
