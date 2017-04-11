@@ -1,6 +1,9 @@
 package com.idyria.osi.wsb.webapp.http.message
 
-class HTTPPathIntermediary(var basePath: String) extends HTTPIntermediary {
+trait HTTPPathIntermediaryTrait extends HTTPIntermediary {
+  var basePath : String
+}
+class HTTPPathIntermediary(var basePath: String) extends HTTPPathIntermediaryTrait {
 
   //tlogEnableFull[HTTPPathIntermediary]
   
