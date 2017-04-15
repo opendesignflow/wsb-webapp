@@ -64,7 +64,7 @@ object HTTPMessage extends MessageFactory {
     //-- Request or Response?
     part.protocolLines(0) match {
       case response if (response.startsWith("HTTP")) => HTTPResponse(data)
-      case request => HTTPRequest(data)
+      case request                                   => HTTPRequest(data)
     }
 
   }
@@ -84,10 +84,8 @@ class HTTPRequest(
     var path: String,
     var version: String) extends MimePart with HTTPMessage with TLogSource {
 
-    
   // Path and URL parameters separation
   //---------------------
-
 
   var originalPath = this.path.split("""\?""").head
   def originalURL = "http://" + (this.getParameter("Host").get + "/" + originalPath).replace("//", "/")
@@ -107,7 +105,7 @@ class HTTPRequest(
           val splitValue = parameterString.split("=")
           val name = splitValue(0)
           val value = splitValue.length match {
-            case 1 => ""
+            case 1     => ""
             //-- If a value is set, remove name from array and reconstruct in case the value has unencoded "="
             case other => java.net.URLDecoder.decode(splitValue.drop(1).mkString("="), "UTF-8")
           }
@@ -129,7 +127,6 @@ class HTTPRequest(
     case None =>
   }
 
-
   //-- Allow removing url parameters
   def removeURLParameter(name: String) = this.urlParameters.get(name) match {
     case None =>
@@ -139,7 +136,7 @@ class HTTPRequest(
 
   //-- Ensure path has no URL parameters
   this.path = this.path.split("""\?""").head
-    
+
   // Do this now and not earlier to avoid mangling of the path values (GET)
   path = path.replaceAll("//+", "/")
 
@@ -154,7 +151,7 @@ class HTTPRequest(
    */
   def changePath(newPath: String) = {
     newPath.startsWith("/") match {
-      case true => this.path = newPath
+      case true  => this.path = newPath
       case false => this.path = "/" + newPath
     }
 
@@ -323,7 +320,7 @@ class HTTPRequest(
 
         """.+; boundary=(.+)\s*""".r.findFirstMatchIn(contentType) match {
           case Some(matched) => Option(matched.group(1))
-          case None => None
+          case None          => None
         }
 
       case _ => None
@@ -336,9 +333,19 @@ class HTTPRequest(
   def isLocalHost = {
     this.getParameter("Host") match {
       case Some(host) => host.contains("localhost") || host.contains("127.0.0.1")
-      case None => false
+      case None       => false
     }
   }
+
+  def isPOST = operation == "POST"
+  def isGET = operation == "GET"
+  def isPUT = operation == "PUT"
+  def isHEAD = operation == "HEAD"
+  def isDELETE = operation == "DELETE"
+  def isTRACE = operation == "TRACE"
+  def isOPTIONS = operation == "OPTIONS"
+  def isCONNECT = operation == "CONNECT"
+  def isPATCH = operation == "PATCH"
 
 }
 
@@ -394,7 +401,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
     //-- If some Query parameters, set the content type, length and add part
     url.getQuery() match {
       case null =>
-      case "" =>
+      case ""   =>
       case query =>
 
         //-- Set type
@@ -452,7 +459,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
           case "POST" =>
           //println(s"Post message content: ${new String(part.bytes)}");
 
-          case _ =>
+          case _      =>
         }
 
         // Add part ot message
@@ -565,14 +572,14 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
 
     contentType match {
       case null =>
-      case ct => headerLines = headerLines :+ s"Content-Type: $ct"
+      case ct   => headerLines = headerLines :+ s"Content-Type: $ct"
     }
 
     //headerLines = headerLines :+ "Cache-Control: no-cache"
 
     content match {
       case null =>
-      case c => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
+      case c    => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
     }
 
     var sessionId = ""
@@ -602,7 +609,7 @@ $sessionId
 """*/
     var header = content match {
       case null => headerLines.mkString("", "\r\n", "\r\n\r\n")
-      case _ => headerLines.mkString("", "\r\n", "\r\n\r\n")
+      case _    => headerLines.mkString("", "\r\n", "\r\n\r\n")
     }
 
     logFine(s"Response Headers: $header //")
@@ -611,7 +618,7 @@ $sessionId
     //-------------------
     var totalSize = content match {
       case null => header.getBytes.size
-      case _ => header.getBytes.size + content.capacity
+      case _    => header.getBytes.size + content.capacity
     }
 
     var res = ByteBuffer.allocateDirect(totalSize)
@@ -768,10 +775,10 @@ object HTTPResponse extends MessageFactory with TLogSource {
     resp.code = 404
     resp
   }
-  def temporaryRedirect(target:String) = {
+  def temporaryRedirect(target: String) = {
     var resp = new HTTPResponse
     resp.code = HTTPCodes.Temporary_Redirect
-    resp.addParameter("Location",target)
+    resp.addParameter("Location", target)
     resp
   }
 
