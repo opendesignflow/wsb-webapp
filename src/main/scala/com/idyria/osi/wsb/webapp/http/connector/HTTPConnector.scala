@@ -498,7 +498,7 @@ class HTTPProtocolHandler(var localContext: NetworkContext) extends ProtocolHand
           //-- Upgrade to Websocket
           case (Some(Tuple2(_, "Upgrade")), Some(Tuple2(_, "websocket"))) =>
 
-            println(s"Connector Update to websocket protocol detected")
+            //println(s"Connector Update to websocket protocol detected")
 
             // Record in Network Context the new protocol handler
             nc("protocol.handler" -> new WebsocketProtocolhandler(nc))

@@ -23,11 +23,15 @@ class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
     //-------------
     //var res = StAXIOBuffer(el, true)
     //println(s"Converting to JSON WS message");
+   
     var res = JsonIO(el, true)
-    var bytes = ByteBuffer.wrap(res.getBytes)
-    logInfo(s"Converting to JSON WS message: " + res)
+    //
+   // logInfo(s"Converting to JSON WS message: " + res)
     
-    nc.synchronized {
+    
+    
+     var bytes = ByteBuffer.wrap(res.getBytes)
+     nc.synchronized {
       // Send
       //---------------
       //println(s"Sending WS message");

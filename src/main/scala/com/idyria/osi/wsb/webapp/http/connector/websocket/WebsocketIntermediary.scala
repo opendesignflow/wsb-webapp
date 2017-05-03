@@ -26,7 +26,7 @@ trait WebsocketIntermediary extends HTTPIntermediary {
   
   this.acceptDown[HTTPRequest] { 
     req =>
-      println("Testing WS Intermediary request: ")
+      //println("Testing WS Intermediary request: ")
     (req.getParameter("Connection"), req.getParameter("Upgrade"), req.getParameter("Sec-WebSocket-Version")) match {
 
       case (Some(conn), Some(protocol), Some("13")) if (conn.toLowerCase().contains("upgrade") && protocol.toLowerCase() == "websocket") => true
@@ -38,7 +38,7 @@ trait WebsocketIntermediary extends HTTPIntermediary {
   //----------------------
   this.onDownMessage {
     req =>
-      println(s"-- Got Websocket message");
+      //println(s"-- Got Websocket message");
 
       //-- Convert Key
       var key = req.getParameter("Sec-WebSocket-Key") match {
@@ -73,7 +73,7 @@ trait WebsocketIntermediary extends HTTPIntermediary {
 
       if (req.upped) {
 
-        println(s"-- Saving WS Connection to pool: "+this.hashCode()+", session is: "+req.getSession.get);
+       // println(s"-- Saving WS Connection to pool: "+this.hashCode()+", session is: "+req.getSession.get);
         
         this.websocketPool.synchronized {
           
@@ -93,7 +93,7 @@ trait WebsocketIntermediary extends HTTPIntermediary {
 
         }
         
-        println(s"-- Done Saving WS Connection to pool: "+this.hashCode());
+        //println(s"-- Done Saving WS Connection to pool: "+this.hashCode());
 
         //-- Send ack 
         //logFine[WebsocketIntermediary](s"Sending HearthBeat acknowledge")
