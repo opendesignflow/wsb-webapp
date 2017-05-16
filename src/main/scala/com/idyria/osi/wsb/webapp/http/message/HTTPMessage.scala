@@ -646,6 +646,10 @@ $sessionId
 
   // Content
   //--------------
+  def clearResults = {
+    this.__htmlContent = None
+    this.content = null
+  }
   var __htmlContent: Option[HTMLNode[HTMLElement, _]] = None
 
   def htmlContent_=(h: HTMLNode[HTMLElement, _]): Unit = {
