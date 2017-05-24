@@ -26,8 +26,8 @@
 	<!-- #### -->
 	<properties>
 		<github.global.server>github</github.global.server>
-		<ooxoo.version>3.2.3-SNAPSHOT</ooxoo.version>
-		<wsb.version>3.3.1-SNAPSHOT</wsb.version>
+		<ooxoo.version>3.2.3</ooxoo.version>
+		<wsb.version>3.3.1</wsb.version>
 	</properties>
 
 	<organization>
@@ -200,7 +200,7 @@
 		<dependency>
             <groupId>org.odfi.ooxoo</groupId>
             <artifactId>ooxoo-db</artifactId>
-            <version>3.2.3</version>
+            <version>${ooxoo.version}</version>
         </dependency>
 		<dependency>
 			<groupId>com.sun.faces</groupId>
