@@ -103,8 +103,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   def putToTempBuffer(name: String, v: Any) = {
     tempBuffer = tempBuffer.updated(name, v)
   }
-  
-  def deleteFromTempBuffer(name:String) = {
+
+  def deleteFromTempBuffer(name: String) = {
     tempBuffer = tempBuffer - name
   }
 
@@ -259,47 +259,47 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   //-----------------------
 
   var actions = Map[String, (HTMLNode[HTMLElement, _], HTMLNode[HTMLElement, _] => Unit)]()
-  var actionName : Option[String] = None
-  var actionData = Stack[(String,String)]()
+  var actionName: Option[String] = None
+  var actionData = Stack[(String, String)]()
 
-   /**
+  /**
    * Action name
    */
-  def withActionName(str:String)(cl: => Unit) = {
-     try {
-       this.actionName = Some(str)
-       cl
-     } finally {
-       this.actionName = None
-     }
-  }
-  
-  /**
-   *(name,fetchJavaScript)
-   */
-  def withActionData(data:(String,String)*)(cl: => Unit) = {
+  def withActionName(str: String)(cl: => Unit) = {
     try {
-      data.foreach { tuple => this.actionData.push(tuple)}
+      this.actionName = Some(str)
       cl
     } finally {
-      data.foreach { tuple => this.actionData.pop}
+      this.actionName = None
     }
   }
-  
+
+  /**
+   * (name,fetchJavaScript)
+   */
+  def withActionData(data: (String, String)*)(cl: => Unit) = {
+    try {
+      data.foreach { tuple => this.actionData.push(tuple) }
+      cl
+    } finally {
+      data.foreach { tuple => this.actionData.pop }
+    }
+  }
+
   /**
    * Return empty array if necessary
    */
   def actionDataToJSArray = {
-   /* this.actionData.size match {
+    /* this.actionData.size match {
       case 
     }*/
     this.actionData.map {
-     // case (name,js) => s"""{'name': '$name','expr': '$js'}"""
-       //case (name,js) => s"""'$name','$js'"""
-       case (name,js) => s"""${name}:'$js'"""
-    }.mkString("{",",","}")
+      // case (name,js) => s"""{'name': '$name','expr': '$js'}"""
+      //case (name,js) => s"""'$name','$js'"""
+      case (name, js) => s"""${name}:'$js'"""
+    }.mkString("{", ",", "}")
   }
-  
+
   def registerAction(id: String)(n: HTMLNode[HTMLElement, _])(actionCl: HTMLNode[HTMLElement, _] => Unit): Unit = {
     this.actions = this.actions + (id -> (n, actionCl))
   }
@@ -312,9 +312,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     val node = currentNode
     var code = this.actionName match {
       case Some(name) => name
-      case None =>  codeprefix + "" + node.hashCode()
+      case None => codeprefix + "" + node.hashCode()
     }
-
 
     //-- Register 
     var v = this
@@ -327,7 +326,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
 
   }
 
-  def createSpecialPath(specialType: String, code: String) : String = {
+  def createSpecialPath(specialType: String, code: String): String = {
 
     var viewsPath = this.currentView.getParentViews
     viewsPath.size match {
@@ -338,10 +337,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     }
 
   }
-  
-  implicit def strToURI(str:String) : URI = new URI(str)
 
- 
+  implicit def strToURI(str: String): URI = new URI(str)
 
   def onClickReload(cl: => Unit) = {
     reload
@@ -440,23 +437,22 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
   }
 
   def onKeyTyped(cl: Char => Unit) = {
-  
-    
+
     var actionCode = this.getActionString({ cl('a') }, "onkeyup")
     +@("onkeyup" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}',noUpdate=true)").noDoubleSlash)
   }
-  def onFilteredKeyTyped(filters:String*)(cl: Char => Unit) = {
-  
+  def onFilteredKeyTyped(filters: String*)(cl: Char => Unit) = {
+
     //-- Get Path
     var actionCode = this.getActionString({ cl('a') }, "onkeydown")
-    
+
     //-- Get Data
     //var data = 
-    
-    +@("onkeydown" -> (s"localWeb.filteredKeyTyped(event,this,[${filters.map {f =>s"function (e){return $f;}" }.mkString(",")}],'${createSpecialPath("action", actionCode)}',${actionDataToJSArray})").noDoubleSlash)
+
+    +@("onkeydown" -> (s"localWeb.filteredKeyTyped(event,this,[${filters.map { f => s"function (e){return $f;}" }.mkString(",")}],'${createSpecialPath("action", actionCode)}',${actionDataToJSArray})").noDoubleSlash)
   }
 
-  override def onClick(cl: => Unit): Unit = {
+  def onClick(cl: => Unit): Unit = {
 
     var actionCode = this.getActionString(cl)
     +@("onclick" -> (s"localWeb.buttonClick(this,'${createSpecialPath("action", actionCode)}')").noDoubleSlash)
@@ -517,7 +513,7 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
       case true => v
       case false =>
         try {
-          LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]], true)
+          LocalWebHTMLVIewCompiler.createView[VT](Some(v), v.getClass.asInstanceOf[Class[VT]], listen = false)
         } catch {
           case e: Throwable =>
             e.printStackTrace()
@@ -824,8 +820,8 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     }
 
   }
-  
-   /**
+
+  /**
    * BindValue with Buffers
    */
   def bindBufferValue(vb: XSDStringBuffer): Unit = {
@@ -834,23 +830,23 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     this.bindValue {
       v: String =>
         vb.data = v
-       
+
     }
 
   }
-  
+
   def bindBufferValue(vb: BooleanBuffer): Unit = {
 
     vb.data.booleanValue() match {
-      case true => 
-         +@("checked" ->"true")
-      case false => 
+      case true =>
+        +@("checked" -> "true")
+      case false =>
     }
-   
+
     this.bindValue {
       v: Boolean =>
         vb.data = v
-       
+
     }
 
   }
@@ -954,10 +950,10 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
     //-- Set to default value if not set
     this.currentNode match {
       case t: Textarea[_, _] =>
-        if (t.textContent=="") {
-          textContent( valueFromPref.toString)
+        if (t.textContent == "") {
+          textContent(valueFromPref.toString)
         }
-            
+
       case other =>
         this.currentNode.attributeOption("value") match {
           case None =>
@@ -979,7 +975,30 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
 
     // Get Value from preference with default being the first of provided values
     //--------
-    var valueFromPrefs = p.get(key, values(0)._1)
+    var valueFromPrefs = p.keys().contains(key) match {
+      case false if (values.size == 0) =>
+        None
+      case false if (values.size > 0) =>
+        p.put(key, values(0)._1)
+        Some(values(0)._1)
+      case true =>
+
+        var prefVal = p.get(key, "")
+
+        // If value from Pref is not in list, remove key
+        //-------------
+        values.find {
+          case (value, text) => value == prefVal
+        } match {
+          case Some(found) => Some(found._1)
+          case None if (values.size > 0) =>
+            p.put(key, values(0)._1)
+            Some(values(0)._1)
+          case None if (values.size == 0) =>
+            p.remove(key)
+            None
+        }
+    }
 
     // Create Select
     //----------
@@ -993,9 +1012,14 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
             textContent(text)
 
             // Mark selected if same value as one from preferences
-            if (value == valueFromPrefs) {
-              +@("selected" -> "true")
+            valueFromPrefs match {
+              case Some(v) =>
+                if (value == v) {
+                  +@("selected" -> "true")
+                }
+              case None =>
             }
+
           }
       }
 
@@ -1007,9 +1031,14 @@ trait DefaultLocalWebHTMLBuilder extends DefaultBasicHTMLBuilder with TLogSource
 
     }
 
-    // Run custom closure at least once before begin
+    // Run custom closure at least once before begin to allow initalisations
     //--------
-    cl(valueFromPrefs)
+    valueFromPrefs match {
+      case Some(value) =>
+        cl(value)
+      case None =>
+    }
+
   }
 
   // File Drop Stuff

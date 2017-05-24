@@ -44,7 +44,10 @@ localWeb.callAction = function(sender, path,data) {
 	deffered.fail(function(data) {
 		$(sender).prop('disabled', false);
 		console.log("Error in action ");
-		localWeb.faultFor(sender, data.responseText);
+		
+		if (localWeb.faultFor(sender, data.responseText)==false) {
+		    $(sender).html(data.responseText);
+		}
 	});
 
 };
@@ -96,8 +99,8 @@ localWeb.buttonClick = function(button, id,noUpdate=false) {
 		console.log("Done...");
 		
 		//-- update reload
+		$(button).prop('disabled', false);
 		if(!noUpdate) {
-			$(button).prop('disabled', false);
 			if (data != "OK") {
 				console.log("Reloading Page")
 				$("body").html(data);
@@ -112,9 +115,12 @@ localWeb.buttonClick = function(button, id,noUpdate=false) {
 
 	});
 	deffered.fail(function(data) {
-		console.log("Error in action ");
-		$(sender).prop('disabled', false);
-		localWeb.faultFor(button, data.responseText);
+		$(button).prop('disabled', false);
+        console.log("Error in action ");
+        
+        if (localWeb.faultFor(button, data.responseText)==false) {
+            $(button).html(data.responseText);
+        }
 	});
 
 };
@@ -176,7 +182,7 @@ localWeb.faultFor = function(element, faultJsonString) {
 	// -- Get text
 	var text = localWeb.decodeHTML(fault.Reason.Text);
 
-	// console.info("Error Reason: "+fault.Reason.Text);
+	 console.info("Error Reason: "+text);
 
 	// -- Look for error in parent neighbor
 	var errorBlockNeighbor = $(element).parent().find(".error:first");
@@ -184,9 +190,11 @@ localWeb.faultFor = function(element, faultJsonString) {
 		console.log("Found Error Container: " + errorBlockNeighbor);
 		$(errorBlockNeighbor).html(text);
 		$(errorBlockNeighbor).css("display", "block");
+		return true;
 
 	} else {
 		console.log("Error Container Not Found");
+		return false;
 	}
 
 };
@@ -216,13 +224,6 @@ localWeb.makeEventConnection = function() {
 	localWeb.wsConnection.onopen = function (event) {
 		if (localWeb.debug == true) {
 			console.log('Connection Done');
-			
-			localWeb.onPushData("HeartBeat",function(hb) {
-				
-				console.log("Got Heartbeat");
-				
-				
-			});
 			
 			
 			//Update text
@@ -418,6 +419,14 @@ localWeb.fileDrop = function(event,action) {
 
 console.info("Welcome to localweb JS..." + window.location.pathname);
 localWeb.makeEventConnection();
+
+
+localWeb.onPushData("HeartBeat",function(hb) {
+	
+	console.log("Got Heartbeat");
+	
+	
+});
 
 
 

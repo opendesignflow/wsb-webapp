@@ -21,7 +21,66 @@
  */
 package com.idyria.osi.wsb.webapp.http.message
 
-object HTTPErrorCodes {
+object HTTPCodes {
+
+  val Continue = 100
+  val Switching_Protocols = 101
+  val Processing = 102
+  val OK = 200
+  val Created = 201
+  val Accepted = 202
+  val Non_Authoritative_Information = 203
+  val No_Content = 204
+  val Reset_Content = 205
+  val Partial_Content = 206
+  val Multi_Status = 207
+  val Already_Reported = 208
+  val IM_Used = 226
+  val Multiple_Choices = 300
+  val Moved_Permanently = 301
+  val Found = 302
+  val See_Other = 303
+  val Not_Modified = 304
+  val Use_Proxy = 305
+  val Reserved = 306
+  val Temporary_Redirect = 307
+  val Permanent_Redirect = 308
+  val Bad_Request = 400
+  val Unauthorized = 401
+  val Payment_Required = 402
+  val Forbidden = 403
+  val Not_Found = 404
+  val Method_Not_Allowed = 405
+  val Not_Acceptable = 406
+  val Proxy_Authentication_Required = 407
+  val Request_Timeout = 408
+  val Conflict = 409
+  val Gone = 410
+  val Length_Required = 411
+  val Precondition_Failed = 412
+  val Request_Entity_Too_Large = 413
+  val Request_URI_Too_Long = 414
+  val Unsupported_Media_Type = 415
+  val Requested_Range_Not_Satisfiable = 416
+  val Expectation_Failed = 417
+  val Unprocessable_Entity = 422
+  val Locked = 423
+  val Failed_Dependency = 424
+  val Upgrade_Required = 426
+  val Precondition_Required = 428
+  val Too_Many_Requests = 429
+  val Request_Header_Fields_Too_Large = 431
+  val Internal_Server_Error = 500
+  val Not_Implemented = 501
+  val Bad_Gateway = 502
+  val Service_Unavailable = 503
+  val Gateway_Timeout = 504
+  val HTTP_Version_Not_Supported = 505
+  val Variant_Also_Negotiates_Experimental = 506
+  val Insufficient_Storage = 507
+  val Loop_Detected = 508
+  val Not_Extended = 510
+  val Network_Authentication_Required = 511
 
   val codes = Map(
     (100 -> "Continue"),
@@ -86,7 +145,7 @@ object HTTPErrorCodes {
   def codeToStatus(code: Integer): String = {
 
     codes.get(code) match {
-      case None       => throw new RuntimeException(s"HTTP Code $code does not exist or is Unassigned ")
+      case None => throw new RuntimeException(s"HTTP Code $code does not exist or is Unassigned ")
       case Some(text) => s"$code $text"
     }
   }

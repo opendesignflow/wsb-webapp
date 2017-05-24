@@ -41,6 +41,8 @@ import com.idyria.osi.wsb.core.message.soap.FaultCode_Value
 import com.idyria.osi.ooxoo.lib.json.JsonIO
 import com.idyria.osi.wsb.core.message.Message
 import com.idyria.osi.ooxoo.core.buffers.structural.AnyXList
+import org.w3c.dom.html.HTMLElement
+import java.awt.GraphicsEnvironment
 
 @xelement
 class Ack extends ElementBuffer {
@@ -57,7 +59,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   // Init -> Compile View once, and be ready for replacements 
   var mainViewInstance = try {
-    LocalWebHTMLVIewCompiler.createView(None, viewClass, true)
+    LocalWebHTMLVIewCompiler.createView(None, viewClass, listen = false)
   } catch {
     case e: Throwable =>
       e.printStackTrace();
@@ -98,6 +100,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           instance.onWith("soap.send") {
             payload: ElementBuffer =>
 
+              println(s"WS Send: " + payload)
               websocketPool.get(session) match {
                 case Some(interface) =>
                   interface.writeSOAPPayload(payload)
@@ -121,7 +124,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   }
 
   def getViewForRequest(req: HTTPRequest) = {
-    this.viewPool.get(req.getSession) match {
+    this.viewPool.get(req.getSession.get) match {
       case Some(view) =>
         view.request = Some(req)
         Some(view)
@@ -165,7 +168,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   //-- Refuse upped messages
   //---------------
-  this.acceptDown { r => !r.upped }
+  this.acceptDown[HTTPRequest] { r => !r.upped }
 
   //-- Resources 
   //-----------------
@@ -236,16 +239,19 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         // TLog.setLevel(classOf[WebsocketProtocolhandler], TLog.Level.FULL)
 
         if (req.upped) {
-          logFine[SingleViewIntermediary](s"Websocket opened")
-          var interface = new WebsocketInterface(req.networkContext.asInstanceOf[TCPNetworkContext])
-          websocketPool.update(req.getSession, interface)
+          logFine[SingleViewIntermediary](s"Websocket opened for: " + req.getSession)
+          var interface = new WebsocketInterface(req.networkContext.get.asInstanceOf[TCPNetworkContext])
+          websocketPool.update(req.getSession.get, interface)
 
-          req.networkContext.on("close") {
+          req.networkContext.get.on("close") {
 
-            websocketPool -= req.getSession
+            websocketPool -= req.getSession.get
             logFine[SingleViewIntermediary](s"Closing Websocket with state: ${req.networkContext}, remaning: " + websocketPool.size)
           }
+
           //-- Send ack 
+          logFine[SingleViewIntermediary](s"Sending HearthBeat acknowledge")
+          Thread.sleep(500) // Wait a bit to let webpage finish loading js
           //println(s"Say Hello");
           var hb = new HeartBeat
           hb.time = System.currentTimeMillis()
@@ -335,7 +341,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
                   //-- ReRender, but get only body
                   if (node.attribute("reRender") != "") {
-                    r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[_, _]]).get.asInstanceOf[HTMLNode[_, HTMLNode[_, _]]]
+                    r.htmlContent = view.rerender.children.find(_.isInstanceOf[Body[HTMLElement, _]]).get.asInstanceOf[HTMLNode[HTMLElement, _]]
                   } else {
                     r.contentType = "text/plain"
                     r.content = ByteBuffer.wrap("OK".getBytes)
@@ -432,7 +438,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
   this <= new HTTPIntermediary {
 
-    this.acceptDown { r =>
+    this.acceptDown[HTTPRequest] { r =>
       // println(s"Comparing: " + s"/$basePath".noDoubleSlash + " with " + r.path.toString)
       //!r.upped && r.path.toString.startsWith(s"/$basePath".noDoubleSlash)
       !r.upped && (r.path.toString == "/")
@@ -448,7 +454,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
 
         //-- Get View to call action on 
         //--------------------
-        var view = viewPool.getOrElseUpdate(req.getSession, {
+        var view = viewPool.getOrElseUpdate(req.getSession.get, {
 
           //  println(s"New view instance")
           var instance = viewClass.newInstance()
@@ -464,12 +470,18 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
           instance.onWith("soap.send") {
             payload: ElementBuffer =>
 
-              websocketPool.get(req.getSession) match {
+              //println(s"WS Send: "+payload+"->"+req.getSession)
+              /*websocketPool.foreach {
+                case (k,v) => 
+                  println(s"Session with socket:"+k)
+              }*/
+              websocketPool.get(req.getSession.get) match {
                 case Some(interface) =>
 
+                  //println(s"Writing")
                   interface.writeSOAPPayload(payload)
                   interface.catchNextDone
-
+                //  println(s"Done")
                 case None =>
               }
 
@@ -483,7 +495,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
         })
         view.request = Some(req)
 
-        logFine[SingleViewIntermediary](s"rendering")
+        logFine[SingleViewIntermediary](s"rendering: " + req.getSession)
 
         var r = new HTTPResponse();
         try {
@@ -507,45 +519,45 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   // Errors 
   //--------------------
   this <= new HTTPIntermediary {
-    this.acceptDown { r => r.errors.size > 0 }
+    this.acceptDown[HTTPRequest] { r => r.errors.size > 0 }
 
-    this.onDownMessage { 
+    this.onDownMessage {
       req =>
 
-      logFine[SingleViewIntermediary](s"Request has errors")
-      try {
-        var r = new HTTPResponse();
-        r.code = 503
+        logFine[SingleViewIntermediary](s"Request has errors")
+        try {
+          var r = new HTTPResponse();
+          r.code = 503
 
-        r.htmlContent = html {
-          head {
-            
-          }
-          body {
-            p {
-              text("Some Errors have been detected")
+          r.htmlContent = html {
+            head {
+
             }
-            req.errors.foreach {
-              err =>
-                h1("Error: " + err.getLocalizedMessage) {
+            body {
+              p {
+                text("Some Errors have been detected")
+              }
+              req.errors.foreach {
+                err =>
+                  h1("Error: " + err.getLocalizedMessage) {
 
-                }
-                var strOut = new StringWriter
-                err.printStackTrace(new PrintWriter(strOut))
-                pre(strOut.toString()) {
+                  }
+                  var strOut = new StringWriter
+                  err.printStackTrace(new PrintWriter(strOut))
+                  pre(strOut.toString()) {
 
-                }
+                  }
+              }
             }
           }
+
+          response(r, req)
+
+        } catch {
+          case e: Throwable =>
+            e.printStackTrace()
+
         }
-
-        response(r, req)
-        
-      } catch {
-        case e: Throwable =>
-          e.printStackTrace()
-         
-      }
 
     }
   }
@@ -553,7 +565,7 @@ class SingleViewIntermediary(basePath: String, var viewClass: Class[_ <: LocalWe
   // 404 no Found
   //-------------
   this <= new HTTPIntermediary {
-    this.acceptDown { r => !r.upped }
+    this.acceptDown[HTTPRequest] { r => !r.upped }
 
     this.onDownMessage { req =>
 
@@ -604,7 +616,7 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
 
     this.onDownMessage {
       req =>
-        req.getSession.validity.add(java.util.Calendar.MINUTE, 30)
+        req.getSession.get.validity.add(java.util.Calendar.MINUTE, 30)
     }
     this.onUpMessage[HTTPResponse] {
       m =>
@@ -750,26 +762,30 @@ object LocalWebEngine extends WSBEngine with DefaultBasicHTMLBuilder {
     }*/
 
     //-- Create Frame
-    uiFrame match {
-      case Some(frame) =>
-        frame.setVisible(true)
-      case None =>
-        var f = new JFrame("LocalWeb")
-        uiFrame = Some(f)
-        f.setSize(800, 600)
+    GraphicsEnvironment.isHeadless() match {
+      case false =>
+        uiFrame match {
+          case Some(frame) =>
+            frame.setVisible(true)
+          case None =>
+            var f = new JFrame("LocalWeb")
+            uiFrame = Some(f)
+            f.setSize(800, 600)
 
-        //-- Add text
-        var tp = new JEditorPane
-        tp.setContentType("text/html")
-        tp.setText("""<html>
+            //-- Add text
+            var tp = new JEditorPane
+            tp.setContentType("text/html")
+            tp.setText("""<html>
       <h1>Web API</h1>
       <p>
       Open your Web Browser and navigate to <a href="http://localhost:8585/">http://localhost:8585/</a>
       </p></html>
       """.trim)
-        f.setContentPane(new JScrollPane(tp))
-        f.setVisible(true)
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+            f.setContentPane(new JScrollPane(tp))
+            f.setVisible(true)
+            f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE)
+        }
+      case true =>
     }
 
   }

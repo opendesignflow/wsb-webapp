@@ -25,9 +25,50 @@ import com.idyria.osi.wsb.core.broker.tree.MessageIntermediary
 
 import scala.reflect._
 
-class HTTPIntermediary extends MessageIntermediary[HTTPRequest] {
+trait HTTPIntermediary extends MessageIntermediary[HTTPRequest] {
 
   val ttag = classTag[HTTPRequest]
+  
+  // Operations CLosures
+  //----------------------
+  def onGET(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isGET) => cl(r)
+    case r => 
+  }
+  def onPOST(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isPOST) => cl(r)
+    case r => 
+  }
+  def onPUT(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isPUT) => cl(r)
+    case r => 
+  }
+  def onHEAD(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isHEAD) => cl(r)
+    case r => 
+  }
+  def onDELETE(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isDELETE) => cl(r)
+    case r => 
+  }
+  def onTRACE(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isTRACE) => cl(r)
+    case r => 
+  }
+  def onOPTIONS(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isOPTIONS) => cl(r)
+    case r => 
+  }
+  def onCONNECT(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isCONNECT) => cl(r)
+    case r => 
+  }
+  def onPATCH(cl: HTTPRequest => Unit) = onDownMessage {
+    case r if (r.isPATCH) => cl(r)
+    case r => 
+  }
+  
+ 
 
 }
 

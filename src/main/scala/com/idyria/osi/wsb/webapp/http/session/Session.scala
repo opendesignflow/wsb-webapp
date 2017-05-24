@@ -24,6 +24,7 @@ package com.idyria.osi.wsb.webapp.http.session
 import com.idyria.osi.wsb.webapp.http.message._
 import java.util.TimeZone
 import com.idyria.osi.tea.logging.TLogSource
+import scala.reflect.ClassTag
 
 /**
  * Persistent memory accross requests for a user
@@ -53,17 +54,18 @@ class Session(var id: String, var host: String) extends TLogSource {
 
   }
 
-  def apply[T<:Any](name: String): Option[T] = {
+  def apply[T <: Any](name: String): Option[T] = {
 
     logFine(s"[Session] Searching value from id $id and instance ${hashCode}")
     this.values.get(name).asInstanceOf[Option[T]]
   }
-  
+
   /**
    * Clear a key in the values
    */
-  def clear(name:String)  = values.contains(name) match {
-    case true => values = values - name; true
+  def clear(name: String) = values.contains(name) match {
+    case true =>
+      values = values - name; true
     case false => false
   }
 
@@ -74,6 +76,38 @@ class Session(var id: String, var host: String) extends TLogSource {
     //String.format("%tc", this.validity);
     String.format("%1$ta,%1$td-%1$tb-%1$tY %1$tT GMT", this.validity);
   }
+  
+  
+  // Values utils
+  //------------
+  
+  def removeValue(name:String) = synchronized {
+    
+    this.values.contains(name) match {
+      case true => 
+        this.values = this.values - name
+      case false =>
+    }
+    
+  }
+  
+  def hasValueOfNameAndType[T](name:String)(implicit tag : ClassTag[T]) =  {
+    this.values.get(name) match {
+      case Some(v) if (tag.runtimeClass.isInstance(v)) => true
+      case other => false
+    }
+  }
+  
+  
+  def findValueOfType[T](implicit tag : ClassTag[T]) = {
+    this.values.find {
+      case (k,v:T) => true
+      case other => false
+    } match {
+      case None => None
+      case Some((k,v:T)) => Some(k,v)
+    }
+  }
 
 }
 
@@ -83,14 +117,29 @@ object Session extends TLogSource {
 
   var longGenerator = new com.idyria.osi.tea.random.UniqueLongGenerator
 
+  def sessionDefined(message: HTTPRequest): Boolean = {
+
+    message.session.isDefined match {
+      case true => true
+      case false =>
+
+        // Return true if already in map
+        message.cookies.get("SSID") match {
+          case Some(ssid) => sessions.contains(ssid)
+          case None => false
+        }
+    }
+
+  }
+
   /**
    * Creates a new Session, or returns an existing one for the user
    */
   def apply(message: HTTPRequest): Session = {
 
     // Return if existing
-    if (message.session != null)
-      return message.session
+    if (message.session.isDefined)
+      return message.session.get
 
     // Return if already in map
     message.cookies.get("SSID") match {

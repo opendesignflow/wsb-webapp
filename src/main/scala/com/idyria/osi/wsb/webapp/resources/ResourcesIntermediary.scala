@@ -4,7 +4,6 @@ import com.idyria.osi.wsb.webapp.http.message.HTTPIntermediary
 import com.idyria.osi.wsb.webapp.http.message.HTTPResponse
 import java.nio.ByteBuffer
 import java.net.URL
-import com.idyria.osi.wsb.webapp.WebApplication
 import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import java.io.File
 import com.idyria.osi.wsb.webapp.http.message.HTTPPathIntermediary
@@ -22,11 +21,12 @@ import com.idyria.osi.tea.io.TeaIOUtils
 class ResourcesIntermediary(basePath: String) extends HTTPPathIntermediary(basePath) {
   name = "Simple File Resources"
 
-  acceptDown { message =>
+  acceptDown[HTTPRequest] {
+    message =>
 
-    var r = (message.errors.isEmpty && message.upped == false)
-    logFine[ResourcesIntermediary](s"Resource acccepts: " + message.path + " -> " + basePath + " -> " + message.errors.isEmpty)
-    r
+      var r = (message.errors.isEmpty && message.upped == false)
+      logFine[ResourcesIntermediary](s"Resource acccepts: " + message.path + " -> " + basePath + " -> " + message.errors.isEmpty)
+      r
   }
 
   //Refuse messages with a path containing WEB-INF
@@ -566,18 +566,16 @@ object ResourcesIntermediary {
    * IF source is the empty string, it is transformed to "." because it means "current folder"
    */
   def addFilesSource(source: String) = {
-    
+
     var realSource = source match {
       case "" => "."
       case s => s
     }
-    
+
     fileSources.contains(realSource) match {
-      case true => 
+      case true =>
       case false => fileSources = source :: fileSources
     }
-    
-  
 
   }
 

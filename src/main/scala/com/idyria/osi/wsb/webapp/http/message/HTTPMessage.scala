@@ -34,15 +34,18 @@ import java.io.ByteArrayInputStream
 import java.util.zip.GZIPInputStream
 import java.io.ByteArrayOutputStream
 import com.idyria.osi.vui.html.HTMLNode
+import org.w3c.dom.html.HTMLElement
 
 trait HTTPMessage extends Message {
 
   /**
    * The current session if available
    */
-  var session: Session = null
+  var session: Option[Session] = None
 
-  def getSession: Session = session
+  def getSession = session
+
+  def hasSession = session.isDefined
 
   // Cookies
   //----------
@@ -51,8 +54,6 @@ trait HTTPMessage extends Message {
 }
 
 object HTTPMessage extends MessageFactory {
-
-  
 
   def apply(data: Any): HTTPMessage = {
 
@@ -63,7 +64,7 @@ object HTTPMessage extends MessageFactory {
     //-- Request or Response?
     part.protocolLines(0) match {
       case response if (response.startsWith("HTTP")) => HTTPResponse(data)
-      case request => HTTPRequest(data)
+      case request                                   => HTTPRequest(data)
     }
 
   }
@@ -85,7 +86,6 @@ class HTTPRequest(
 
   // Path and URL parameters separation
   //---------------------
-  path = path.replaceAll("//+", "/")
 
   var originalPath = this.path.split("""\?""").head
   def originalURL = "http://" + (this.getParameter("Host").get + "/" + originalPath).replace("//", "/")
@@ -97,7 +97,22 @@ class HTTPRequest(
   path.split("""\?""").lastOption match {
 
     //-- Query part
-    case Some(queryPart) => queryPart.split("&").foreach("""([\w_-]+)=(.+)""".r.findFirstMatchIn(_) match {
+    case Some(queryPart) =>
+
+      queryPart.split("&").foreach {
+        parameterString =>
+
+          val splitValue = parameterString.split("=")
+          val name = splitValue(0)
+          val value = splitValue.length match {
+            case 1     => ""
+            //-- If a value is set, remove name from array and reconstruct in case the value has unencoded "="
+            case other => java.net.URLDecoder.decode(splitValue.drop(1).mkString("="), "UTF-8")
+          }
+          urlParameters.update(name, value)
+      }
+
+    /*queryPart.split("&").foreach("""([\w_-]+)=(.+)""".r.findFirstMatchIn(_) match {
 
       case Some(parameterMatch) =>
 
@@ -107,13 +122,23 @@ class HTTPRequest(
       //this.addParameter()
       case None =>
 
-    })
+    })*/
 
     case None =>
   }
 
+  //-- Allow removing url parameters
+  def removeURLParameter(name: String) = this.urlParameters.get(name) match {
+    case None =>
+    case Some(v) =>
+      this.urlParameters = this.urlParameters - name
+  }
+
   //-- Ensure path has no URL parameters
   this.path = this.path.split("""\?""").head
+
+  // Do this now and not earlier to avoid mangling of the path values (GET)
+  path = path.replaceAll("//+", "/")
 
   // Use Path as qualifier
   this.qualifier = s"http:$path:$operation"
@@ -126,11 +151,18 @@ class HTTPRequest(
    */
   def changePath(newPath: String) = {
     newPath.startsWith("/") match {
-      case true => this.path = newPath
+      case true  => this.path = newPath
       case false => this.path = "/" + newPath
     }
 
     this.qualifier = s"http:${this.path}:$operation"
+  }
+
+  /**
+   * Changes the message path by removing a prefix
+   */
+  def stripPathPrefix(prefix: String) = {
+    changePath(path.stripPrefix(prefix))
   }
 
   def toBytes = {
@@ -175,13 +207,32 @@ class HTTPRequest(
 
   // Session
   //-------------------
-  override def getSession: Session = {
-    this.session = Session(this)
-    this.session
+  override def getSession = this.session match {
+    case Some(s) => Some(s)
+    case None =>
+      this.session = Some(Session(this))
+      this.session
   }
+
+  override def hasSession = Session.sessionDefined(this)
 
   // URL Parameters
   //-------------------------
+
+  /**
+   * @throws IllegalArgumentExeption if not all parameters are met
+   */
+  def ensureURLParameters(names: List[String]) = {
+
+    names.foreach {
+      p =>
+        this.getURLParameter(p) match {
+          case Some(found) =>
+          case None =>
+            throw new IllegalArgumentException(s"Required URL Parameter $p was not found ")
+        }
+    }
+  }
 
   /**
    * If the content type matches application/x-www-form-urlencoded
@@ -269,13 +320,33 @@ class HTTPRequest(
 
         """.+; boundary=(.+)\s*""".r.findFirstMatchIn(contentType) match {
           case Some(matched) => Option(matched.group(1))
-          case None => None
+          case None          => None
         }
 
       case _ => None
     }
 
   }
+
+  // General Utilities
+  //------------------
+  def isLocalHost = {
+    this.getParameter("Host") match {
+      case Some(host) => host.contains("localhost") || host.contains("127.0.0.1")
+      case None       => false
+    }
+  }
+
+  def isPOST = operation == "POST"
+  def isGET = operation == "GET"
+  def isPUT = operation == "PUT"
+  def isHEAD = operation == "HEAD"
+  def isDELETE = operation == "DELETE"
+  def isTRACE = operation == "TRACE"
+  def isOPTIONS = operation == "OPTIONS"
+  def isCONNECT = operation == "CONNECT"
+  def isPATCH = operation == "PATCH"
+
 }
 
 object HTTPRequest extends MessageFactory with TLogSource {
@@ -330,7 +401,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
     //-- If some Query parameters, set the content type, length and add part
     url.getQuery() match {
       case null =>
-      case "" =>
+      case ""   =>
       case query =>
 
         //-- Set type
@@ -346,7 +417,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
     //-- Destination URL is a network context parameter
     //-----------------------
-    var ctx = new TCPNetworkContext("tcp+http+http://" + url.getHost())
+    var ctx = Some(new TCPNetworkContext("tcp+http+http://" + url.getHost()))
     request.networkContext = ctx
 
     request
@@ -388,7 +459,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
           case "POST" =>
           //println(s"Post message content: ${new String(part.bytes)}");
 
-          case _ =>
+          case _      =>
         }
 
         // Add part ot message
@@ -492,7 +563,7 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
   def toBytes: ByteBuffer = {
 
     var headerLines = List[String]()
-    headerLines = headerLines :+ s"HTTP/1.1 ${HTTPErrorCodes.codeToStatus(code)}"
+    headerLines = headerLines :+ s"HTTP/1.1 ${HTTPCodes.codeToStatus(code)}"
 
     // Add Standard Parameters
     //-----------------------------------
@@ -501,21 +572,21 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
 
     contentType match {
       case null =>
-      case ct => headerLines = headerLines :+ s"Content-Type: $ct"
+      case ct   => headerLines = headerLines :+ s"Content-Type: $ct"
     }
 
     //headerLines = headerLines :+ "Cache-Control: no-cache"
 
     content match {
       case null =>
-      case c => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
+      case c    => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
     }
 
     var sessionId = ""
-    if (this.getSession != null) {
+    if (this.getSession.isDefined) {
 
       //sessionId = s"""Set-Cookie: SSID=${this.getSession.id}; Domain=${this.getSession.host}; Path=${this.getSession.path}; Expires=${this.getSession.validityString};"""
-      sessionId = s"""Set-Cookie: SSID=${this.getSession.id}; Path=${this.getSession.path}; Expires=${this.getSession.validityString};"""
+      sessionId = s"""Set-Cookie: SSID=${this.getSession.get.id}; Path=${this.getSession.get.path}; Expires=${this.getSession.get.validityString};"""
 
       //sessionId = s"""Set-Cookie: SSID=${this.getSession.id}; Expires=${this.getSession.validityString};"""
       //sessionId = s"""Set-Cookie: SSID=${this.getSession.id};"""
@@ -538,7 +609,7 @@ $sessionId
 """*/
     var header = content match {
       case null => headerLines.mkString("", "\r\n", "\r\n\r\n")
-      case _ => headerLines.mkString("", "\r\n", "\r\n\r\n")
+      case _    => headerLines.mkString("", "\r\n", "\r\n\r\n")
     }
 
     logFine(s"Response Headers: $header //")
@@ -547,7 +618,7 @@ $sessionId
     //-------------------
     var totalSize = content match {
       case null => header.getBytes.size
-      case _ => header.getBytes.size + content.capacity
+      case _    => header.getBytes.size + content.capacity
     }
 
     var res = ByteBuffer.allocateDirect(totalSize)
@@ -575,20 +646,26 @@ $sessionId
 
   // Content
   //--------------
-  def htmlContent_=(h: HTMLNode[_, HTMLNode[_, _]]): Unit = {
+  def clearResults = {
+    this.__htmlContent = None
+    this.content = null
+  }
+  var __htmlContent: Option[HTMLNode[HTMLElement, _]] = None
+
+  def htmlContent_=(h: HTMLNode[HTMLElement, _]): Unit = {
+    __htmlContent = Some(h)
     this.contentType = "text/html"
     this.content = ByteBuffer.wrap(h.toString().getBytes)
+    htmlContent
   }
 
   // Dummy
-  def htmlContent: HTMLNode[_, HTMLNode[_, _]] = null
-  
-  
-  def setTextContent(str:String) = {
+  def htmlContent = __htmlContent
+
+  def setTextContent(str: String) = {
     this.contentType = "text/plain"
-    this.content= ByteBuffer.wrap(str.getBytes)
+    this.content = ByteBuffer.wrap(str.getBytes)
   }
-  
 
 }
 object HTTPResponse extends MessageFactory with TLogSource {
@@ -689,6 +766,24 @@ object HTTPResponse extends MessageFactory with TLogSource {
     r.content = ByteBuffer.wrap(content.getBytes)
     r
 
+  }
+
+  //-- Standard codes
+  def c503 = {
+    var resp = new HTTPResponse
+    resp.code = 503
+    resp
+  }
+  def c404 = {
+    var resp = new HTTPResponse
+    resp.code = 404
+    resp
+  }
+  def temporaryRedirect(target: String) = {
+    var resp = new HTTPResponse
+    resp.code = HTTPCodes.Temporary_Redirect
+    resp.addParameter("Location", target)
+    resp
   }
 
 }

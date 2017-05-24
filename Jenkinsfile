@@ -1,3 +1,12 @@
+
+
+// Start Build Step function
+def transformIntoStep(jobFullName) {
+    return {
+       build job: jobFullName , wait: false, propagate: false
+    }
+}
+
 // WSB-Webapp
 node {
  
@@ -18,7 +27,8 @@ node {
     //junit '**/target/surefire-reports/TEST-*.xml'
   }
 
-
+  // Deploy or Package
+  //---------
   if (env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == 'master') {
     stage('Deploy') {
         sh "${mvnHome}/bin/mvn -B -Dmaven.test.failure.ignore deploy"

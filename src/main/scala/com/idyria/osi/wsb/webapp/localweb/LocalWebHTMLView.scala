@@ -9,12 +9,13 @@ import com.idyria.osi.wsb.webapp.http.message.HTTPRequest
 import com.idyria.osi.vui.html.basic.DefaultBasicHTMLBuilder._
 import java.net.URI
 import com.idyria.osi.ooxoo.core.buffers.structural.ElementBuffer
-import com.idyria.osi.wsb.core.broker.tree.SingleMessageIntermediary
+import com.idyria.osi.wsb.core.broker.tree.single.SingleMessageIntermediary
 import com.idyria.osi.wsb.core.message.Message
 import scala.reflect.ClassTag
 import java.util.prefs.Preferences
 import java.util.prefs.PreferenceChangeListener
 import java.util.prefs.PreferenceChangeEvent
+import com.idyria.osi.wsb.core.broker.tree.single.SingleMessage
 
 // with StandaloneHTMLUIBuilder
 class LocalWebHTMLVIew extends AView[HTMLElement, HTMLNode[HTMLElement, HTMLNode[HTMLElement, _]]] with DefaultLocalWebHTMLBuilder {
@@ -39,7 +40,7 @@ class LocalWebHTMLVIew extends AView[HTMLElement, HTMLNode[HTMLElement, HTMLNode
   }
 
   // Receive message
-  def singleMessageUpdateText[MT <: Message](id: MT => String, text: MT => String, onlyLast: Boolean = false, delayMS: Long = 100)(implicit tag: ClassTag[MT]) = {
+  def singleMessageUpdateText[MT <: SingleMessage](id: MT => String, text: MT => String, onlyLast: Boolean = false, delayMS: Long = 100)(implicit tag: ClassTag[MT]) = {
 
     LocalWebEngine.broker <= new SingleMessageIntermediary[MT] {
       this.onDownMessage {
@@ -62,7 +63,7 @@ class LocalWebHTMLVIew extends AView[HTMLElement, HTMLNode[HTMLElement, HTMLNode
       }
     }
   }
-  def singleMessageReceive[MT <: Message](onlyLast: Boolean = false, delayMS: Long = 100)(cl: (MT => Unit))(implicit tag: ClassTag[MT]) = {
+  def singleMessageReceive[MT <: SingleMessage](onlyLast: Boolean = false, delayMS: Long = 100)(cl: (MT => Unit))(implicit tag: ClassTag[MT]) = {
     LocalWebEngine.broker <= new SingleMessageIntermediary[MT] {
       this.onDownMessage {
         message =>

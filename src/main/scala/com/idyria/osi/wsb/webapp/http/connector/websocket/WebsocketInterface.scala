@@ -19,20 +19,23 @@ class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
 
   def writeMessage(el: ElementBuffer) = {
 
-    nc.synchronized {
-
-      // Produce XML Bytes
-      //-------------
-      //var res = StAXIOBuffer(el, true)
-      //println(s"Converting to JSON WS message");
-      var res = JsonIO(el, true)
-
-      logInfo(s"Converting to JSON WS message: " + res)
-
+    // Produce XML Bytes
+    //-------------
+    //var res = StAXIOBuffer(el, true)
+    //println(s"Converting to JSON WS message");
+   
+    var res = JsonIO(el, true)
+    //
+   // logInfo(s"Converting to JSON WS message: " + res)
+    
+    
+    
+     var bytes = ByteBuffer.wrap(res.getBytes)
+     nc.synchronized {
       // Send
       //---------------
       //println(s"Sending WS message");
-      nc.relatedConnector.send(ByteBuffer.wrap(res.getBytes), nc)
+      nc.relatedConnector.send(bytes, nc)
     }
   }
 
@@ -74,7 +77,7 @@ class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
     nc.relatedConnector.deregister(closeId)
     
     */
-    
+
   }
 
 }
