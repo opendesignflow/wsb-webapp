@@ -200,47 +200,18 @@
 		<dependency>
             <groupId>org.odfi.ooxoo</groupId>
             <artifactId>ooxoo-db</artifactId>
-            <version>3.2.3-SNAPSHOT</version>
+            <version>3.2.3</version>
         </dependency>
-<!-- 		<dependency> -->
-<!-- 			<groupId>com.idyria.osi.java-utils</groupId> -->
-<!-- 			<artifactId>security-utils</artifactId> -->
-<!-- 			<version>1.2</version> -->
-<!-- 			<exclusions> -->
-<!-- 				<exclusion> -->
-<!-- 					<groupId>com.idyria.osi.java-utils</groupId> -->
-<!-- 					<artifactId>tea</artifactId> -->
-<!-- 				</exclusion> -->
-<!-- 			</exclusions> -->
-<!-- 		</dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>com.idyria.osi.vui</groupId> -->
-		<!-- <artifactId>vui-core</artifactId> -->
-		<!-- <version>1.1.1-SNAPSHOT</version> -->
-		<!-- </dependency> -->
 		<dependency>
 			<groupId>com.sun.faces</groupId>
 			<artifactId>jsf-api</artifactId>
 			<version>2.2.3</version>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>com.idyria.osi.aib</groupId> -->
-		<!-- <artifactId>aib-appserv</artifactId> -->
-		<!-- <version>0.0.1-SNAPSHOT</version> -->
-		<!-- <scope>provided</scope> -->
-		<!-- </dependency> -->
-		<!-- <dependency> -->
-		<!-- <groupId>com.paypal.sdk</groupId> -->
-		<!-- <artifactId>rest-api-sdk</artifactId> -->
-		<!-- <version>0.12.2</version> -->
-		<!-- </dependency> -->
 		<dependency>
 			<groupId>org.commonjava.googlecode.markdown4j</groupId>
 			<artifactId>markdown4j</artifactId>
 			<version>2.2-cj-1.0</version>
 		</dependency>
-
-
 		<dependency>
 			<groupId>org.odfi.vui2</groupId>
 			<artifactId>vui2-html</artifactId>
