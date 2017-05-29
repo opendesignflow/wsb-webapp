@@ -93,6 +93,9 @@ trait WebsocketIntermediary extends HTTPIntermediary {
 
         }
         
+        // Finished connection
+        this.@->("websocket.connected")
+        
         //println(s"-- Done Saving WS Connection to pool: "+this.hashCode());
 
         //-- Send ack 
@@ -110,6 +113,13 @@ trait WebsocketIntermediary extends HTTPIntermediary {
       }
   }
 
+  // Events
+  def onWebsocketConnected(cl: => Any) {
+    this.on("websocket.connected") {
+      cl
+    }
+  }
+  
 }
 
 class WebsocketPathIntermediary(p: String) extends HTTPPathIntermediary(p) with WebsocketIntermediary
