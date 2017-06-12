@@ -3,51 +3,91 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.odfi.wsb</groupId>
 	<artifactId>wsb-webapp</artifactId>
-	<version>2.2.0-SNAPSHOT</version>
-	<inceptionYear>2013</inceptionYear>
+	<version>2.2.0-SNAPSHOT</version>	
 	<name>WSB Webapp</name>
 
 
 	<parent>
 		<groupId>org.odfi</groupId>
 		<artifactId>superpom-scala</artifactId>
-		<version>2.12.2.r1</version>
+		<version>2.12.2.r17</version>
 	</parent>
 
 	<!-- SCM -->
 	<!-- ### -->
 	<scm>
-		<connection>scm:git:git@github.com:richnou/wsb-webapp.git</connection>
+		<connection>https://github.com/richnou/wsb-webapp.git</connection>
 		<developerConnection>scm:git:git@github.com:richnou/wsb-webapp.git</developerConnection>
 		<url>https://github.com/richnou/wsb-webapp</url>
 	</scm>
+	
+	<inceptionYear>2013</inceptionYear>
+	
+	<licenses>
+		<license>
+			<name>GNU Affero General Public License (AGPL) version 3.0</name>
+			<url>https://www.gnu.org/licenses/agpl-3.0.en.html</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Richard Leys</name>
+			<email>leys.richard@gmail.com</email>
+		</developer>
+	</developers>
 
 	<!-- Site -->
 	<!-- #### -->
 	<properties>
 		<github.global.server>github</github.global.server>
-		<ooxoo.version>3.2.3</ooxoo.version>
-		<wsb.version>3.3.1</wsb.version>
+		<ooxoo.version>3.3.0-SNAPSHOT</ooxoo.version>
+		<wsb.version>3.4.0-SNAPSHOT</wsb.version>
 	</properties>
 
-	<organization>
-		<name>OSI / Computer Architecture Group @ Uni. Heidelberg </name>
-		<url>https://github.com/richnou/wsb-webapp</url>
-	</organization>
 
 	<build>
-		<!-- Add Examples folder to compilation and resources -->
-		<!-- ################## -->
-		<resources>
-			<resource>
-				<directory>${basedir}/src/main/javascript</directory>
-			</resource>
-			<resource>
-				<directory>${basedir}/src/main/resources</directory>
-			</resource>
-		</resources>
+
+
 
 		<plugins>
+			<!-- Licenses -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>${license.plugin.version}</version>
+				<configuration>
+					<encoding>UTF8</encoding>
+					<licenseName>agpl_v3</licenseName>
+				</configuration>
+				<executions>
+					<execution>
+						<id>update-file-header</id>
+						<goals>
+							<goal>update-file-header</goal>
+						</goals>
+						<phase>process-sources</phase>
+						<configuration>
+							<copyrightOwners>
+								OpenDesignFlow.org
+								Richard Leys (leys dot richard at gmail):
+								${project.inceptionYear}-2014 University of Heidelberg (Computer Architecture group)
+								${project.inceptionYear}-2014 Extoll GmbH (extoll.de)
+								2014-2017 University of Karlsruhe (KIT) - ASIC and Detector Lab
+							</copyrightOwners>
+							<addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+							<dryRun>false</dryRun>
+							<roots>
+								<root>src/main/java</root>
+								<root>src/main/scala</root>
+								<root>src/test/scala</root>
+								<root>target/generated-sources</root>
+								<root>src/examples/scala</root>
+							</roots>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-ooxoo-plugin</artifactId>
@@ -101,39 +141,6 @@
 				</executions>
 			</plugin>
 
-			<!-- Licenses -->
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-				<version>1.6</version>
-				<configuration>
-					<licenseName>agpl_v3</licenseName>
-					<extraExtensions>
-						<scala>java</scala>
-					</extraExtensions>
-				</configuration>
-			</plugin>
-			<!-- Site -->
-			<plugin>
-				<groupId>com.github.github</groupId>
-				<artifactId>site-maven-plugin</artifactId>
-				<version>0.12</version>
-				<configuration>
-					<message>Creating site for ${project.version}</message>
-					<repositoryName>wsb-webapp</repositoryName>
-					<repositoryOwner>richnou</repositoryOwner>
-					<path>maven/${project.version}</path>
-					<merge>true</merge>
-				</configuration>
-				<executions>
-					<execution>
-						<goals>
-							<goal>site</goal>
-						</goals>
-						<phase>site</phase>
-					</execution>
-				</executions>
-			</plugin>
 
 		</plugins>
 
@@ -181,8 +188,8 @@
 		</repository>
 		<repository>
 			<snapshots>
-                <enabled>true</enabled>
-            </snapshots>
+				<enabled>true</enabled>
+			</snapshots>
 			<id>odfi.snapshots</id>
 			<name>odfi-snapshot</name>
 			<url>http://www.opendesignflow.org/maven/repository/snapshots/</url>
@@ -191,21 +198,16 @@
 
 
 	<dependencies>
-		
+
 		<dependency>
 			<groupId>org.odfi.wsb</groupId>
 			<artifactId>wsb-core</artifactId>
 			<version>${wsb.version}</version>
 		</dependency>
 		<dependency>
-            <groupId>org.odfi.ooxoo</groupId>
-            <artifactId>ooxoo-db</artifactId>
-            <version>${ooxoo.version}</version>
-        </dependency>
-		<dependency>
-			<groupId>com.sun.faces</groupId>
-			<artifactId>jsf-api</artifactId>
-			<version>2.2.3</version>
+			<groupId>org.odfi.ooxoo</groupId>
+			<artifactId>ooxoo-db</artifactId>
+			<version>${ooxoo.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.commonjava.googlecode.markdown4j</groupId>
@@ -217,11 +219,6 @@
 			<artifactId>vui2-html</artifactId>
 			<version>2.1.1</version>
 		</dependency>
-		<!-- <dependency> -->
-		<!-- <groupId>com.idyria.osi.vui2</groupId> -->
-		<!-- <artifactId>vui2-javafx</artifactId> -->
-		<!-- <version>2.0.0-SNAPSHOT</version> -->
-		<!-- </dependency> -->
 	</dependencies>
 
 </project>
