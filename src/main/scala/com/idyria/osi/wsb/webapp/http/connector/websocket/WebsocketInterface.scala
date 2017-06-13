@@ -30,7 +30,7 @@ import com.idyria.osi.wsb.core.message.soap.Envelope
 import com.idyria.osi.wsb.core.message.soap.EnvelopeBody
 import com.idyria.osi.wsb.core.message.soap.JSONSOAPMessage
 import com.idyria.osi.wsb.core.network.connectors.tcp.TCPNetworkContext
-import com.idyria.osi.wsb.webapp.localweb.Done
+
 
 /**
  * @author zm4632
