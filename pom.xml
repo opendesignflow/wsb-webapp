@@ -43,6 +43,7 @@
 		<github.global.server>github</github.global.server>
 		<ooxoo.version>3.3.0-SNAPSHOT</ooxoo.version>
 		<wsb.version>3.4.0-SNAPSHOT</wsb.version>
+		<vui2.version>2.2.0-SNAPSHOT</vui2.version>
 	</properties>
 
 
@@ -217,7 +218,7 @@
 		<dependency>
 			<groupId>org.odfi.vui2</groupId>
 			<artifactId>vui2-html</artifactId>
-			<version>2.1.1</version>
+			<version>${vui2.version}</version>
 		</dependency>
 	</dependencies>
 
