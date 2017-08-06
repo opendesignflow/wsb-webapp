@@ -778,6 +778,11 @@ object HTTPResponse extends MessageFactory with TLogSource {
     resp.code = 404
     resp
   }
+  def c200 = {
+    var resp = new HTTPResponse
+    resp.code = 404
+    resp
+  }
   def temporaryRedirect(target: String) = {
     var resp = new HTTPResponse
     resp.code = HTTPCodes.Temporary_Redirect
