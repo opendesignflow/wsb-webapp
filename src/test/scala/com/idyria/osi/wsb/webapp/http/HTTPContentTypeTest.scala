@@ -194,4 +194,15 @@ Content-Disposition: form-data; name="eaction"
     
   }*/
 
+  test("Test POST Parameter with '") {
+    
+    var message = new HTTPRequest("POST","/","1.0")
+    message.addParameter("Content-Type", "application/x-www-form-urlencoded")
+    message  += """_render=none&value=Gordon+C%C3%B4t%C3%A9's+Reel&_format=json""".getBytes("UTF-8")
+    
+    println("Parameter: "+message.getURLParameter("value"))
+   
+    
+  }
+  
 }

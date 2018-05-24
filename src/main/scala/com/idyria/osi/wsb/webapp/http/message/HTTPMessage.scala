@@ -34,9 +34,12 @@ import java.util.zip.GZIPInputStream
 import java.io.ByteArrayOutputStream
 import com.idyria.osi.vui.html.HTMLNode
 import org.w3c.dom.html.HTMLElement
+import java.io.InputStreamReader
+import java.io.BufferedReader
 
 trait HTTPMessage extends Message {
 
+  
   /**
    * The current session if available
    */
@@ -63,7 +66,7 @@ object HTTPMessage extends MessageFactory {
     //-- Request or Response?
     part.protocolLines(0) match {
       case response if (response.startsWith("HTTP")) => HTTPResponse(data)
-      case request                                   => HTTPRequest(data)
+      case request => HTTPRequest(data)
     }
 
   }
@@ -79,9 +82,9 @@ object HTTPMessage extends MessageFactory {
  */
 class HTTPRequest(
 
-    var operation: String,
-    var path: String,
-    var version: String) extends MimePart with HTTPMessage with TLogSource {
+  var operation: String,
+  var path: String,
+  var version: String) extends MimePart with HTTPMessage with TLogSource {
 
   // Path and URL parameters separation
   //---------------------
@@ -93,38 +96,24 @@ class HTTPRequest(
   //-----------
 
   var urlParameters = scala.collection.mutable.Map[String, String]()
-  path.split("""\?""").lastOption match {
-
-    //-- Query part
-    case Some(queryPart) =>
-
+  path.split('?') match {
+    case split if (split.length==1) => 
+    case split => 
+      val queryPart = split.last
       queryPart.split("&").foreach {
         parameterString =>
 
           val splitValue = parameterString.split("=")
           val name = splitValue(0)
           val value = splitValue.length match {
-            case 1     => ""
+            case 1 => ""
             //-- If a value is set, remove name from array and reconstruct in case the value has unencoded "="
             case other => java.net.URLDecoder.decode(splitValue.drop(1).mkString("="), "UTF-8")
           }
           urlParameters.update(name, value)
       }
-
-    /*queryPart.split("&").foreach("""([\w_-]+)=(.+)""".r.findFirstMatchIn(_) match {
-
-      case Some(parameterMatch) =>
-
-        logFine(s"[HTTP] URL Parameter: ${parameterMatch.group(1)} ${parameterMatch.group(2)}")
-
-        urlParameters.update(parameterMatch.group(1), java.net.URLDecoder.decode(parameterMatch.group(2),"US-ASCII"))
-      //this.addParameter()
-      case None =>
-
-    })*/
-
-    case None =>
   }
+ 
 
   //-- Allow removing url parameters
   def removeURLParameter(name: String) = this.urlParameters.get(name) match {
@@ -142,7 +131,7 @@ class HTTPRequest(
   // Use Path as qualifier
   this.qualifier = s"http:$path:$operation"
 
-  def getCurrentURL = "http://" + this.getParameter("Host").get + "/" + this.path
+  def getCurrentURL = ("http://" + this.getParameter("Host").get + "/" + this.path).replaceAll("//+", "/")
 
   /**
    * Update the path
@@ -150,7 +139,7 @@ class HTTPRequest(
    */
   def changePath(newPath: String) = {
     newPath.startsWith("/") match {
-      case true  => this.path = newPath
+      case true => this.path = newPath
       case false => this.path = "/" + newPath
     }
 
@@ -162,6 +151,22 @@ class HTTPRequest(
    */
   def stripPathPrefix(prefix: String) = {
     changePath(path.stripPrefix(prefix))
+  }
+
+  /**
+   * Removes one element of "/path/in/url" and return it
+   */
+  def consumePathElement = {
+    var split = path.split("/")
+    split.size match {
+      case 1 => path
+      case more =>
+
+        var elt = split(1)
+        stripPathPrefix("/" + elt)
+        elt
+    }
+
   }
 
   def toBytes = {
@@ -234,6 +239,36 @@ class HTTPRequest(
   }
 
   /**
+   * Parse URL Parameters from POST form url encoded content
+   */
+  def parseURLParameters = {
+    this.parameters.find(_._1 == "Content-Type") match {
+      case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded")) =>
+
+        var content = new String(this.bytes)
+       
+        //println("Parsing URL parameters using base: "+content)
+
+        content.trim().split("&").foreach {
+          parameterString =>
+
+            
+           // println("P: /"+parameterString+"/")
+            val splitValue = parameterString.trim().split("=")
+            val name = splitValue(0).trim
+            val value = splitValue.length match {
+              case 1 => ""
+              //-- If a value is set, remove name from array and reconstruct in case the value has unencoded "="
+              case other => java.net.URLDecoder.decode(splitValue(1), "UTF-8")
+            }
+            urlParameters.update(name, value)
+        }
+
+      case other =>
+    }
+  }
+
+  /**
    * If the content type matches application/x-www-form-urlencoded
    * Then try to find in bytes string the whished parameter
    */
@@ -255,7 +290,7 @@ class HTTPRequest(
           case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded")) =>
 
             var content = new String(this.bytes)
-            ("""\b""" + name + """\b""" + """=([\w%+_\.-]+)(?:&|$$)""").r.findFirstMatchIn(content) match {
+            ("""\b""" + name + """\b""" + """=([\w'"%+_\.-]+)(?:&|$$)""").r.findFirstMatchIn(content) match {
 
               // Foudn Something, save and return
               case Some(matched) =>
@@ -281,12 +316,43 @@ class HTTPRequest(
 
             }
             this.nextParts.collectFirst {
-              case p if (p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;\\s*name=\"" + name + "\".*")) =>
 
-                // Found something, save it 
+              // Standard text content disposition
+              case p if (p.getParameter("Content-Type").isEmpty && p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;\\s*name=\"" + name + "\".*")) =>
+
+                // Found something, save it
                 var decoded = java.net.URLDecoder.decode(new String(p.bytes), "UTF-8")
                 this.urlParameters.update(name, decoded)
                 decoded
+
+              // Binary Content Disposition
+              case p if (p.getParameter("Content-Type").isDefined && p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;\\s*name=\"" + name + "\"\\s*;\\s+filename=\".*\".*")) =>
+
+                // Name is File Name
+                val filenameExtract = """filename\s*=\s*"([^"]+)"\s*;?""".r
+                filenameExtract.findFirstMatchIn(p.getParameter("Content-Disposition").get) match {
+                  case Some(m) =>
+                    m.group(1)
+                  case None =>
+                    sys.error("Cannot find filename for name: " + name + " inside content: " + p.getParameter("Content-Disposition").get)
+
+                }
+
+              /*
+                val splittedValues = p.getParameter("Content-Disposition").get.trim.split("=")
+                splittedValues.zipWithIndex.find {
+                  case (s,i) if(s=="filename") => true
+                  case other => false
+                } match {
+                  // Filename is after "filename" index, and remove ";"
+                  // Data is within " " boundaries
+                  case Some((s,i)) => splittedValues(i+1).drop(1).ex
+                  case other => sys.error("Cannot find filename for name: "+name)
+                }*/
+
+              //println("FIXME GET NAME FILE NAMES")
+              ////this.urlParameters.update(name)
+              //""
 
             }
 
@@ -319,10 +385,23 @@ class HTTPRequest(
 
         """.+; boundary=(.+)\s*""".r.findFirstMatchIn(contentType) match {
           case Some(matched) => Option(matched.group(1))
-          case None          => None
+          case None => None
         }
 
       case _ => None
+    }
+
+  }
+
+  def getPartForFileName(filename: String) = {
+
+    this.nextParts.find {
+
+      // Binary Content Disposition
+      case p if (p.getParameter("Content-Type").isDefined && p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;\\s+.+filename=\"" + filename + "\".*")) =>
+
+        true
+
     }
 
   }
@@ -332,7 +411,7 @@ class HTTPRequest(
   def isLocalHost = {
     this.getParameter("Host") match {
       case Some(host) => host.contains("localhost") || host.contains("127.0.0.1")
-      case None       => false
+      case None => false
     }
   }
 
@@ -400,7 +479,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
     //-- If some Query parameters, set the content type, length and add part
     url.getQuery() match {
       case null =>
-      case ""   =>
+      case "" =>
       case query =>
 
         //-- Set type
@@ -458,45 +537,149 @@ object HTTPRequest extends MessageFactory with TLogSource {
           case "POST" =>
           //println(s"Post message content: ${new String(part.bytes)}");
 
-          case _      =>
+          case _ =>
         }
 
         // Add part ot message
         //-------------
         lastFirstMessage(part)
 
-        // Handle Multipart 
+        // Handle Multipart
         //--------------------
         //println(s"MP: "+lastFirstMessage.isMultipart+"//"+lastFirstMessage.getParameter("Content-Type"))
         if (lastFirstMessage.isMultipart) {
+
           var boundary = lastFirstMessage.getMultiPartBoundary.get
+          var realBoundary = "--" + boundary
+
+          logInfo[HTTPMessage]("Multipart boundary: " + realBoundary)
 
           //println(s"Split to $boundary")
 
-          // Split
-          new String(lastFirstMessage.bytes).split("--" + boundary).dropRight(1).drop(1).filter { p => p.trim != "" }.map { _.trim }.foreach {
-            lines =>
+          // Split boundary, create part and extract parameters
+          /*var boundaryBytes = realBoundary.getBytes
+          var bytesBuffer = ByteBuffer.wrap(lastFirstMessage.bytes)
+
+          // Search for Boundary
+          var continue = true
+          var bytes = false
+          while (continue) {
+
+            logInfo[HTTPMessage]("Boundary Chunk -> remaining: "+bytesBuffer.remaining()+", boundary size: "+realBoundary.size)
+            bytesBuffer.get(boundaryBytes)
+
+            new String(boundaryBytes) match {
+
+
+
+                // boundary+"--" is end of stream
+              case searched if (searched == realBoundary && bytesBuffer.remaining()==2) =>
+
+                continue = false
+
+              // Found Boundary -> New Part
+              case searched if (searched == realBoundary) =>
+
+                logInfo[HTTPMessage]("Found Boundary")
+
+                bytes = false
+
+                var part = new DefaultMimePart
+                lastFirstMessage.append(part)
+
+                // Read lines for header part of Part, then move forward on the pure bytes and gather content as bytes
+                var reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bytesBuffer.array(), bytesBuffer.arrayOffset(), bytesBuffer.remaining())))
+                var headerBytes = 0
+                var headerLines = true
+                while (headerLines) {
+
+                  reader.readLine() match {
+                    case "" =>
+
+                       logInfo[HTTPMessage]("-- EOF Header")
+                      headerLines = false
+                      headerBytes += 2
+                      bytesBuffer.position(bytesBuffer.position() + headerBytes)
+                      bytes = true
+                    case other =>
+
+                      logInfo[HTTPMessage]("-- Header -> "+other)
+                      part.addParameter(other)
+                      headerBytes += (other.getBytes.size + 2)
+                  }
+
+                }
+
+
+              // Content does not match boundary -> add as bytes to part
+              case searched =>
+
+                logInfo[HTTPMessage]("Stack bytes")
+                lastFirstMessage.nextParts.last += boundaryBytes
+
+            }
+          }
+          */
+          /*var reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(lastFirstMessage.bytes)))
+          var continue = true
+          while (continue) {
+
+            reader.readLine() match {
+
+              // Boundary -> New Part
+              case line if (line.startsWith("--" + boundary)) =>
+
+                var part = new DefaultMimePart
+                lastFirstMessage.append(part)
+
+            }
+          }*/
+          var i = 0;
+          var contentBytesPointer = 0
+          new String(lastFirstMessage.bytes).split(realBoundary).dropRight(1).drop(1).filter { p => p.trim != "" }.foreach {
+            partContent =>
+
+              // Add Boundary to offset
+              contentBytesPointer += realBoundary.size + 2
 
               //println(s"**--> part: $lines")
 
               var part = new DefaultMimePart
               lastFirstMessage.append(part)
 
-              /*  lines.split("\r\n").foreach {
-                l => println(s"**-----> line $l")
-              }*/
-
               // Add all first lines as parameter, if we find a new line, the remaining goes as content
-              var contents = lines.split("\r\n\r\n")
+              var contents = partContent.split("\r\n\r\n")
+
+              // First Content part is the header
               contents(0).split("\r\n").foreach {
-                pl => part.addParameter(pl)
+                pl =>
+                  part.addParameter(pl)
+
+                  contentBytesPointer += pl.size + 2
 
               }
 
-              // Add content if any 
+              // Add Empty separator to bytes pointer
+              // contentBytesPointer += 2
+
+              // Add content if any
               if (contents.size > 1) {
-                part += contents(1).getBytes
+
+                var bytesTotal = contents(1).getBytes.size - 2
+
+                //part += contents(1).getBytes
+                var bytesForPart = lastFirstMessage.bytes.slice(contentBytesPointer, contentBytesPointer + bytesTotal)
+                part += bytesForPart
+
+                if (bytesTotal <= 40) {
+                  logInfo[HTTPMessage]("PartContent: " + new String(bytesForPart))
+                  logInfo[HTTPMessage]("PartContent Before: " + contents(1))
+                }
+
+                contentBytesPointer += contents(1).getBytes.size
               }
+
+              i += 1
           }
         }
 
@@ -571,14 +754,14 @@ class HTTPResponse extends HTTPMessage with MimePart with TLogSource {
 
     contentType match {
       case null =>
-      case ct   => headerLines = headerLines :+ s"Content-Type: $ct"
+      case ct => headerLines = headerLines :+ s"Content-Type: $ct"
     }
 
     //headerLines = headerLines :+ "Cache-Control: no-cache"
 
     content match {
       case null =>
-      case c    => headerLines = headerLines :+ s"Content-Length: ${c.capacity}"
+      case c => headerLines = headerLines :+ s"Content-Length: ${c.remaining}"
     }
 
     var sessionId = ""
@@ -608,7 +791,7 @@ $sessionId
 """*/
     var header = content match {
       case null => headerLines.mkString("", "\r\n", "\r\n\r\n")
-      case _    => headerLines.mkString("", "\r\n", "\r\n\r\n")
+      case _ => headerLines.mkString("", "\r\n", "\r\n\r\n")
     }
 
     logFine(s"Response Headers: $header //")
@@ -617,7 +800,7 @@ $sessionId
     //-------------------
     var totalSize = content match {
       case null => header.getBytes.size
-      case _    => header.getBytes.size + content.capacity
+      case _ => header.getBytes.size + content.capacity
     }
 
     var res = ByteBuffer.allocateDirect(totalSize)
@@ -720,12 +903,12 @@ object HTTPResponse extends MessageFactory with TLogSource {
 
                   // Init with twice the size to avoid too much internal array resizing
                   /* var outputStream = new ByteArrayOutputStream(lastFirstMessage.bytes.length*2)
-                  
+
                   // Read loop (read in page size buffers)
                   while(zipInput.available()==1) {
                     zipInput.
                   }
-                  
+
                   lastFirstMessage.bytes = new Array[Byte](size)
                   zipInput.read(lastFirstMessage.bytes)*/
 

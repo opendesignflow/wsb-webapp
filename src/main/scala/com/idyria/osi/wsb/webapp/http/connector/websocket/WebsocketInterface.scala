@@ -51,12 +51,12 @@ class WebsocketInterface(val nc: TCPNetworkContext) extends TLogSource {
     
     
      var bytes = ByteBuffer.wrap(res.getBytes)
-     nc.synchronized {
+    // nc.synchronized {
       // Send
       //---------------
       //println(s"Sending WS message");
       nc.relatedConnector.send(bytes, nc)
-    }
+    //}
   }
 
   def writeSOAPPayload(el: ElementBuffer) = {

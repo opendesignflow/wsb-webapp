@@ -3,14 +3,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.odfi.wsb</groupId>
 	<artifactId>wsb-webapp</artifactId>
-	<version>2.2.0-SNAPSHOT</version>	
+	<version>2.2.1-SNAPSHOT</version>	
 	<name>WSB Webapp</name>
 
 
 	<parent>
 		<groupId>org.odfi</groupId>
 		<artifactId>superpom-scala</artifactId>
-		<version>2.12.2.r17</version>
+		<version>2.12.6.r1</version>
 	</parent>
 
 	<!-- SCM -->
@@ -41,9 +41,9 @@
 	<!-- #### -->
 	<properties>
 		<github.global.server>github</github.global.server>
-		<ooxoo.version>3.3.0-SNAPSHOT</ooxoo.version>
-		<wsb.version>3.4.0-SNAPSHOT</wsb.version>
-		<vui2.version>2.2.0-SNAPSHOT</vui2.version>
+		<ooxoo.version>3.3.1-SNAPSHOT</ooxoo.version>
+		<wsb.version>3.4.1-SNAPSHOT</wsb.version>
+		<vui2.version>2.2.1-SNAPSHOT</vui2.version>
 	</properties>
 
 
@@ -104,7 +104,7 @@
 					<execution>
 						<phase>generate-sources</phase>
 						<goals>
-							<goal>generate-sources</goal>
+							<goal>generate</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -146,6 +146,43 @@
 		</plugins>
 
 
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+											maven-ooxoo-plugin
+										</artifactId>
+										<versionRange>
+											[3.3.1-SNAPSHOT,)
+										</versionRange>
+										<goals>
+											<goal>
+												generate-sources
+											</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
 
 	<!-- Repositories to find ODFI packages -->

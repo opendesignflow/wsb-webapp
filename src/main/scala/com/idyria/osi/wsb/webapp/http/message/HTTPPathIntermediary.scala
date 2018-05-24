@@ -33,7 +33,7 @@ class HTTPPathIntermediary(var basePath: String) extends HTTPPathIntermediaryTra
 
   acceptDown[HTTPRequest] { message =>
     val res =  message.path.startsWith(basePath)
-    logFine[HTTPPathIntermediary](s"($res)Testing message with path: " + message.originalPath + " against " + basePath +" , subtree: "+this.intermediaries.filter{i => i.isInstanceOf[HTTPPathIntermediary]}.map {i => i.asInstanceOf[HTTPPathIntermediary].basePath})
+    logFine[HTTPPathIntermediary](s"($res)Testing "+message.operation+" message with path: " + message.originalPath + ", current dynamic path="+message.path+ ", against " + basePath +" , subtree: "+this.intermediaries.filter{i => i.isInstanceOf[HTTPPathIntermediary]}.map {i => i.asInstanceOf[HTTPPathIntermediary].basePath})
     res
   }
 
