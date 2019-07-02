@@ -121,6 +121,8 @@ trait MimePart extends TLogSource {
     this._bytes = this._bytes ++ inputBytes
     this.contentLength += inputBytes.size
   }
+  
+  def asString = new String(this.bytes)
 
   // Parameters Exploration to find data
   //-------------------------------------------
