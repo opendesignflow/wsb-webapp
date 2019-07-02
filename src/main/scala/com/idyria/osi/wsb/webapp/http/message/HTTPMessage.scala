@@ -290,7 +290,8 @@ class HTTPRequest(
           case Some((_, contentType)) if (contentType.trim.startsWith("application/x-www-form-urlencoded")) =>
 
             var content = new String(this.bytes)
-            ("""\b""" + name + """\b""" + """=([\w'"%+_\.-]+)(?:&|$$)""").r.findFirstMatchIn(content) match {
+           // ("""\b""" + name + """\b""" + """=([\w'"%+_\*\.-]+)(?:&|$$)""").r.findFirstMatchIn(content) match {
+            ("""\b""" + name + """\b""" + """=([^&]+)(?:&|$$)""").r.findFirstMatchIn(content) match {
 
               // Foudn Something, save and return
               case Some(matched) =>
@@ -398,10 +399,12 @@ class HTTPRequest(
     this.nextParts.find {
 
       // Binary Content Disposition
-      case p if (p.getParameter("Content-Type").isDefined && p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;\\s+.+filename=\"" + filename + "\".*")) =>
+      case p if (p.getParameter("Content-Type").isDefined && p.getParameter("Content-Disposition") != None && p.getParameter("Content-Disposition").get.trim.matches("form-data;.+name=\"" + filename + "\".*")) =>
 
         true
 
+      case other => 
+          false
     }
 
   }
@@ -546,6 +549,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
 
         // Handle Multipart
         //--------------------
+         logFine[HTTPMessage]("Multipart: "+lastFirstMessage.isMultipart)
         //println(s"MP: "+lastFirstMessage.isMultipart+"//"+lastFirstMessage.getParameter("Content-Type"))
         if (lastFirstMessage.isMultipart) {
 
@@ -642,15 +646,41 @@ object HTTPRequest extends MessageFactory with TLogSource {
               // Add Boundary to offset
               contentBytesPointer += realBoundary.size + 2
 
+              logFine[HTTPMessage](s"**--> part: $partContent")
               //println(s"**--> part: $lines")
 
               var part = new DefaultMimePart
               lastFirstMessage.append(part)
 
               // Add all first lines as parameter, if we find a new line, the remaining goes as content
-              var contents = partContent.split("\r\n\r\n")
+              var contents = partContent.trim.split("\n")
 
-              // First Content part is the header
+              
+              val parametersContent = contents.toList.takeWhile {
+                  l => 
+                      //println(s"***-> Line: "+l+" -> "+l.trim()!="")
+                      l.trim()!=""
+              }
+              
+              val realContent = contents.toList.dropWhile {
+                  l => 
+                      l.trim()!=""
+              }.drop(1).mkString
+              
+              
+              
+              parametersContent.foreach {
+                  parameterLine => 
+                      logFine[HTTPMessage](s"**Parameter Line: $parameterLine")
+                      part.addParameter(parameterLine)
+              }
+             
+              part += realContent.getBytes
+              
+              /*
+               * BACKUP
+                
+                // First Content part is the header
               contents(0).split("\r\n").foreach {
                 pl =>
                   part.addParameter(pl)
@@ -658,7 +688,8 @@ object HTTPRequest extends MessageFactory with TLogSource {
                   contentBytesPointer += pl.size + 2
 
               }
-
+               
+               
               // Add Empty separator to bytes pointer
               // contentBytesPointer += 2
 
@@ -679,7 +710,7 @@ object HTTPRequest extends MessageFactory with TLogSource {
                 contentBytesPointer += contents(1).getBytes.size
               }
 
-              i += 1
+              i += 1*/
           }
         }
 
